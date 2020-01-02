@@ -45,6 +45,9 @@ class SuperRV:
         self.N = rv.N
 
     def split_by_structure(self):
+        if self.value is not None:
+            return {self}
+
         clusters = dict()
         for rv in self.rvs:
             signature = tuple(sorted(map(self.get_cluster, rv.nb)))
