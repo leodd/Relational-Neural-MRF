@@ -21,6 +21,6 @@ Given a set of training data points $M$, the task of learning the MRF $G(V,C; \t
 for the ease of computation, we could use the log likelihood
 
 \[
-\log(l(M; \theta)) = \sum_{m} \log(P(x^{(m)}; \theta)) \\
-= \sum_{m} \sum_{c \in C} \log(\phi_c(x_c^{(m)}; \theta_c)) - M \log(Z)
+\log(l(M; \theta)) = \frac{1}{M} \sum_{m} \log(P(x^{(m)}; \theta)) \\
+= \frac{1}{M} \sum_{m} \sum_{c \in C} \log(\phi_c(x_c^{(m)}; \theta_c)) - \log(Z)
 \]
