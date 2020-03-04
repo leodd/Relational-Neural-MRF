@@ -147,3 +147,6 @@ The whole gradient of the pseudo likelihood is
 \right)
 \right]
 \]
+
+##### Handling Missing Data
+The above mentioned learning methods are all based on the assumption that for each training data point, every variables have there corresponding observed data. Unfortunately, in many application, especially in relational models, the assumption does not hold.
