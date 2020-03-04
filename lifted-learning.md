@@ -22,26 +22,31 @@ for the ease of computation, we could use the log likelihood
 
 \[
 \log l(M; \theta) = \frac{1}{M} \sum_{m} \log p(x^{(m)}; \theta) \\
-= \frac{1}{M} \sum_{m} \sum_{c \in C} \phi_c(x_c^{(m)}; \theta_c) - \log Z
+= \frac{1}{M} \sum_{m} \sum_{c \in C} \phi_c(x_c^{(m)}; \theta_c) - \log Z(\theta)
 \]
 
 The gradient of the partition function is
 
 \[
-\frac{\partial \log Z}{\partial \theta_c} =
+\frac{\partial \log Z(\theta)}{\partial \theta_c} =
 \frac{1}
 {\sum_x \exp \sum_{c \in C} \phi_c(x_c; \theta_c)}
 \sum_x \exp(\sum_{c \in C} \phi_c(x_c; \theta_c))
 \frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
 =\frac{1}{Z}
-\sum_{x_c} \sum_{x \setminus x_c} \exp(\sum_{c \in C} \phi_c(x_c; \theta_c))
+\sum_{x_c} \sum_{x_{V \setminus c}} \exp(\sum_{c \in C} \phi_c(x_c; \theta_c))
 \frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
 =
-\sum_{x_c} \sum_{x \setminus x_c} p(x; \theta)
+\sum_{x_c} \sum_{x_{V \setminus c}} p(x; \theta)
 \frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
 =
 \sum_{x_c} p(x_c; \theta)
+\frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
+=
+\mathop{\mathbb{E}}_{p(x_c; \theta)}
+\left(
 \frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c}
+\right)
 \]
 
 The whole gradient of the log likelihood is
@@ -51,7 +56,10 @@ The whole gradient of the log likelihood is
 = \frac{1}{M} \sum_{c \in C} \sum_{m}
 \left[
 \frac{\partial \phi_c(x_c^{(m)}; \theta_c)}{\partial \theta_c} -
-\sum_{x_c} p(x_c; \theta) \frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c}
+\mathop{\mathbb{E}}_{p(x_c; \theta)}
+\left(
+\frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c}
+\right)
 \right]
 \]
 
@@ -61,37 +69,24 @@ Directly model the full joint distribution might be very hard as the joint distr
 Now the log likelihood becomes
 
 \[
-\log l(M; \theta) = \frac{1}{M} \sum_{m} \log p(x^{(m)}; \theta) \\
-= \frac{1}{M} \sum_{m} \sum_{c \in C} \phi_c(x_c^{(m)}; \theta_c) - \log Z
+\log l(M; \theta) = \frac{1}{M} \sum_{m} \log p(x^{(m)} \mid y^{(m)}; \theta) \\
+= \frac{1}{M} \sum_{m}
+\left[
+\sum_{c \in C} \phi_c(x_c^{(m)} \mid y^{(m)}; \theta_c) - \log Z(y^{(m)}; \theta)
+\right]
 \]
 
-The gradient of the partition function is
-
-\[
-\frac{\partial \log Z}{\partial \theta_c} =
-\frac{1}
-{\sum_x \exp \sum_{c \in C} \phi_c(x_c; \theta_c)}
-\sum_x \exp(\sum_{c \in C} \phi_c(x_c; \theta_c))
-\frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
-=\frac{1}{Z}
-\sum_{x_c} \sum_{x \setminus x_c} \exp(\sum_{c \in C} \phi_c(x_c; \theta_c))
-\frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
-=
-\sum_{x_c} \sum_{x \setminus x_c} p(x; \theta)
-\frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c} \\
-=
-\sum_{x_c} p(x_c; \theta)
-\frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c}
-\]
-
-The whole gradient of the log likelihood is
+and the gradient of the conditional log likelihood is
 
 \[
 \frac{\partial \log l(M; \theta)}{\partial \theta_c}
 = \frac{1}{M} \sum_{c \in C} \sum_{m}
 \left[
-\frac{\partial \phi_c(x_c^{(m)}; \theta_c)}{\partial \theta_c} -
-\sum_{x_c} p(x_c; \theta) \frac{\partial \phi_c(x_c; \theta_c)}{\partial \theta_c}
+\frac{\partial \phi_c(x_c^{(m)} \mid y^{(m)}; \theta_c)}{\partial \theta_c} -
+\mathop{\mathbb{E}}_{p(x_c \mid y^{(m)}; \theta)}
+\left(
+\frac{\partial \phi_c(x_c \mid y^{(m)}; \theta_c)}{\partial \theta_c}
+\right)
 \right]
 \]
 
@@ -101,12 +96,16 @@ In the standard learning setting, the computation of each gradient step requires
 To tackle this issue, we could instead use pseudo likelihood, which make an assumption of the original distribution factorized into pieces of local conditional distribution
 
 \[
-p(x; \theta) \approx \prod_{i \in V} p(x_i \mid x \setminus x_i)
+p(x; \theta) \approx \prod_{i \in V} p(x_i \mid x_{V \setminus i})
 = \prod_{i \in V} p(x_i \mid MB_i)
 \]
 
 \[
-p(x_i \mid MB_i) = 
+p(x_i \mid MB_i) =
+\frac{\exp \sum_{c \supset i} \phi_c(x_i \mid x_{c \setminus i})}
+{\sum_{\dot{x_i}} \exp \sum_{c \supset i} \phi_c(\dot{x_i}, \mid x_{c \setminus i})}
+= \frac{\exp \sum_{c \supset i} \phi_c(x_i \mid x_{c \setminus i})}
+{Z_i(MB_i)}
 \]
 
 where $MB_i$ is the Markov Blanket of the node $i$ (the set of variables that are neighboring to node $i$).
@@ -115,5 +114,36 @@ Thus the pseudo log likelihood function would be
 
 \[
 \log l(M; \theta) = \frac{1}{M} \sum_m \sum_{i \in V} \log p(x_i^{(m)} \mid MB_i^{(m)}; \theta) \\
-=
+= \frac{1}{M} \sum_m \sum_{i \in V}
+\left[
+\sum_{c \supset i} \phi_c(x_i^{(m)} \mid x_{c \setminus i}^{(m)}; \theta_c) - \log Z_i(MB_i^{(m)}; \theta)
+\right]
+\]
+
+The gradient of the log partition function with respect to $\theta_c$ is
+
+\[
+\frac{\partial \log Z_i(MB_i^{(m)}; \theta)}{\partial \theta_c} =
+\frac{1}{Z_i(MB_i^{(m)}; \theta)}
+\sum_{x_i} \exp \left( \sum_{c \supset i} \phi_c(x_i \mid MB_i^{(m)}; \theta_c) \right)
+\frac{\partial \phi_c(x_i | x_{c \setminus i}^{(m)}; \theta_c)}{\partial \theta_c} \\
+= \sum_{x_i} p(x_i \mid MB_i^{(m)}; \theta)
+\frac{\partial \phi_c(x_i | x_{c \setminus i}^{(m)}; \theta_c)}{\partial \theta_c} \\
+= \mathop{\mathbb{E}}_{p(x_i \mid MB_i^{(m)}; \theta)}
+\left(
+\frac{\partial \phi_c(x_i | x_{c \setminus i}^{(m)}; \theta_c)}{\partial \theta_c}
+\right)
+\]
+
+The whole gradient of the pseudo likelihood is
+
+\[
+\frac{\partial \log l(M; \theta)}{\partial \theta_c}
+= \frac{1}{M} \sum_m \sum_{i \in V}
+\left[
+\sum_{c \supset i} \frac{\partial \phi_c(x_c^{(m)}; \theta_c)}{\partial \theta_c} - \mathop{\mathbb{E}}_{p(x_i \mid MB_i^{(m)}; \theta)}
+\left(
+\frac{\partial \phi_c(x_i | x_{c \setminus i}^{(m)}; \theta_c)}{\partial \theta_c}
+\right)
+\right]
 \]
