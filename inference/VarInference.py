@@ -135,7 +135,7 @@ class VarInference:
         eta = self.eta[rv]
 
         for k in range(self.K):
-            for d, (xi, v) in enumerate(zip(rv.domain.values, eta[k])):
+            for d, xi in enumerate(rv.domain.values):
                 g_c[k, d] -= (rv.N - 1) * log(self.rvs_belief([xi], [rv]) + 1e-100)
 
             for f in rv.nb:

@@ -11,7 +11,7 @@ def generate_samples(g, iteration, burnin=30):
 
 
 class MCMC:
-    # Gibbs Sampling for inference in discrete MRF
+    # Gibbs Sampling for inference in hybrid MRF with tabular potential and Gaussian potential
 
     def __init__(self, g):
         self.g = g
@@ -53,17 +53,26 @@ class MCMC:
         return self.points[rv][0]
 
     def belief(self, x, rv):
-        return self.state[rv].count(x) / len(self.state[rv])
+        if rv.continuous:
+            raise Exception('cannot handle continuous variables')
+        else:
+            return self.state[rv].count(x) / len(self.state[rv])
 
     def map(self, rv):
-        counter = Counter(self.state[rv])
-        return max(counter.keys(), key=(lambda k: counter[k]))
+        if rv.continuous:
+            raise Exception('cannot handle continuous variables')
+        else:
+            counter = Counter(self.state[rv])
+            return max(counter.keys(), key=(lambda k: counter[k]))
 
     def prob(self, rv):
-        p = dict()
-        for x in rv.domain.values:
-            p[x] = self.belief(x, rv)
-        return p
+        if rv.continuous:
+            raise Exception('cannot handle continuous variables')
+        else:
+            p = dict()
+            for x in rv.domain.values:
+                p[x] = self.belief(x, rv)
+            return p
 
     def run(self, iteration=100, burnin=30, init_state=None):
         self.points = self.init_points()
