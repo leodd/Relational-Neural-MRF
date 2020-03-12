@@ -1,38 +1,22 @@
-from Graph import Potential
+from Function import Function
 import numpy as np
 from math import pow, pi, e, sqrt, exp
 
 
-def mu_prec_to_quad_params(mu, prec):
-    # find A, b, c, s.t., x^T A x + b^T x + c = -0.5 * (x - mu)^T prec (x - mu)
-    mu, prec = np.asarray(mu), np.asarray(prec)
-    A = -0.5 * prec
-    b = prec @ mu
-    c = -0.5 * np.dot(mu, b)
-    return A, b, c
-
-
-class TablePotential(Potential):
-    def __init__(self, table, symmetric=False):
-        Potential.__init__(self, symmetric=symmetric)
-        self.table = table
-
-    def get(self, parameters):
-        return self.table[parameters]
-
-    def to_log_potential(self):
-        return LogTable(np.log(self.table))  # may get infs
-
-
-class LogTable:
+class TablePotential(Function):
     def __init__(self, table):
+        """
+        Args:
+            table: A dictionary that maps a set of assignment to a value.
+        """
+        Function.__init__(self)
         self.table = table
 
-    def __call__(self, args):
-        return self.table[tuple(args)]  # use tuple arg to ensure indexing into a single value
+    def __call__(self, *parameters):
+        return self.table[tuple(parameters)]
 
 
-class GaussianPotential(Potential):
+class GaussianPotential(Function):
     """
     exp{-0.5 (x- mu)^T sig^{-1} (x - mu)}
     """
@@ -40,7 +24,7 @@ class GaussianPotential(Potential):
     def __init__(self, mu, sig, w=1):
         Potential.__init__(self, symmetric=False)
         self.mu = np.array(mu)
-        self.sig = np.matrix(sig)
+        self.sig = np.ndarray(sig)
         self.prec = self.sig.I
         det = np.linalg.det(self.sig)
         p = float(len(mu))
@@ -48,7 +32,7 @@ class GaussianPotential(Potential):
             raise NameError("The covariance matrix can't be singular")
         self.coefficient = w / (pow(2 * pi, p * 0.5) * pow(det, 0.5))
 
-    def get(self, parameters, use_coef=False):
+    def get(self, parameters):
         x_mu = np.matrix(np.array(parameters) - self.mu)
         coef = self.coefficient if use_coef else 1.
         return coef * pow(e, -0.5 * (x_mu * self.prec * x_mu.T))
@@ -58,56 +42,6 @@ class GaussianPotential(Potential):
 
     def to_log_potential(self):
         return LogQuadratic(*self.get_quadratic_params())
-
-        # def __eq__(self, other):
-        #     return np.all(self.mu == other.mu) and np.all(self.sig == other.sig)  # self.w shouldn't make a difference
-        #
-        # def __hash__(self):
-        #     return hash((self.mu, self.sig))
-
-
-class QuadraticPotential(Potential):
-    """
-    Convenience Potential object wrapper for LogQuadratic, implementing exp(x^T A x + b^T x + c)
-    """
-
-    def __init__(self, A, b, c):
-        Potential.__init__(self, symmetric=False)
-        self.A = np.array(A)
-        self.b = np.array(b)
-        self.c = c
-        self.log_potential = LogQuadratic(A, b, c)
-
-    def to_log_potential(self):
-        return self.log_potential
-
-    def get(self, args, ignore_const=False):
-        # return e ** self.log_potential(args, ignore_const)
-        # simpliest use case, assuming args is a length n tuple/list of floats;
-        # /osi directly uses the underlying LogQuadratic for vectorization and
-        # doesn't use potential.get so this is OK
-        args = np.array(args)
-        res = np.dot(args, self.A @ args) + np.dot(self.b, args)
-        if not ignore_const:
-            res += self.c
-        res = e ** res
-        return res
-
-    def __call__(self, *args, **kwargs):
-        return self.get(*args, **kwargs)
-
-    def get_quadratic_params(self):
-        # for convenient handling of all quadratic (including Gaussian like) potentials
-        return self.A, self.b, self.c
-
-    # def __eq__(self, other):
-    #     return np.all(self.A == other.A) and np.all(self.b == other.b) and np.all(self.c == other.c)
-    #
-    # def __hash__(self):
-    #     return hash((self.A, self.b, self.c))
-
-    def dim(self):
-        return self.b.size
 
 
 class LogQuadratic:

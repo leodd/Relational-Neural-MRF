@@ -1,4 +1,4 @@
-from Potential import GaussianPotential, LinearGaussianPotential, XYPotential, X2Potential
+from Potentials import GaussianPotential, LinearGaussianPotential, XYPotential, X2Potential
 from numpy import exp, Inf
 
 import time

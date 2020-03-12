@@ -1,4 +1,4 @@
-from Potential import Potential
+from Potentials import Potential
 from math import e
 import numpy as np
 
