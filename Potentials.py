@@ -1,9 +1,11 @@
 from Function import Function
 import numpy as np
+from numpy.linalg import det
 from math import pow, pi, e, sqrt, exp
+from itertools import product
 
 
-class TablePotential(Function):
+class TableFunction(Function):
     def __init__(self, table):
         """
         Args:
@@ -15,117 +17,92 @@ class TablePotential(Function):
     def __call__(self, *parameters):
         return self.table[tuple(parameters)]
 
+    def slice(self, *parameters):
+        new_parameters = {idx: set() for idx, val in enumerate(parameters) if val is None}
+        for k in self.table:  # Collect variable domain
+            for idx in new_parameters:
+                new_parameters[idx].add(k[idx])
 
-class GaussianPotential(Function):
-    """
-    exp{-0.5 (x- mu)^T sig^{-1} (x - mu)}
-    """
+        new_table = dict()
+        args = [list(new_parameters[idx]) if val is None else [val] for idx, val in enumerate(parameters)]
+        for assignment in product(*args):  # Create slice table
+            assignment = tuple(assignment)
+            new_table[assignment] = self.table[assignment]
 
-    def __init__(self, mu, sig, w=1):
+        return TableFunction(new_table)
+
+
+class GaussianFunction(Function):
+    def __init__(self, mu, sig):
+        """
+        Args:
+            mu: The mean vector.
+            sig: The covariance matrix.
+        """
         Function.__init__(self)
-        self.mu = np.array(mu)
-        self.sig = np.ndarray(sig)
-        self.prec = self.sig.I
-        det = np.linalg.det(self.sig)
-        p = float(len(mu))
+        self.mu = np.array(mu, dtype=float)
+        self.sig = np.array(sig, dtype=float)
+        self.sig_ = self.sig ** -1
+        n = float(len(mu))
         if det == 0:
             raise NameError("The covariance matrix can't be singular")
-        self.coefficient = w / (pow(2 * pi, p * 0.5) * pow(det, 0.5))
+        self.coeff = pow(2 * pi, n * 0.5) * pow(det(self.sig), 0.5)
 
-    def get(self, parameters):
-        x_mu = np.matrix(np.array(parameters) - self.mu)
-        return self.coefficient * pow(e, -0.5 * (x_mu * self.prec * x_mu.T))
+    def __call__(self, *parameters):
+        x_mu = np.array(parameters, dtype=float) - self.mu
+        return self.coeff * pow(e, -0.5 * (x_mu * self.sig_ * x_mu.T))
 
 
-class LinearGaussianPotential(Potential):
+class LinearGaussianPotential(Function):
     def __init__(self, coeff, sig):
-        Potential.__init__(self, symmetric=False)
+        Function.__init__(self)
         self.coeff = coeff
         self.sig = sig
 
-    def get(self, parameters):
+    def __call__(self, *parameters):
         return np.exp(-(parameters[1] - self.coeff * parameters[0]) ** 2 * 0.5 / self.sig)
 
 
-class X2Potential(Potential):
+class X2Potential(Function):
     def __init__(self, coeff, sig):
-        Potential.__init__(self, symmetric=False)
+        Function.__init__(self)
         self.coeff = coeff
         self.sig = sig
 
-    def get(self, parameters):
+    def __call__(self, *parameters):
         return np.exp(-self.coeff * parameters[0] ** 2 * 0.5 / self.sig)
 
-    def __hash__(self):
-        return hash((self.coeff, self.sig))
 
-    def __eq__(self, other):
-        return (
-            self.__class__ == other.__class__ and
-            self.coeff == other.coeff and
-            self.sig == other.sig
-        )
-
-    def get_quadratic_params(self):
-        # get params of an equivalent quadratic log potential
-        mu = np.zeros(1)
-        prec = np.zeros([1, 1])
-        prec[0, 0] = self.coeff / self.sig
-        return mu_prec_to_quad_params(mu, prec)
-
-    def to_log_potential(self):
-        return LogQuadratic(*self.get_quadratic_params())
-
-
-class XYPotential(Potential):
+class XYPotential(Function):
     def __init__(self, coeff, sig):
-        Potential.__init__(self, symmetric=True)
+        Function.__init__(self)
         self.coeff = coeff
         self.sig = sig
 
-    def get(self, parameters):
+    def __call__(self, *parameters):
         return np.exp(-self.coeff * parameters[0] * parameters[1] * 0.5 / self.sig)
 
-    def __hash__(self):
-        return hash((self.coeff, self.sig))
 
-    def __eq__(self, other):
-        return (
-            self.__class__ == other.__class__ and
-            self.coeff == other.coeff and
-            self.sig == other.sig
-        )
-
-    def get_quadratic_params(self):
-        # get params of an equivalent quadratic log potential
-        mu = np.zeros(2)
-        prec = np.array([[0., 0.5], [0.5, 0.]]) * self.coeff / self.sig
-        return mu_prec_to_quad_params(mu, prec)
-
-    def to_log_potential(self):
-        return LogQuadratic(*self.get_quadratic_params())
-
-
-class ImageNodePotential(Potential):
+class ImageNodePotential(Function):
     def __init__(self, mu, sig):
-        Potential.__init__(self, symmetric=True)
+        Function.__init__(self)
         self.mu = mu
         self.sig = sig
 
-    def get(self, parameters):
+    def __call__(self, *parameters):
         u = (parameters[0] - parameters[1] - self.mu) / self.sig
         return exp(-u * u * 0.5) / (2.506628274631 * self.sig)
 
 
-class ImageEdgePotential(Potential):
+class ImageEdgePotential(Function):
     def __init__(self, distant_cof, scaling_cof, max_threshold):
-        Potential.__init__(self, symmetric=True)
+        Function.__init__(self)
         self.distant_cof = distant_cof
         self.scaling_cof = scaling_cof
         self.max_threshold = max_threshold
         self.v = pow(e, -self.max_threshold / self.scaling_cof)
 
-    def get(self, parameters):
+    def __call__(self, *parameters):
         d = abs(parameters[0] - parameters[1])
         if d > self.max_threshold:
             return d * self.distant_cof + self.v
