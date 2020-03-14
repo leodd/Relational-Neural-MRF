@@ -18,18 +18,18 @@ class TableFunction(Function):
         return self.table[tuple(parameters)]
 
     def slice(self, *parameters):
-        new_parameters = {idx: set() for idx, val in enumerate(parameters) if val is None}
+        parameters_new = {idx: set() for idx, val in enumerate(parameters) if val is None}
         for k in self.table:  # Collect variable domain
-            for idx in new_parameters:
-                new_parameters[idx].add(k[idx])
+            for idx in parameters_new:
+                parameters_new[idx].add(k[idx])
 
-        new_table = dict()
-        args = [list(new_parameters[idx]) if val is None else [val] for idx, val in enumerate(parameters)]
+        table_new = dict()
+        args = [list(parameters_new[idx]) if val is None else [val] for idx, val in enumerate(parameters)]
         for assignment in product(*args):  # Create slice table
             assignment = tuple(assignment)
-            new_table[assignment] = self.table[assignment]
+            table_new[assignment] = self.table[assignment]
 
-        return TableFunction(new_table)
+        return TableFunction(table_new)
 
 
 class GaussianFunction(Function):
@@ -46,41 +46,52 @@ class GaussianFunction(Function):
         n = float(len(mu))
         if det == 0:
             raise NameError("The covariance matrix can't be singular")
-        self.coeff = pow(2 * pi, n * 0.5) * pow(det(self.sig), 0.5)
+        self.coeff = (pow(2 * pi, n * 0.5) * pow(det(self.sig), 0.5)) ** -1
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
-        return self.coeff * pow(e, -0.5 * (x_mu * self.sig_ * x_mu.T))
+        return self.coeff * pow(e, -0.5 * (x_mu.T @ self.sig_ @ x_mu))
+
+    def slice(self, *parameters):
+        idx_latent, idx_condition = list(), list()
+        for idx, val in enumerate(parameters):  # Create rearrange index
+            if val is None:
+                idx_latent.append(idx)
+            else:
+                idx_condition.append(idx)
+
+        n = len(idx_latent)  # Number of latent variables
+        parameters = np.array(parameters, dtype=float)
+
+        mu_new = self.mu[idx_latent] + \
+                 self.sig[np.ix_(idx_latent, idx_condition)] @ \
+                 (self.sig[np.ix_(idx_condition, idx_condition)] ** -1) @ \
+                 (parameters[idx_condition] - self.mu[idx_condition])
+
+        sig_new = (self.sig ** -1)[np.ix_(idx_latent, idx_latent)] ** -1
+
+        return GaussianFunction(mu_new, sig_new)
 
 
-class LinearGaussianPotential(Function):
-    def __init__(self, coeff, sig):
+class LinearGaussianFunction(Function):
+    def __init__(self, sig):
+        """
+        Args:
+            sig: The variance value.
+        """
         Function.__init__(self)
-        self.coeff = coeff
         self.sig = sig
 
     def __call__(self, *parameters):
-        return np.exp(-(parameters[1] - self.coeff * parameters[0]) ** 2 * 0.5 / self.sig)
+        return np.exp(-(parameters[1] - parameters[0]) ** 2 * 0.5 * self.sig ** -1)
 
+    def slice(self, *parameters):
+        mu = 0
+        for val in parameters:
+            if val is not None:
+                mu = val
 
-class X2Potential(Function):
-    def __init__(self, coeff, sig):
-        Function.__init__(self)
-        self.coeff = coeff
-        self.sig = sig
-
-    def __call__(self, *parameters):
-        return np.exp(-self.coeff * parameters[0] ** 2 * 0.5 / self.sig)
-
-
-class XYPotential(Function):
-    def __init__(self, coeff, sig):
-        Function.__init__(self)
-        self.coeff = coeff
-        self.sig = sig
-
-    def __call__(self, *parameters):
-        return np.exp(-self.coeff * parameters[0] * parameters[1] * 0.5 / self.sig)
+        return GaussianFunction(mu, self.sig)
 
 
 class ImageNodePotential(Function):
