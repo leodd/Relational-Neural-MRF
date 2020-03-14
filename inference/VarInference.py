@@ -73,7 +73,7 @@ class VarInference:
 
         for f in self.g.factors:
             def f_w(x):
-                return log(f.potential.get(x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)
+                return log(f.potential(*x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)
 
             for k in range(self.K):
                 args = list()
@@ -109,11 +109,11 @@ class VarInference:
             idx = f.nb.index(rv)
             for k in range(self.K):
                 def f_mu(x):
-                    return (log(f.potential.get(x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)) * \
+                    return (log(f.potential(*x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)) * \
                            (x[idx] - eta[k][0])
 
                 def f_var(x):
-                    return (log(f.potential.get(x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)) * \
+                    return (log(f.potential(*x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)) * \
                            ((x[idx] - eta[k][0]) ** 2 - eta[k][1])
 
                 args = list()
@@ -153,7 +153,7 @@ class VarInference:
                 for d, xi in enumerate(rv.domain.values):
                     def f_c(x):
                         new_x = x[:idx] + (xi,) + x[idx:]
-                        return log(f.potential.get(new_x) + 1e-100) - log(self.rvs_belief(new_x, f.nb) + 1e-100)
+                        return log(f.potential(*new_x) + 1e-100) - log(self.rvs_belief(new_x, f.nb) + 1e-100)
 
                     g_c[k, d] -= self.expectation(f_c, *args)
 
@@ -178,7 +178,7 @@ class VarInference:
 
         for f in self.g.factors:
             def f_bfe(x):
-                return log(f.potential.get(x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)
+                return log(f.potential(*x) + 1e-100) - log(self.rvs_belief(x, f.nb) + 1e-100)
 
             for k in range(self.K):
                 args = list()

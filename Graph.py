@@ -34,7 +34,7 @@ class F:
             potential: A function instance created by a derived class of the Function abstract class.
             nb: A list of the neighboring variables.
         """
-        self.phi = potential
+        self.potential = potential
         if nb is None:
             self.nb = []
         else:
