@@ -6,6 +6,7 @@ from math import sqrt, pi, e, log
 from itertools import product
 import time
 from utils import log_likelihood
+from optimization_tools import AdamOptimizer
 
 
 class VarInference:
@@ -40,6 +41,7 @@ class VarInference:
         for rv in tuple(self.g.rvs):
             # split rvs
             new_rvs = rv.split_by_structure()
+
             if rv.value is not None:
                 if len(new_rvs) > 1:
                     self.g.clustered_evidence |= new_rvs
@@ -50,14 +52,13 @@ class VarInference:
                 if rv.domain.continuous:
                     for rv_ in new_rvs:
                         self.eta[rv_] = self.eta[rv]
-                        self.eta_g[0][rv_] = self.eta_g[0][rv]
-                        self.eta_g[1][rv_] = self.eta_g[1][rv]
+                        self.moments[rv_] = self.moments.get(rv, (0, 0))
                 else:
                     for rv_ in new_rvs:
                         self.eta[rv_] = self.eta[rv]
                         self.eta_tau[rv_] = self.eta_tau[rv]
-                        self.eta_tau_g[0][rv_] = self.eta_tau_g[0][rv]
-                        self.eta_tau_g[1][rv_] = self.eta_tau_g[1][rv]
+                        self.moments[rv_] = self.moments.get(rv, (0, 0))
+
             self.g.rvs |= new_rvs
 
     def cp_run(self):
@@ -301,30 +302,18 @@ class VarInference:
     def run(self, iteration=100, lr=0.1, is_log=True):
         self.is_log = is_log
 
+        if self.is_log:
+            self.time_log = list()
+            self.total_time = 0
+
         # initiate compressed graph
         self.g.init_cluster(is_split_cont_evidence=False)
 
         # initiate parameters
         self.init_param()
 
-        self.alpha = lr
-        self.b1 = 0.9
-        self.b2 = 0.999
-        self.eps = 1e-8
-
-        self.w_tau_g = [np.zeros(self.K), np.zeros(self.K)]
-        self.eta_g = [dict(), dict()]
-        self.eta_tau_g = [dict(), dict()]
-        for rv in self.g.rvs:
-            if rv.value is not None:
-                continue
-            elif rv.domain.continuous:
-                self.eta_g[0][rv] = np.zeros((self.K, 2))
-                self.eta_g[1][rv] = np.zeros((self.K, 2))
-            else:
-                self.eta_tau_g[0][rv] = np.zeros((self.K, len(rv.domain.values)))
-                self.eta_tau_g[1][rv] = np.zeros((self.K, len(rv.domain.values)))
-
+        self.adam = AdamOptimizer(lr)
+        self.moments = dict()
         self.t = 0
 
         # initial color passing run
@@ -337,10 +326,6 @@ class VarInference:
         d = epsilon * self.update_obs_its / (iteration - self.output_its)
         epsilon -= d
 
-        if self.is_log:
-            self.time_log = list()
-            self.total_time = 0
-
         # Bethe iteration
         for itr in range(int(iteration / self.update_obs_its)):
             # split evidence
@@ -348,47 +333,35 @@ class VarInference:
             self.cp_run()
             epsilon = max(epsilon - d, self.min_obs_var)
             print('split, num of rvs:', len(self.g.rvs))
-            self.ADAM_update(self.update_obs_its)
+            self.partial_run(self.update_obs_its)
 
-    def ADAM_update(self, iteration):
-        for itr in range(iteration):
+    def partial_run(self, iteration):
+        for _ in range(iteration):
             start_time = time.process_time()
             self.t += 1
-            # compute gradient
-            g = self.gradient_w_tau()
-            self.w_tau_g[0] = self.w_tau_g[0] * self.b1 + (1 - self.b1) * g
-            self.w_tau_g[1] = self.w_tau_g[1] * self.b2 + (1 - self.b2) * g * g
-
-            for rv in self.g.rvs:
-                if rv.value is not None:
-                    continue
-                elif rv.domain.continuous:
-                    g = self.gradient_mu_var(rv)
-                    self.eta_g[0][rv] = self.eta_g[0][rv] * self.b1 + (1 - self.b1) * g
-                    self.eta_g[1][rv] = self.eta_g[1][rv] * self.b2 + (1 - self.b2) * g * g
-                else:
-                    g = self.gradient_category_tau(rv)
-                    self.eta_tau_g[0][rv] = self.eta_tau_g[0][rv] * self.b1 + (1 - self.b1) * g
-                    self.eta_tau_g[1][rv] = self.eta_tau_g[1][rv] * self.b2 + (1 - self.b2) * g * g
 
             # update parameters
-            self.w_tau = self.w_tau - (self.alpha * (self.w_tau_g[0] / (1 - (self.b1 ** self.t)))) \
-                         / (np.sqrt(self.w_tau_g[1] / (1 - (self.b2 ** self.t))) + self.eps)
+            step, moment = self.adam(self.gradient_w_tau(), self.moments.get('tau', (0, 0)), self.t)
+            self.moments['tau'] = moment
+            self.w_tau = self.w_tau - step
             self.w = self.softmax(self.w_tau)
             for rv in self.g.rvs:
                 if rv.value is not None:
                     continue
                 elif rv.domain.continuous:
-                    table = self.eta[rv] - (self.alpha * (self.eta_g[0][rv] / (1 - (self.b1 ** self.t)))) \
-                            / (np.sqrt(self.eta_g[1][rv] / (1 - (self.b2 ** self.t))) + self.eps)
-                    table[:, 1] = np.clip(table[:, 1], a_min=self.var_threshold, a_max=np.inf)
-                    self.eta[rv] = table
+                    step, moment = self.adam(self.gradient_mu_var(rv), self.moments.get(rv, (0, 0)), self.t)
+                    self.moments[rv] = moment
+                    temp = self.eta[rv] - step
+                    temp[:, 1] = np.clip(temp[:, 1], a_min=self.var_threshold, a_max=np.inf)
+                    self.eta[rv] = temp
                 else:
-                    table = self.eta_tau[rv] - (self.alpha * (self.eta_tau_g[0][rv] / (1 - (self.b1 ** self.t)))) \
-                            / (np.sqrt(self.eta_tau_g[1][rv] / (1 - (self.b2 ** self.t))) + self.eps)
-                    self.eta_tau[rv] = table
-                    self.eta[rv] = self.softmax(table, 1)
+                    step, moment = self.adam(self.gradient_category_tau(rv), self.moments.get(rv, (0, 0)), self.t)
+                    self.moments[rv] = moment
+                    temp = self.eta_tau[rv] - step
+                    self.eta_tau[rv] = temp
+                    self.eta[rv] = self.softmax(temp, 1)
 
+            # logger
             if self.is_log:
                 current_time = time.process_time()
                 self.total_time += current_time - start_time
@@ -399,37 +372,6 @@ class VarInference:
                 fe = log_likelihood(self.g.g, map_res)
                 print(fe, self.total_time)
                 self.time_log.append([self.total_time, fe])
-
-    def GD_update(self, iteration, lr):
-        for itr in range(iteration):
-            # compute gradient
-            w_tau_g = self.gradient_w_tau() * lr
-            eta_g = dict()
-            eta_tau_g = dict()
-            for rv in self.g.rvs:
-                if rv.value is not None:
-                    continue
-                elif rv.domain.continuous:
-                    eta_g[rv] = self.gradient_mu_var(rv) * lr
-                else:
-                    eta_tau_g[rv] = self.gradient_category_tau(rv) * lr
-
-            # update parameters
-            self.w_tau = self.w_tau - w_tau_g
-            self.w = self.softmax(self.w_tau)
-            for rv in self.g.rvs:
-                if rv.value is not None:
-                    continue
-                elif rv.domain.continuous:
-                    table = self.eta[rv] - eta_g[rv]
-                    table[:, 1] = np.clip(table[:, 1], a_min=self.var_threshold, a_max=np.inf)
-                    self.eta[rv] = table
-                else:
-                    table = self.eta_tau[rv] - eta_tau_g[rv]
-                    self.eta_tau[rv] = table
-                    self.eta[rv] = self.softmax(table, 1)
-
-            print(self.free_energy())
 
     def belief(self, x, rv):
         return self.rvs_belief((x,), (rv.cluster,))

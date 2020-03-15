@@ -1,6 +1,6 @@
 from Function import Function
 import numpy as np
-from numpy.linalg import det
+from numpy.linalg import det, inv
 from math import pow, pi, e, sqrt, exp
 from itertools import product
 
@@ -36,21 +36,22 @@ class GaussianFunction(Function):
     def __init__(self, mu, sig):
         """
         Args:
-            mu: The mean vector.
-            sig: The covariance matrix.
+            mu: The mean vector (must be 1 dimensional).
+            sig: The covariance matrix (must be 2 dimensional).
         """
         Function.__init__(self)
         self.mu = np.array(mu, dtype=float)
         self.sig = np.array(sig, dtype=float)
-        self.sig_ = self.sig ** -1
+        self.inv_sig = inv(self.sig)
         n = float(len(mu))
-        if det == 0:
+        det_sig = det(self.sig)
+        if det_sig == 0:
             raise NameError("The covariance matrix can't be singular")
-        self.coeff = (pow(2 * pi, n * 0.5) * pow(det(self.sig), 0.5)) ** -1
+        self.coeff = 1 / sqrt((2 * pi) ** n * det_sig)
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
-        return self.coeff * pow(e, -0.5 * (x_mu.T @ self.sig_ @ x_mu))
+        return self.coeff * exp(-0.5 * (x_mu.T @ self.inv_sig @ x_mu))
 
     def slice(self, *parameters):
         idx_latent, idx_condition = list(), list()
@@ -65,10 +66,10 @@ class GaussianFunction(Function):
 
         mu_new = self.mu[idx_latent] + \
                  self.sig[np.ix_(idx_latent, idx_condition)] @ \
-                 (self.sig[np.ix_(idx_condition, idx_condition)] ** -1) @ \
+                 inv(self.sig[np.ix_(idx_condition, idx_condition)]) @ \
                  (parameters[idx_condition] - self.mu[idx_condition])
 
-        sig_new = (self.sig ** -1)[np.ix_(idx_latent, idx_latent)] ** -1
+        sig_new = inv(inv(self.sig)[np.ix_(idx_latent, idx_latent)])
 
         return GaussianFunction(mu_new, sig_new)
 
@@ -83,7 +84,8 @@ class LinearGaussianFunction(Function):
         self.sig = sig
 
     def __call__(self, *parameters):
-        return np.exp(-(parameters[1] - parameters[0]) ** 2 * 0.5 * self.sig ** -1)
+        diff = parameters[1] - parameters[0]
+        return np.exp(-0.5 * diff * diff / self.sig)
 
     def slice(self, *parameters):
         mu = 0

@@ -152,8 +152,7 @@ class SuperF:
     def split_by_structure(self):
         clusters = dict()
         for f in self.factors:
-            signature = tuple(sorted(map(self.get_cluster, f.nb))) \
-                if f.potential.symmetric else tuple(map(self.get_cluster, f.nb))
+            signature = tuple(map(self.get_cluster, f.nb))
             if signature in clusters:
                 clusters[signature].add(f)
             else:
