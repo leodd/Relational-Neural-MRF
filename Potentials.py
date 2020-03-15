@@ -26,8 +26,8 @@ class TableFunction(Function):
         table_new = dict()
         args = [list(parameters_new[idx]) if val is None else [val] for idx, val in enumerate(parameters)]
         for assignment in product(*args):  # Create slice table
-            assignment = tuple(assignment)
-            table_new[assignment] = self.table[assignment]
+            table_new[tuple([val for idx, val in enumerate(assignment) if idx in parameters_new])] \
+                = self.table[tuple(assignment)]
 
         return TableFunction(table_new)
 
@@ -68,7 +68,6 @@ class GaussianFunction(Function):
             else:
                 idx_condition.append(idx)
 
-        n = len(idx_latent)  # Number of latent variables
         parameters = np.array(parameters, dtype=float)
 
         mu_new = self.mu[idx_latent] + \
@@ -87,6 +86,34 @@ class GaussianFunction(Function):
         mu_new = sig_new @ (inv_sig_1 @ self.mu + inv_sig_2 @ other.mu)
 
         return GaussianFunction(mu_new, sig_new)
+
+
+class CategoricalGaussianFunction(Function):
+    def __init__(self, table):
+        """
+        Args:
+            table: A dictionary that maps a set of assignment to a multivariate Gaussian distribution,
+            e.g. {True: (mu, sig), ...}
+            or {(True, False): (mu, sig), ...}
+            and also, mu and sig are single value.
+        """
+        self.table = dict()
+        Function.__init__(self)
+        for k, (mu, sig) in table.items():
+            self.table[k] = GaussianFunction([mu], [[sig]])
+
+    def __call__(self, *parameters):
+        """
+        Args:
+            *parameters: A vector of assignment [d, c],
+            where d and c represent discrete and continuous variable assignment.
+        """
+        return self.table[parameters[0]](parameters[1])
+
+    def slice(self, *parameters):
+        if parameters[0] is None:
+            table_new = table
+
 
 
 class LinearGaussianFunction(Function):
