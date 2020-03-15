@@ -31,6 +31,13 @@ class TableFunction(Function):
 
         return TableFunction(table_new)
 
+    def __mul__(self, other):
+        table_new = dict()
+        for k, val in self.table.items():
+            table_new[k] = val * other.table[k]
+
+        return TableFunction(table_new)
+
 
 class GaussianFunction(Function):
     def __init__(self, mu, sig):
@@ -70,6 +77,14 @@ class GaussianFunction(Function):
                  (parameters[idx_condition] - self.mu[idx_condition])
 
         sig_new = inv(inv(self.sig)[np.ix_(idx_latent, idx_latent)])
+
+        return GaussianFunction(mu_new, sig_new)
+
+    def __mul__(self, other):
+        inv_sig_1, inv_sig_2 = inv(self.sig), inv(other.sig)
+
+        sig_new = inv(inv_sig_1 + inv_sig_2)
+        mu_new = sig_new @ (inv_sig_1 @ self.mu + inv_sig_2 @ other.mu)
 
         return GaussianFunction(mu_new, sig_new)
 
