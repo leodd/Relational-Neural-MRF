@@ -1,5 +1,6 @@
 from RelationalGraph import *
 from Potentials import GaussianFunction
+from inference.MCMC import MCMC
 import numpy as np
 import json
 
@@ -38,7 +39,14 @@ def generate_rel_graph():
     return rel_g
 
 
-def generate_data(f, rel_g, evidence_ratio):
+def generate_samples(g, iteration, burnin=30):
+    mcmc = MCMC(g)
+    mcmc.run(iteration, burnin)
+
+    return mcmc.state
+
+
+def generate_observation(f, rel_g, evidence_ratio):
     data = dict()
     _, rvs_dict = rel_g.ground_graph()
     key_list = list(rvs_dict.keys())
@@ -66,7 +74,7 @@ def load_data(f):
 
 if __name__ == "__main__":
     rel_g = generate_rel_graph()
-    generate_data('time_log_20percent', rel_g, 0.2)
+    generate_observation('time_log_20percent', rel_g, 0.2)
     # for i in range(5):
     #     # evidence_ratio = np.random.uniform(0.05, 0.2)
     #     evidence_ratio = 0.2

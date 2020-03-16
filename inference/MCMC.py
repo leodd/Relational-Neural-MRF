@@ -1,13 +1,6 @@
-from itertools import product
-from numpy.random import uniform
+from numpy.random import uniform, normal
 from collections import Counter
-
-
-def generate_samples(g, iteration, burnin=30):
-    mcmc = MCMC(g)
-    mcmc.run(iteration, burnin)
-
-    return mcmc.state
+from Potentials import TableFunction, GaussianFunction
 
 
 class MCMC:
@@ -28,29 +21,32 @@ class MCMC:
         return points
 
     def generate_sample(self, rv):
-        values = [1 for _ in self.points[rv]]
+        b = None  # Local belief function
 
         # compute the unnormalized belief
         for f in rv.nb:
             param = list()
             for rv_ in f.nb:
                 if rv_ == rv:
-                    param.append(self.points[rv])
+                    param.append(None)
                 else:
-                    param.append((self.state[rv_][-1],))
-            all_joint_x = tuple(product(*param))
-            for idx, joint_x in enumerate(all_joint_x):
-                values[idx] *= f.potential.get(joint_x)
+                    param.append(self.state[rv_][-1])
+            b = f.potential.slice(*param) * b
 
         # draw a sample from the local distribution
-        v_ = sum(values)
-        random_value = uniform() * v_
-        for idx, v in enumerate(values):
-            v_ -= v
-            if random_value >= v_:
-                return self.points[rv][idx]
+        if type(b) is TableFunction:
+            return self.sample_from_table(b.table)[0]
+        elif type(b) is GaussianFunction:
+            return normal(b.mu, b.sig).item()
+        else:
+            raise Exception('Cannot handle class type:' + type(b))
 
-        return self.points[rv][0]
+    def sample_from_table(self, table):
+        p = sum(table) * uniform()
+        for k, val in table.items():
+            p -= val
+            if p <= 0:
+                return k
 
     def belief(self, x, rv):
         if rv.continuous:
@@ -82,7 +78,7 @@ class MCMC:
         for rv in self.g.rvs:
             if rv.value is None:
                 if init_state is None:
-                    self.state[rv] = [0]
+                    self.state[rv] = [rv.domain.sample()]
                 else:
                     self.state[rv] = [init_state[rv] if rv in init_state else 0]
             else:

@@ -32,6 +32,9 @@ class TableFunction(Function):
         return TableFunction(table_new)
 
     def __mul__(self, other):
+        if other is None:
+            return self
+
         table_new = dict()
         for k, val in self.table.items():
             table_new[k] = val * other.table[k]
@@ -80,6 +83,9 @@ class GaussianFunction(Function):
         return GaussianFunction(mu_new, sig_new)
 
     def __mul__(self, other):
+        if other is None:
+            return self
+
         inv_sig_1, inv_sig_2 = inv(self.sig), inv(other.sig)
 
         sig_new = inv(inv_sig_1 + inv_sig_2)
@@ -112,8 +118,12 @@ class CategoricalGaussianFunction(Function):
 
     def slice(self, *parameters):
         if parameters[0] is None:
-            table_new = table
-
+            table_new = dict()
+            for k, fun in self.table.items():
+                table_new[k] = fun(parameters[1])
+            return TableFunction(table_new)
+        else:
+            return self.table[parameters[0]]
 
 
 class LinearGaussianFunction(Function):

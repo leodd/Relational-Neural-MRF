@@ -1,3 +1,6 @@
+from numpy.random import normal, randint
+
+
 class Domain:
     """
     The domain of variables.
@@ -11,6 +14,12 @@ class Domain:
         """
         self.values = tuple(values)
         self.continuous = continuous
+
+    def sample(self):
+        if self.continuous:
+            return normal(0, 1)
+        else:
+            return self.values[randint(len(self.values))]
 
 
 class RV:
