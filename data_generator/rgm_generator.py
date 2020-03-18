@@ -39,22 +39,52 @@ def generate_rel_graph():
     return rel_g
 
 
-def generate_samples(g, iteration, burnin=30):
+def generate_samples(rel_g, data, iteration, burnin=30):
+    rel_g.ground_graph()
+    g, rvs_dict = rel_g.add_evidence(data)
+
     mcmc = MCMC(g)
     mcmc.run(iteration, burnin)
 
-    return mcmc.state
+    sample = dict()
+
+    for k, rv in rvs_dict.items():
+        sample[k] = mcmc.state[rv]
+
+    return sample
 
 
-def generate_observation(f, rel_g, evidence_ratio):
+def generate_observation(rel_g, evidence_ratio):
     data = dict()
     _, rvs_dict = rel_g.ground_graph()
     key_list = list(rvs_dict.keys())
 
     idx_evidence = np.random.choice(len(key_list), int(len(key_list) * evidence_ratio), replace=False)
     for i in idx_evidence:
-        key = str(key_list[i])
+        key = key_list[i]
         data[key] = np.random.uniform(-30, 30)
+
+    return data
+
+
+def key_to_str(data):
+    res = dict()
+    for k, v in data.items():
+        res[str(k)] = v
+
+    return res
+
+
+def str_to_key(data):
+    res = dict()
+    for k, v in data.items():
+        res[eval(k)] = v
+
+    return res
+
+
+def save_data(f, data):
+    data = key_to_str(data)
 
     with open(f, 'w+') as file:
         file.write(json.dumps(data))
@@ -63,18 +93,13 @@ def generate_observation(f, rel_g, evidence_ratio):
 def load_data(f):
     with open(f, 'r') as file:
         s = file.read()
-        temp = json.loads(s)
-
-    data = dict()
-    for k, v in temp.items():
-        data[eval(k)] = v
-
-    return data
+        return str_to_key(json.loads(s))
 
 
 if __name__ == "__main__":
     rel_g = generate_rel_graph()
-    generate_observation('time_log_20percent', rel_g, 0.2)
+    data = generate_observation(rel_g, 0.2)
+    save_data('time_log_20percent', data)
     # for i in range(5):
     #     # evidence_ratio = np.random.uniform(0.05, 0.2)
     #     evidence_ratio = 0.2

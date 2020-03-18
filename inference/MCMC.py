@@ -89,9 +89,13 @@ class MCMC:
             for rv in self.g.rvs:
                 if rv.value is None:
                     self.state[rv][0] = self.generate_sample(rv)
+            if i % 10 == 0:
+                print(i)
 
         # generate MCMC samples
         for i in range(iteration):
             for rv in self.g.rvs:
                 if rv.value is None:
                     self.state[rv].append(self.generate_sample(rv))
+            if i % 10 == 0:
+                print(i)
