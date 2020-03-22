@@ -2,6 +2,16 @@ from numpy import maximum, abs, sqrt
 
 
 class AdamOptimizer:
+    """
+    Usage:
+        adam = AdamOptimizer(lr)
+        moment = (0, 0)
+
+        for t in range(1, max_iter):
+            gradient = compute_gradient(theta)
+            step, moment = adam(gradient, moment, t)
+            theta -= step
+    """
     def __init__(self, lr, b1=0.9, b2=0.999, eps=1e-8):
         self.lr = lr
         self.b1 = b1

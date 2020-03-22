@@ -3,6 +3,22 @@ import numpy as np
 
 
 class NeuralNetFunction(Function):
+    """
+    Usage:
+        nn = NeuralNetFunction(
+            (in, inner, Relu),
+            (inner, out, None)
+        )
+
+        for _ in range(max_iter):
+            predict = nn.forward(x)
+            d_loss = compute_loss_gradient(predict, target)
+            _, d_network = backward(d_loss)
+
+            for layer, (d_W, d_b) in d_network.items():
+                layer.W -= d_W * lr
+                layer.b -= d_b * lr
+    """
     def __init__(self, *args):
         Function.__init__(self)
 
@@ -32,7 +48,7 @@ class NeuralNetFunction(Function):
 
         return x
 
-    def forward(self, x, save_cache=False):
+    def forward(self, x, save_cache=True):
         x = np.array(x, dtype=float)
 
         if save_cache:
@@ -45,9 +61,9 @@ class NeuralNetFunction(Function):
 
         return x
 
-    def backward(self, d_y, x, use_cache=False):
-        if not use_cache:
-            self.forward(x, save_cache=True)
+    def backward(self, d_y, x=None):
+        if x is not None:
+            self.forward(x)
 
         d_x = d_y
         d_network = dict()

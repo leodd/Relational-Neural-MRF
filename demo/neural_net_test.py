@@ -18,9 +18,9 @@ adam = AdamOptimizer(lr)
 moments = dict()
 
 for t in range(1, 1000):
-    predict = nn.forward(x, save_cache=True)
+    predict = nn.forward(x)
     d_loss = predict - target
-    _, d_network = nn.backward(d_loss, None, use_cache=True)
+    _, d_network = nn.backward(d_loss)
 
     for layer, (d_W, d_b) in d_network.items():
         step, moment = adam(d_W, moments.get((layer, 'W'), (0, 0)), t)
