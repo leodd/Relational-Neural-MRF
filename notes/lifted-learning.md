@@ -152,3 +152,6 @@ $$
 The above mentioned learning methods are all based on the assumption that for each training data point, every variables have there corresponding observed data. Unfortunately, in many application, especially in relational models, the assumption does not hold.
 
 A common way of handling missing data is to perform an expectation maximization (EM) approach, approximate the missing data with the current prediction distribution, and iteratively update the distribution.
+
+### Neural Potential Function
+A potential function is a function that maps an assignment of a set of variables to a real value. In the case of having discrete variables, we can represent the function as a table, but in the case of having 
