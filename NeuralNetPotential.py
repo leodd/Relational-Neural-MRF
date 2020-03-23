@@ -6,7 +6,7 @@ class NeuralNetFunction(Function):
     """
     Usage:
         nn = NeuralNetFunction(
-            (in, inner, Relu),
+            (in, inner, RELU),
             (inner, out, None)
         )
 
@@ -78,7 +78,7 @@ class NeuralNetFunction(Function):
         return d_x, d_network
 
 
-class Relu:
+class RELU:
     @staticmethod
     def forward(x):
         return np.maximum(0, x)
@@ -87,6 +87,36 @@ class Relu:
     def backward(d_y, x):
         d_x = np.array(d_y, copy=True)
         d_x[x <= 0] = 0
+
+        return d_x, None
+
+
+class LeakyRELU:
+    def __init__(self, slope=0.01):
+        self.slope = slope
+
+    def forward(self, x):
+        return np.maximum(0, x) + np.minimum(0, x) * self.slope
+
+    def backward(self, d_y, x):
+        d_x = np.array(d_y, copy=True)
+        d_x[x <= 0] *= self.slope
+
+        return d_x, None
+
+
+class ELU:
+    def __init__(self, alpha=0.01):
+        self.alpha = alpha
+
+    def forward(self, x):
+        return np.maximum(0, x) + np.minimum(0, self.alpha * (np.exp(x) - 1))
+
+    def backward(self, d_y, x):
+        d_x = np.array(d_y, copy=True)
+        temp = self.alpha * np.exp(x)
+        idx = (temp - self.alpha) <= 0
+        d_x[idx] *= temp[idx]
 
         return d_x, None
 
