@@ -154,4 +154,10 @@ The above mentioned learning methods are all based on the assumption that for ea
 A common way of handling missing data is to perform an expectation maximization (EM) approach, approximate the missing data with the current prediction distribution, and iteratively update the distribution.
 
 ### Neural Potential Function
-A potential function is a function that maps an assignment of a set of variables to a real value. In the case of having discrete variables, we can represent the function as a table, but in the case of having 
+A potential function is a function that maps an assignment of a set of variables to a real value. In the case of having discrete variables, we can represent the function as a table, but in the case of having continuous variables, we have to come up with a representation for the continuous manifold. In this work, we propose using neural network for modeling the continuous relationship among variables.
+
+The Neural potential function is defined as
+
+$$
+\phi_c = \exp()
+$$

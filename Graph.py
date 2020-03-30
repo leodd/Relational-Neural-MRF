@@ -37,13 +37,15 @@ class F:
     """
     The Factor (a clique of variables that associates with a potential function).
     """
-    def __init__(self, potential=None, nb=None):
+    def __init__(self, potential=None, nb=None, trainable=True):
         """
         Args:
             potential: A function instance created by a derived class of the Function abstract class.
             nb: A list of the neighboring variables.
+            trainable: A boolean value indicating if the potential function should be trained.
         """
         self.potential = potential
+        self.trainable = trainable
         if nb is None:
             self.nb = []
         else:
