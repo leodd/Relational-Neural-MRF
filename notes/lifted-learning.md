@@ -159,5 +159,40 @@ A potential function is a function that maps an assignment of a set of variables
 The Neural potential function is defined as
 
 $$
-\phi_c = \exp()
+\phi_c = \exp(-nn(x_c)^2)
 $$
+
+where $nn(x_c)$ is a multi-layers neural network with input $x_c$ and a single scalar output.
+The outer layer function $\exp(-(\cdot)^2)$ insures the integrability of the whole potential function and also provide mathematical convenience for computing the gradient of the pseudo likelihood.
+
+##### Computation of the Network Gradient
+The learning process in the pseudo likelihood setting can be considered as a data generating task.
+For a $c \in C$, the corresponding neural potential function can be trained with a set of selected data points and a specific loss function designed for pseudo likelihood learning.
+
+According to the pseudo likelihood gradient formula, given the Markov Blanket of variable $i$, the value of $i$, and the distribution of $i$, the gradient with respect to the potential $phi_c$, where $c \supset i$, is defined as
+
+$$
+\nabla \phi_c(x_c^{(m)}; \theta_c) - \mathop{\mathbb{E}}_{p(x_i \mid MB_i^{(m)}; \theta)}
+\left(
+\nabla \phi_c(x_i | x_{c \setminus i}^{(m)}; \theta_c)
+\right) \\
+\approx \nabla \phi_c(x_c^{(m)}; \theta_c) - \sum_{x_i \sim p(x_i \mid MB_i^{(m)}; \theta)}
+\frac{1}{N}
+\nabla \phi_c(x_i | x_{c \setminus i}^{(m)}; \theta_c)
+$$
+
+It implies that we could update the network with data points $\{x_c^{(m)}\}_{data} \cup \{x_i^{(s)} \times x_{c \setminus i}^{(m)}\}_{samples}$, where $x_i^{(s)}$ are values sampled from the variable distribution. And the loss function is defined as
+
+$$
+Loss(\theta_c) = \frac{1}{D} \sum_{}
+\begin{cases}
+  -nn(x_c; \theta_c)^2 & \text{data points} \\
+  \frac{nn(x_c; \theta_c)^2}{N} & \text{sampling points}
+\end{cases}
+$$
+
+To avoid over fitting, we could apply regularization term or add gaussian noise to $x_c$.
+
+### Lifted Learning
+
+### Learning with Missing Data
