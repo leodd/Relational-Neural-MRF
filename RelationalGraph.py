@@ -122,10 +122,7 @@ class RelationalGraph:
                         nb.append(self.atom_substitution(atom_tuple_expression, substitution)[1])
                     factors.add(F(potential=param_f.potential, nb=nb))
 
-        grounding = Graph()
-        grounding.rvs = set(self.rvs_dict.values())
-        grounding.factors = factors
-        grounding.init_nb()
+        grounding = Graph(set(self.rvs_dict.values()), factors)
 
         self.grounding = grounding
 

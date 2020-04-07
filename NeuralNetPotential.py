@@ -18,9 +18,14 @@ class NeuralNetFunction(Function):
             for layer, (d_W, d_b) in d_network.items():
                 layer.W -= d_W * lr
                 layer.b -= d_b * lr
+
+    Note:
+        The input data x is 2 dimensional,
+        where the first dimension represents data point,
+        and the second dimension represents features.
     """
     def __init__(self, *args):
-        Function.__init__(self)
+        Function.__init__(self, trainable=True)
 
         self.layers = []
 
@@ -48,9 +53,7 @@ class NeuralNetFunction(Function):
 
         return x
 
-    def forward(self, x, save_cache=True):
-        x = np.array(x, dtype=float)
-
+    def forward(self, x, save_cache=True):  # x must be numpy array
         if save_cache:
             self.cache = [x]
 
@@ -61,7 +64,7 @@ class NeuralNetFunction(Function):
 
         return x
 
-    def backward(self, d_y, x=None):
+    def backward(self, d_y, x=None):  # d_y must be numpy array
         if x is not None:
             self.forward(x)
 
@@ -78,7 +81,7 @@ class NeuralNetFunction(Function):
         return d_x, d_network
 
 
-class RELU:
+class ReLU:
     @staticmethod
     def forward(x):
         return np.maximum(0, x)
@@ -91,7 +94,7 @@ class RELU:
         return d_x, None
 
 
-class LeakyRELU:
+class LeakyReLU:
     def __init__(self, slope=0.01):
         self.slope = slope
 
@@ -138,3 +141,11 @@ class LinearLayer:
         d_x = d_y @ self.W.T
 
         return d_x, (d_W, d_b)
+
+
+class NeuralNetPotential(NeuralNetFunction):
+    def __init__(self, *args):
+        NeuralNetFunction.__init__(self, *args)
+
+    def __call__(self, *parameters):
+        return np.exp(NeuralNetFunction.__call__(self, *parameters))

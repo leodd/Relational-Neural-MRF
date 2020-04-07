@@ -2,8 +2,12 @@ from abc import ABC, abstractmethod
 
 
 class Function(ABC):
-    def __init__(self):
-        pass
+    def __init__(self, trainable=True):
+        """
+        Args:
+            trainable: A boolean value indicating if the potential function should be trained.
+        """
+        self.trainable = trainable
 
     @abstractmethod
     def __call__(self, *parameters):

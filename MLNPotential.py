@@ -28,8 +28,8 @@ def eq_op(x, y):
 
 
 class MLNPotential(Function):
-    def __init__(self, formula, w=1):
-        Function.__init__(self)
+    def __init__(self, formula, w=1, trainable=True):
+        Function.__init__(self, trainable)
         self.formula = formula
         self.w = w
 
@@ -38,8 +38,8 @@ class MLNPotential(Function):
 
 
 class MLNHardPotential(Function):
-    def __init__(self, formula):
-        Function.__init__(self)
+    def __init__(self, formula, trainable=True):
+        Function.__init__(self, trainable)
         self.formula = formula
 
     def __call__(self, *parameters):

@@ -1,4 +1,4 @@
-from NeuralNetPotential import NeuralNetFunction, RELU, ELU, LeakyRELU
+from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU
 import numpy as np
 from optimization_tools import AdamOptimizer
 
@@ -9,8 +9,8 @@ target = np.random.randn(m, 1)
 lr = 0.01
 
 nn = NeuralNetFunction(
-    (3, 4, LeakyRELU()),
-    (4, 4, LeakyRELU()),
+    (3, 4, LeakyReLU()),
+    (4, 4, LeakyReLU()),
     (4, 1, None)
 )
 

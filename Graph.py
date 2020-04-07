@@ -37,15 +37,13 @@ class F:
     """
     The Factor (a clique of variables that associates with a potential function).
     """
-    def __init__(self, potential=None, nb=None, trainable=True):
+    def __init__(self, potential=None, nb=None):
         """
         Args:
             potential: A function instance created by a derived class of the Function abstract class.
             nb: A list of the neighboring variables.
-            trainable: A boolean value indicating if the potential function should be trained.
         """
         self.potential = potential
-        self.trainable = trainable
         if nb is None:
             self.nb = []
         else:
@@ -56,9 +54,10 @@ class Graph:
     """
     The Graphical Model, representing by a set of random variables and a set of factors.
     """
-    def __init__(self):
-        self.rvs = set()
-        self.factors = set()
+    def __init__(self, rvs, factors):
+        self.rvs = rvs
+        self.factors = factors
+        self.init_nb()
 
     def init_nb(self):
         for rv in self.rvs:
