@@ -23,11 +23,11 @@ for t in range(1, 1000):
     _, d_network = nn.backward(d_loss)
 
     for layer, (d_W, d_b) in d_network.items():
-        step, moment = adam(d_W, moments.get((layer, 'W'), (0, 0)), t)
+        step, moment = adam(d_W / m, moments.get((layer, 'W'), (0, 0)), t)
         layer.W -= step
         moments[(layer, 'W')] = moment
 
-        step, moment = adam(d_b, moments.get((layer, 'b'), (0, 0)), t)
+        step, moment = adam(d_b / m, moments.get((layer, 'b'), (0, 0)), t)
         layer.b -= step
         moments[(layer, 'b')] = moment
 

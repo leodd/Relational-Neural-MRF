@@ -193,6 +193,4 @@ $$
 
 To avoid over fitting, we could apply regularization term or add gaussian noise to $x_c$.
 
-### Lifted Learning
-
 ### Learning with Missing Data

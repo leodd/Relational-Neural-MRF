@@ -54,9 +54,10 @@ class Graph:
     """
     The Graphical Model, representing by a set of random variables and a set of factors.
     """
-    def __init__(self, rvs, factors):
+    def __init__(self, rvs, factors, condition_rvs=None):
         self.rvs = rvs
         self.factors = factors
+        self.condition_rvs = set() if condition_rvs is None else condition_rvs
         self.init_nb()
 
     def init_nb(self):

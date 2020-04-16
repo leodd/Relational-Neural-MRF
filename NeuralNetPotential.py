@@ -25,7 +25,7 @@ class NeuralNetFunction(Function):
         and the second dimension represents features.
     """
     def __init__(self, *args):
-        Function.__init__(self, trainable=True)
+        Function.__init__(self)
 
         self.layers = []
 
@@ -135,8 +135,7 @@ class LinearLayer:
         return x @ self.W + self.b
 
     def backward(self, d_y, x):
-        m = d_y.shape[0]
-        d_W = x.T @ d_y / m
+        d_W = x.T @ d_y
         d_b = np.sum(d_y, axis=0)
         d_x = d_y @ self.W.T
 
@@ -144,8 +143,12 @@ class LinearLayer:
 
 
 class NeuralNetPotential(NeuralNetFunction):
+    """
+    A wrapper for NeuralNetFunction class, such that the function call will return the
+    """
     def __init__(self, *args):
         NeuralNetFunction.__init__(self, *args)
+        self.dimension = args[0][0]  # The dimension of the input parameters
 
     def __call__(self, *parameters):
         return np.exp(NeuralNetFunction.__call__(self, *parameters))
