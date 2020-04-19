@@ -51,6 +51,7 @@ class PseudoMLELearner:
 
         Returns:
             A dictionary with potential as key, and data pairs (x, y) as value.
+            Also the data indexing, shift and spacing information.
         """
         potential_count = Counter()  # A counter of potential occurrence
         f_MB = dict()  # A dictionary with factor as key, and local assignment vector as value
@@ -74,19 +75,17 @@ class PseudoMLELearner:
             ]
         ) for p in potential_count}
 
-        rv_data_idx = dict()  # rv as key, matrix of starting idx of the potential in the data_x matrix [k, [idx]]
+        data_info = dict()  # rv as key, data indexing, shift, spacing as value
 
         current_idx = Counter()  # Potential as key, index as value
         for rv in rvs:
+            # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = [[0] * len(rv.nb)] * K
 
-            samples = np.linspace(
-                rv.domain.values[0], rv.domain.values[1],
-                num=sample_size,
-                endpoint=False
-            )
+            samples = np.linspace(rv.domain.values[0], rv.domain.values[1], num=sample_size)
 
             shift = np.random.random(K)
+            s = (rv.domain.values[1] - rv.domain.values[0]) / (sample_size - 1)
 
             for c, f in enumerate(rv.nb):
                 rv_idx = rv.nb.index(rv)
@@ -96,21 +95,23 @@ class PseudoMLELearner:
                     next_idx = current_idx[f.potential] + sample_size + r
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
-                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples + shift[k]
+                    temp = samples + shift[k] * s
+                    temp[0], temp[-1] = samples[0] + shift[k] * s * 0.5, samples[-1] - (1 - shift[k]) * s * 0.5
+                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = temp
 
                     data_idx_matrix[k][c] = current_idx + r
 
                     current_idx[f.potential] = next_idx
 
-            rv_data_idx[rv] = data_idx_matrix
+            data_info[rv] = data_idx_matrix, shift, s
 
-        return (data_x, rv_data_idx)
+        return (data_x, data_info)
 
-    def get_gradient(self, data_x, rv_data_idx, sample_size=10):
+    def get_gradient(self, data_x, data_info, sample_size=10):
         """
         Args:
             data_x: The potential input that are computed by get_unweighted_data function.
-            rv_data_idx: The data idx returned by get_unweighted_data function.
+            data_info: The data indexing, shift and spacing information.
             sample_size: The number of sampling points (need to be consistent with get_unweighted_data function).
 
         Returns:
@@ -128,19 +129,20 @@ class PseudoMLELearner:
         for potential in self.trainable_potentials:
             gradient_y[potential] = np.ones(data_y[potential].shape)
 
-        for rv, data_idx_matrix in rv_data_idx.items():
-            for data_idx in data_idx_matrix:
+        for rv, (data_idx, shift, s) in data_info.items():
+            for start_idx, shift_k in zip(data_idx, shift):
                 b = np.zeros(len(rv.nb))
 
-                for f, idx in zip(rv.nb, data_idx):
+                for f, idx in zip(rv.nb, start_idx):
                     b += data_y[f.potential][idx:idx + sample_size, 0]
 
-                b = np.exp(b)
-                z = np.sum(b) * (rv.domain.values[1] - rv.domain.values[0])
-                b /= z
+                b = np.exp(b) * s
+                b[0] *= shift_k
+                b[-1] *= (1 - shift_k)
+                b /= np.sum(b)
 
                 # Re-weight gradient of sampling points
-                for f, idx in zip(rv.nb, data_idx):
+                for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
                         gradient_y[f.potential][idx:idx + sample_size, 0] *= -b
 
@@ -177,11 +179,11 @@ class PseudoMLELearner:
 
             # The computed data set for training the potential function
             # Potential function as key, and data x as value
-            data_x, rv_data_idx = self.get_unweighted_data(rvs, batch, sample_size)
+            data_x, data_info = self.get_unweighted_data(rvs, batch, sample_size)
 
             i = 0
             while i < batch_iter and t < max_iter:
-                gradient_y = self.get_gradient(data_x, rv_data_idx, sample_size)
+                gradient_y = self.get_gradient(data_x, data_info, sample_size)
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
@@ -195,7 +197,7 @@ class PseudoMLELearner:
                         moments[(layer, 'W')] = moment
 
                         step, moment = adam(d_b * c, moments.get((layer, 'b'), (0, 0)), t + 1)
-                        layer.b += step
+                        layer.b += step  # Gradient ascent
                         moments[(layer, 'b')] = moment
 
                 i += 1
