@@ -131,20 +131,20 @@ class PseudoMLELearner:
 
         for rv, (data_idx, shift, s) in data_info.items():
             for start_idx, shift_k in zip(data_idx, shift):
-                b = np.zeros(len(rv.nb))
+                w = np.zeros(len(rv.nb))
 
                 for f, idx in zip(rv.nb, start_idx):
-                    b += data_y[f.potential][idx:idx + sample_size, 0]
+                    w += data_y[f.potential][idx:idx + sample_size, 0]
 
-                b = np.exp(b) * s
-                b[0] *= shift_k
-                b[-1] *= (1 - shift_k)
-                b /= np.sum(b)
+                w = np.exp(w) * s
+                w[0] *= shift_k
+                w[-1] *= (1 - shift_k)
+                w /= np.sum(w)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] *= -b
+                        gradient_y[f.potential][idx:idx + sample_size, 0] *= -w
 
         return gradient_y
 

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import log, exp
 from scipy.integrate import quad
+import pickle
 
 
 def log_likelihood(g, assignment):
@@ -154,6 +155,16 @@ def show_images(images, cols=1, titles=None, vmin=0, vmax=1):
         a.set_title(title)
     fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
     plt.show()
+
+
+def save(f, *objects):
+    with open(f, 'wb') as file:
+        pickle.dump(objects, file)
+
+
+def load(f):
+    with open(f, 'rb') as file:
+        return pickle.load(file)
 
 
 if __name__ == '__main__':
