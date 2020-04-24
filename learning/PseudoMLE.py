@@ -151,10 +151,12 @@ class PseudoMLELearner:
 
         return gradient_y
 
-    def train(self, lr=0.01, max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10):
+    def train(self, lr=0.01, regular=0.5,
+              max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10):
         """
         Args:
             lr: Learning rate.
+            regular: Regularization ratio.
             max_iter: The number of total iterations.
             batch_iter: The number of iteration of each mini batch.
             batch_size: The number of data frame in a mini batch.
@@ -195,11 +197,11 @@ class PseudoMLELearner:
                     c = (sample_size + 1) / d_y.shape[0]
 
                     for layer, (d_W, d_b) in d_param.items():
-                        step, moment = adam(d_W * c, moments.get((layer, 'W'), (0, 0)), t + 1)
+                        step, moment = adam(d_W * c - layer.W * regular, moments.get((layer, 'W'), (0, 0)), t + 1)
                         layer.W += step
                         moments[(layer, 'W')] = moment
 
-                        step, moment = adam(d_b * c, moments.get((layer, 'b'), (0, 0)), t + 1)
+                        step, moment = adam(d_b * c - layer.b * regular, moments.get((layer, 'b'), (0, 0)), t + 1)
                         layer.b += step  # Gradient ascent
                         moments[(layer, 'b')] = moment
 

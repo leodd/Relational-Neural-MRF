@@ -37,8 +37,7 @@ fs = list()
 
 # create hidden-obs factors
 pxo = NeuralNetPotential(
-    (2, 32, LeakyReLU()),
-    (32, 16, LeakyReLU()),
+    (2, 16, LeakyReLU()),
     (16, 1, None)
 )
 for i in range(row):
@@ -52,8 +51,7 @@ for i in range(row):
 
 # create hidden-hidden factors
 pxy = NeuralNetPotential(
-    (2, 32, LeakyReLU()),
-    (32, 16, LeakyReLU()),
+    (2, 16, LeakyReLU()),
     (16, 1, None)
 )
 for i in range(row):
@@ -75,13 +73,17 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
+visualize_2d_neural_net(pxo, domain, domain, 5)
+visualize_2d_neural_net(pxy, domain, domain, 5)
+
 leaner = PseudoMLELearner(g, {pxo, pxy}, data)
 leaner.train(
-    lr=0.0001,
+    lr=0.001,
+    regular=0.5,
     max_iter=1000,
     batch_iter=10,
     batch_size=1,
-    rvs_selection_size=len(rvs),
+    rvs_selection_size=500,
     sample_size=10
 )
 
