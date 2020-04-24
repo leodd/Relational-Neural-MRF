@@ -1,10 +1,11 @@
 import matplotlib.image as img
-from utils import show_images
+from utils import show_images, save, visualize_2d_neural_net
 import numpy as np
 from Graph import *
 from NeuralNetPotential import NeuralNetPotential, ReLU, ELU, LeakyReLU
 from inference.VarInference import VarInference
 from learning.PseudoMLE import PseudoMLELearner
+
 
 gt_image = img.imread('data/ground-true-image.png')
 gt_image = gt_image[:, :, 0] * 100
@@ -36,8 +37,9 @@ fs = list()
 
 # create hidden-obs factors
 pxo = NeuralNetPotential(
-    (2, 4, LeakyReLU()),
-    (4, 1, None)
+    (2, 32, LeakyReLU()),
+    (32, 16, LeakyReLU()),
+    (16, 1, None)
 )
 for i in range(row):
     for j in range(col):
@@ -50,8 +52,9 @@ for i in range(row):
 
 # create hidden-hidden factors
 pxy = NeuralNetPotential(
-    (2, 4, LeakyReLU()),
-    (4, 1, None)
+    (2, 32, LeakyReLU()),
+    (32, 16, LeakyReLU()),
+    (16, 1, None)
 )
 for i in range(row):
     for j in range(col - 1):
@@ -72,4 +75,20 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-leaner = PseudoMLELearner(g, data, {pxo, pxy})
+leaner = PseudoMLELearner(g, {pxo, pxy}, data)
+leaner.train(
+    lr=0.0001,
+    max_iter=1000,
+    batch_iter=10,
+    batch_size=1,
+    rvs_selection_size=len(rvs),
+    sample_size=10
+)
+
+visualize_2d_neural_net(pxo, domain, domain, 5)
+visualize_2d_neural_net(pxy, domain, domain, 5)
+
+save(
+    'demo/image_denoising/learned-potentials',
+    pxo, pxy
+)

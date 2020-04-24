@@ -68,7 +68,7 @@ class PseudoMLELearner:
                     ]
 
         # Initialize data matrix
-        data_x = {p: np.array(
+        data_x = {p: np.empty(
             [
                 potential_count[p] * ((sample_size + 1) if p in self.trainable_potentials else sample_size),
                 p.dimension
@@ -77,7 +77,7 @@ class PseudoMLELearner:
 
         data_info = dict()  # rv as key, data indexing, shift, spacing as value
 
-        current_idx = Counter()  # Potential as key, index as value
+        current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = [[0] * len(rv.nb)] * K
@@ -88,11 +88,13 @@ class PseudoMLELearner:
             s = (rv.domain.values[1] - rv.domain.values[0]) / (sample_size - 1)
 
             for c, f in enumerate(rv.nb):
-                rv_idx = rv.nb.index(rv)
+                rv_idx = f.nb.index(rv)
                 r = 1 if f.potential in self.trainable_potentials else 0
 
+                current_idx = current_idx_counter[f.potential]
+
                 for k in range(K):
-                    next_idx = current_idx[f.potential] + sample_size + r
+                    next_idx = current_idx + sample_size + r
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     temp = samples + shift[k] * s
@@ -100,8 +102,9 @@ class PseudoMLELearner:
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = temp
 
                     data_idx_matrix[k][c] = current_idx + r
+                    current_idx = next_idx
 
-                    current_idx[f.potential] = next_idx
+                current_idx_counter[f.potential] = current_idx
 
             data_info[rv] = data_idx_matrix, shift, s
 
@@ -131,7 +134,7 @@ class PseudoMLELearner:
 
         for rv, (data_idx, shift, s) in data_info.items():
             for start_idx, shift_k in zip(data_idx, shift):
-                w = np.zeros(len(rv.nb))
+                w = np.zeros(sample_size)
 
                 for f, idx in zip(rv.nb, start_idx):
                     w += data_y[f.potential][idx:idx + sample_size, 0]
