@@ -1,5 +1,5 @@
 import matplotlib.image as img
-from utils import show_images
+from utils import show_images, load
 import numpy as np
 from Graph import *
 from Potentials import ImageNodePotential, ImageEdgePotential
@@ -16,6 +16,12 @@ col = gt_image.shape[1]
 
 domain = Domain([-30, 130], continuous=True)
 
+# pxo = ImageNodePotential(0, 5)
+# pxy = ImageEdgePotential(0, 3.5, 25)
+pxo, pxy = load(
+    'demo/image_denoising/learned-potentials'
+)
+
 evidence = [None] * (col * row)
 for i in range(row):
     for j in range(col):
@@ -28,7 +34,6 @@ for _ in range(row * col):
 fs = list()
 
 # create hidden-obs factors
-pxo = ImageNodePotential(0, 5)
 for i in range(row):
     for j in range(col):
         fs.append(
@@ -39,7 +44,6 @@ for i in range(row):
         )
 
 # create hidden-hidden factors
-pxy = ImageEdgePotential(0, 3.5, 25)
 for i in range(row):
     for j in range(col - 1):
         fs.append(
@@ -61,12 +65,13 @@ g = Graph(rvs + evidence, fs)
 
 infer = VarInference(g, num_mixtures=1, num_quadrature_points=3)
 
-infer.run(200, lr=5)
+infer.run(200, lr=0.1)
 
 predict_image = np.empty([row, col])
 
 for i in range(row):
     for j in range(col):
         predict_image[i, j] = infer.map(rvs[i * col + j])
+        print(predict_image[i, j])
 
 show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=100)

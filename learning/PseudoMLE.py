@@ -3,6 +3,7 @@ import numpy as np
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
+from utils import load, visualize_2d_neural_net
 
 
 class PseudoMLELearner:
@@ -209,3 +210,7 @@ class PseudoMLELearner:
                 t += 1
 
                 print(t)
+                # if t % 1000 == 0:
+                #     for p in self.trainable_potentials:
+                #         domain = Domain([0, 100], continuous=True)
+                #         visualize_2d_neural_net(p, domain, domain, 3)

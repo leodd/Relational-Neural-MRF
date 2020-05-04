@@ -158,15 +158,34 @@ def show_images(images, cols=1, titles=None, vmin=0, vmax=1):
     plt.show()
 
 
-def visualize_2d_neural_net(nn, d1, d2, spacing=2):
+def visualize_1d_neural_net(nn, d, spacing=2, is_exp=True):
+    xs = np.arange(d.values[0], d.values[1], spacing)
+    xs = xs.reshape(-1, 1)
+
+    ys = nn.forward(xs, save_cache=False)
+
+    if is_exp:
+        ys = np.exp(ys)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(xs, ys)
+    ax.set_xlabel('x')
+    ax.set_ylabel('value')
+    plt.show()
+
+
+def visualize_2d_neural_net(nn, d1, d2, spacing=2, is_exp=True):
     d1 = np.arange(d1.values[0], d1.values[1], spacing)
     d2 = np.arange(d2.values[0], d2.values[1], spacing)
 
     x1, x2 = np.meshgrid(d1, d2)
     xs = np.array([x1, x2]).T.reshape(-1, 2)
 
-    ys = np.exp(nn.forward(xs, save_cache=False))
-    ys = ys.reshape(-1, 1)
+    ys = nn.forward(xs, save_cache=False)
+
+    if is_exp:
+        ys = np.exp(ys)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

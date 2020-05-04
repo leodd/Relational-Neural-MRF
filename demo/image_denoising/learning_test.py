@@ -18,6 +18,18 @@ col = gt_image.shape[1]
 
 domain = Domain([-30, 130], continuous=True)
 
+pxo = NeuralNetPotential(
+    (2, 16, LeakyReLU()),
+    (16, 16, LeakyReLU()),
+    (16, 1, LeakyReLU())
+)
+
+pxy = NeuralNetPotential(
+    (2, 16, LeakyReLU()),
+    (16, 16, LeakyReLU()),
+    (16, 1, LeakyReLU())
+)
+
 data = dict()
 
 evidence = [None] * (col * row)
@@ -36,10 +48,6 @@ for i in range(row):
 fs = list()
 
 # create hidden-obs factors
-pxo = NeuralNetPotential(
-    (2, 16, LeakyReLU()),
-    (16, 1, None)
-)
 for i in range(row):
     for j in range(col):
         fs.append(
@@ -50,10 +58,6 @@ for i in range(row):
         )
 
 # create hidden-hidden factors
-pxy = NeuralNetPotential(
-    (2, 16, LeakyReLU()),
-    (16, 1, None)
-)
 for i in range(row):
     for j in range(col - 1):
         fs.append(
@@ -78,12 +82,12 @@ visualize_2d_neural_net(pxy, domain, domain, 5)
 
 leaner = PseudoMLELearner(g, {pxo, pxy}, data)
 leaner.train(
-    lr=0.001,
-    regular=0.5,
-    max_iter=1000,
+    lr=0.0001,
+    regular=0.1,
+    max_iter=10000,
     batch_iter=10,
     batch_size=1,
-    rvs_selection_size=500,
+    rvs_selection_size=len(rvs),
     sample_size=10
 )
 
