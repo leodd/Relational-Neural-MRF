@@ -144,7 +144,7 @@ class LinearLayer:
 
 class NeuralNetPotential(NeuralNetFunction):
     """
-    A wrapper for NeuralNetFunction class, such that the function call will return the
+    A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
     """
     def __init__(self, *args):
         NeuralNetFunction.__init__(self, *args)

@@ -1,9 +1,10 @@
 from Graph import *
 import numpy as np
+import torch
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
-from utils import load, visualize_2d_neural_net
+from utils import load, visualize_2d_neural_net, visualize_1d_neural_net
 
 
 class PseudoMLELearner:
@@ -69,7 +70,7 @@ class PseudoMLELearner:
                     ]
 
         # Initialize data matrix
-        data_x = {p: np.empty(
+        data_x = {p: torch.empty(
             [
                 potential_count[p] * ((sample_size + 1) if p in self.trainable_potentials else sample_size),
                 p.dimension
@@ -81,9 +82,9 @@ class PseudoMLELearner:
         current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
-            data_idx_matrix = [[0] * len(rv.nb)] * K
+            data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
 
-            samples = np.linspace(rv.domain.values[0], rv.domain.values[1], num=sample_size)
+            samples = torch.linspace(rv.domain.values[0], rv.domain.values[1], sample_size)
 
             shift = np.random.random(K)
             s = (rv.domain.values[1] - rv.domain.values[0]) / (sample_size - 1)
@@ -102,7 +103,7 @@ class PseudoMLELearner:
                     temp[0], temp[-1] = samples[0] + shift[k] * s * 0.5, samples[-1] - (1 - shift[k]) * s * 0.5
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = temp
 
-                    data_idx_matrix[k][c] = current_idx + r
+                    data_idx_matrix[k, c] = current_idx + r
                     current_idx = next_idx
 
                 current_idx_counter[f.potential] = current_idx
@@ -111,12 +112,13 @@ class PseudoMLELearner:
 
         return (data_x, data_info)
 
-    def get_gradient(self, data_x, data_info, sample_size=10):
+    def get_gradient(self, data_x, data_info, sample_size=10, alpha=0.5):
         """
         Args:
             data_x: The potential input that are computed by get_unweighted_data function.
             data_info: The data indexing, shift and spacing information.
             sample_size: The number of sampling points (need to be consistent with get_unweighted_data function).
+            alpha: The coefficient for balancing the mle and prior fitting.
 
         Returns:
             A dictionary with potential as key, and gradient as value.
@@ -125,38 +127,42 @@ class PseudoMLELearner:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y[potential] = potential.forward(data_matrix, save_cache=True)
+            data_y[potential] = potential.forward(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.ones(data_y[potential].shape)
+            gradient_y[potential] = torch.ones(data_y[potential].shape) * alpha
 
         for rv, (data_idx, shift, s) in data_info.items():
             for start_idx, shift_k in zip(data_idx, shift):
-                w = np.zeros(sample_size)
+                w = torch.zeros(sample_size)
 
                 for f, idx in zip(rv.nb, start_idx):
                     w += data_y[f.potential][idx:idx + sample_size, 0]
 
-                w = np.exp(w) * s
+                b = torch.exp(w)
+                prior_diff = b - 1 / (rv.domain.values[1] - rv.domain.values[0])
+
+                w = b * s
                 w[0] *= shift_k
                 w[-1] *= (1 - shift_k)
-                w /= np.sum(w)
+                w /= torch.sum(w)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] *= -w
+                        gradient_y[f.potential][idx:idx + sample_size, 0] = -alpha * w + (alpha - 1) * prior_diff * b
 
         return gradient_y
 
-    def train(self, lr=0.01, regular=0.5,
+    def train(self, lr=0.01, alpha=0.5, regular=0.5,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10):
         """
         Args:
             lr: Learning rate.
+            alpha: The coefficient for balancing the mle and prior fitting.
             regular: Regularization ratio.
             max_iter: The number of total iterations.
             batch_iter: The number of iteration of each mini batch.
@@ -164,8 +170,11 @@ class PseudoMLELearner:
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
         """
-        adam = AdamOptimizer(lr)
-        moments = dict()
+        optimizers = {
+            p: torch.optim.Adam(p.parameters(), lr=lr, weight_decay=regular)
+            for p in self.trainable_potentials
+        }
+
         t = 0
 
         while t < max_iter:
@@ -189,29 +198,23 @@ class PseudoMLELearner:
 
             i = 0
             while i < batch_iter and t < max_iter:
-                gradient_y = self.get_gradient(data_x, data_info, sample_size)
+                gradient_y = self.get_gradient(data_x, data_info, sample_size, alpha)
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    _, d_param = potential.backward(d_y)
+                    optimizer = optimizers[potential]
+                    optimizer.zero_grad()
 
                     c = (sample_size + 1) / d_y.shape[0]
+                    potential.backward(-d_y * c)
 
-                    # Gradient ascent
-                    for layer, (d_W, d_b) in d_param.items():
-                        step, moment = adam(d_W * c, moments.get((layer, 'W'), (0, 0)), t + 1)
-                        layer.W -= step + layer.W * (regular * c)
-                        moments[(layer, 'W')] = moment
-
-                        step, moment = adam(d_b * c, moments.get((layer, 'b'), (0, 0)), t + 1)
-                        layer.b -= step + layer.b * (regular * c)
-                        moments[(layer, 'b')] = moment
+                    optimizer.step()
 
                 i += 1
                 t += 1
 
                 print(t)
-                # if t % 1000 == 0:
-                #     for p in self.trainable_potentials:
-                #         domain = Domain([0, 100], continuous=True)
-                #         visualize_2d_neural_net(p, domain, domain, 3)
+                if t % 200 == 0:
+                    for p in self.trainable_potentials:
+                        domain = Domain([-20, 10], continuous=True)
+                        visualize_1d_neural_net(p, domain, 0.3)

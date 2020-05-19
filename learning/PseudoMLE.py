@@ -216,7 +216,7 @@ class PseudoMLELearner:
                 t += 1
 
                 print(t)
-                if t % 200 == 0:
-                    for p in self.trainable_potentials:
-                        domain = Domain([-20, 10], continuous=True)
-                        visualize_1d_neural_net(p, domain, 0.3)
+                # if t % 200 == 0:
+                #     for p in self.trainable_potentials:
+                #         domain = Domain([-20, 10], continuous=True)
+                #         visualize_1d_neural_net(p, domain, 0.3)

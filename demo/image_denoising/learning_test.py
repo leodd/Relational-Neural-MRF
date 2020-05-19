@@ -19,15 +19,15 @@ col = gt_image.shape[1]
 domain = Domain([-30, 130], continuous=True)
 
 pxo = NeuralNetPotential(
-    (2, 16, LeakyReLU()),
-    (16, 16, LeakyReLU()),
-    (16, 1, LeakyReLU())
+    (2, 16, ReLU()),
+    (16, 16, ReLU()),
+    (16, 1, None)
 )
 
 pxy = NeuralNetPotential(
-    (2, 16, LeakyReLU()),
-    (16, 16, LeakyReLU()),
-    (16, 1, LeakyReLU())
+    (2, 16, ReLU()),
+    (16, 16, ReLU()),
+    (16, 1, None)
 )
 
 data = dict()
@@ -82,9 +82,10 @@ visualize_2d_neural_net(pxy, domain, domain, 5)
 
 leaner = PseudoMLELearner(g, {pxo, pxy}, data)
 leaner.train(
-    lr=0.0001,
+    lr=0.001,
+    alpha=0.5,
     regular=0.1,
-    max_iter=10000,
+    max_iter=100,
     batch_iter=10,
     batch_size=1,
     rvs_selection_size=len(rvs),
