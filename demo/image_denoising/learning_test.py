@@ -82,13 +82,13 @@ visualize_2d_neural_net(pxy, domain, domain, 5)
 
 leaner = PseudoMLELearner(g, {pxo, pxy}, data)
 leaner.train(
-    lr=0.001,
-    alpha=0.5,
+    lr=0.0001,
+    alpha=0.3,
     regular=0.1,
-    max_iter=100,
+    max_iter=10000,
     batch_iter=10,
     batch_size=1,
-    rvs_selection_size=len(rvs),
+    rvs_selection_size=1000,
     sample_size=10
 )
 
