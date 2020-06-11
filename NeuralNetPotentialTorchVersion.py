@@ -8,30 +8,30 @@ class NeuralNetModule(nn.Module):
     def __init__(self, *args):
         super(NeuralNetModule, self).__init__()
 
-        self.layers = []
+        layers = []
 
-        for i_size, o_size, act in args:
+        for idx, (i_size, o_size, act) in enumerate(args):
             """
             i_size: input size
             o_size: output size
             act: activation function
             """
-            self.layers.append(
+            layers.append(
                 nn.Linear(i_size, o_size)
             )
 
-            if act is not None:
-                self.layers.append(act)
+            if idx < len(args) - 1:
+                layers.append(
+                    nn.BatchNorm1d(o_size)
+                )
 
-        self.layers = nn.ModuleList(self.layers)
+            if act is not None:
+                layers.append(act)
+
+        self.model = nn.Sequential(*layers)
 
     def forward(self, x):
-        out = x
-
-        for layer in self.layers:
-            out = layer(out)
-
-        return out
+        return self.model(x)
 
 
 class NeuralNetPotential(Function):
@@ -42,8 +42,15 @@ class NeuralNetPotential(Function):
         Function.__init__(self)
         self.dimension = args[0][0]  # The dimension of the input parameters
 
-        self.device = None if device is None else torch.device(device)
-        self.nn = NeuralNetModule(args)  # The wrapped neural net
+        if device is None:
+            self.device = torch.device('cpu')
+        else:
+            self.device = device
+
+        self.nn = NeuralNetModule(*args)  # The wrapped neural net
+        self.nn.to(device)  # Place the network on specified device
+
+        self.out = None  # The cache out the forward output tensor
 
     def parameters(self):
         return self.nn.parameters()
@@ -52,15 +59,8 @@ class NeuralNetPotential(Function):
         return torch.exp(self.nn(parameters))
 
     def forward(self, x):
-        if self.device is not None:
-            x = x.to(self.device)
-            return self.nn(x).cpu()
-        else:
-            return self.nn(x)
+        self.out = self.nn(x)
+        return self.out
 
     def backward(self, d_y):
-        if self.device is not None:
-            d_y = d_y.to(self.device)
-            return self.nn.backward(d_y).cpu()
-        else:
-            return self.nn.backward(d_y)
+        return self.out.backward(d_y)

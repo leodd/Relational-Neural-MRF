@@ -5,7 +5,16 @@ import numpy as np
 import json
 
 
-def generate_rel_graph():
+def generate_rel_graph(*args):
+    if len(args) != 3:
+        raise Exception('Must define 3 potential functions')
+
+    p1, p2, p3 = args
+
+    # p1 = GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]])
+    # p2 = GaussianFunction([0., 0.], [[10., 5.], [5., 10.]])
+    # p3 = GaussianFunction([0., 0.], [[10., 7.], [7., 10.]])
+
     instance_category = []
     instance_bank = []
     for i in range(100):
@@ -14,10 +23,6 @@ def generate_rel_graph():
         instance_bank.append(f'b{i}')
 
     d = Domain((-50, 50), continuous=True)
-
-    p1 = GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]])
-    p2 = GaussianFunction([0., 0.], [[10., 5.], [5., 10.]])
-    p3 = GaussianFunction([0., 0.], [[10., 7.], [7., 10.]])
 
     lv_recession = LV(('all',))
     lv_category = LV(instance_category)
@@ -99,7 +104,6 @@ def load_data(f):
 if __name__ == "__main__":
     rel_g = generate_rel_graph()
     data = generate_observation(rel_g, 0.2)
-    save_data('time_log_20percent', data)
     # for i in range(5):
     #     # evidence_ratio = np.random.uniform(0.05, 0.2)
     #     evidence_ratio = 0.2

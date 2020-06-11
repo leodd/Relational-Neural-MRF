@@ -1,23 +1,28 @@
 from Graph import *
-import numpy as np
 import torch
 import random
 from collections import Counter
-from optimization_tools import AdamOptimizer
-from utils import load, visualize_2d_neural_net, visualize_1d_neural_net
+import numpy as np
+from utils import load, visualize_2d_neural_net_torch, visualize_1d_neural_net_torch
 
 
 class PseudoMLELearner:
-    def __init__(self, g, trainable_potentials, data):
+    def __init__(self, g, trainable_potentials, data, device=None):
         """
         Args:
             g: The Graph object.
             trainable_potentials: A set of potential functions that need to be trained.
             data: A dictionary that maps each rv to a list of m observed data (list could contain None elements).
+            device: The device object for torch.
         """
         self.g = g
         self.trainable_potentials = trainable_potentials
         self.data = data
+
+        if device is None:
+            self.device = torch.device('cpu')
+        else:
+            self.device = device
 
         self.M = len(self.data[next(iter(self.data))])  # Number of data frame
         self.latent_rvs = g.rvs - g.condition_rvs
@@ -65,7 +70,7 @@ class PseudoMLELearner:
 
                 if f not in f_MB:
                     f_MB[f] = [
-                        [self.data[rv][m] for rv in f.nb]
+                        torch.FloatTensor([self.data[rv][m] for rv in f.nb])
                         for m in batch
                     ]
 
@@ -74,7 +79,8 @@ class PseudoMLELearner:
             [
                 potential_count[p] * ((sample_size + 1) if p in self.trainable_potentials else sample_size),
                 p.dimension
-            ]
+            ],
+            device=self.device
         ) for p in potential_count}
 
         data_info = dict()  # rv as key, data indexing, shift, spacing as value
@@ -82,11 +88,11 @@ class PseudoMLELearner:
         current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
-            data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
+            data_idx_matrix = torch.empty([K, len(rv.nb)], dtype=torch.int32)
 
             samples = torch.linspace(rv.domain.values[0], rv.domain.values[1], sample_size)
 
-            shift = np.random.random(K)
+            shift = torch.rand(K)
             s = (rv.domain.values[1] - rv.domain.values[0]) / (sample_size - 1)
 
             for c, f in enumerate(rv.nb):
@@ -127,17 +133,17 @@ class PseudoMLELearner:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y[potential] = potential.forward(data_matrix)
+            data_y[potential] = potential.forward(data_matrix).data
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = torch.ones(data_y[potential].shape) * alpha
+            gradient_y[potential] = torch.ones(data_y[potential].shape, device=self.device) * alpha
 
         for rv, (data_idx, shift, s) in data_info.items():
             for start_idx, shift_k in zip(data_idx, shift):
-                w = torch.zeros(sample_size)
+                w = torch.zeros(sample_size, device=self.device)
 
                 for f, idx in zip(rv.nb, start_idx):
                     w += data_y[f.potential][idx:idx + sample_size, 0]
@@ -210,11 +216,13 @@ class PseudoMLELearner:
 
                     optimizer.step()
 
+                    del potential.out
+
                 i += 1
                 t += 1
 
                 print(t)
-                if t % 200 == 0:
+                if t % 100 == 0:
                     for p in self.trainable_potentials:
-                        domain = Domain([-20, 10], continuous=True)
-                        visualize_1d_neural_net(p, domain, 0.3)
+                        domain = Domain([0, 1], continuous=True)
+                        visualize_2d_neural_net_torch(p.nn, domain, domain, 3)

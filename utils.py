@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 from math import log, exp
 from scipy.integrate import quad
@@ -186,6 +187,57 @@ def visualize_2d_neural_net(nn, d1, d2, spacing=2, is_exp=True):
 
     if is_exp:
         ys = np.exp(ys)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x1, x2, ys)
+    ax.set_xlabel('x1')
+    ax.set_ylabel('x2')
+    ax.set_zlabel('value')
+    plt.show()
+
+
+def visualize_1d_neural_net_torch(nn, d, spacing=2, is_exp=True):
+    device = next(nn.parameters()).device
+
+    xs = torch.arange(d.values[0], d.values[1], spacing, device=device)
+    xs = xs.reshape(-1, 1)
+
+    with torch.no_grad():
+        ys = nn(xs)
+
+        if is_exp:
+            ys = torch.exp(ys)
+
+    xs = xs.cpu().numpy()
+    ys = ys.cpu().numpy()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(xs, ys)
+    ax.set_xlabel('x')
+    ax.set_ylabel('value')
+    plt.show()
+
+
+def visualize_2d_neural_net_torch(nn, d1, d2, spacing=2, is_exp=True):
+    device = next(nn.parameters()).device
+
+    d1 = np.arange(d1.values[0], d1.values[1], spacing)
+    d2 = np.arange(d2.values[0], d2.values[1], spacing)
+
+    x1, x2 = np.meshgrid(d1, d2)
+    xs = np.array([x1, x2]).T.reshape(-1, 2)
+
+    xs = torch.FloatTensor(xs).to(device)
+
+    with torch.no_grad():
+        ys = nn(xs)
+
+        if is_exp:
+            ys = torch.exp(ys)
+
+    ys = ys.cpu().numpy()
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

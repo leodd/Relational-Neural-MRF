@@ -2,7 +2,11 @@ from data_generator.rgm_generator import *
 from utils import log_likelihood
 
 
-rel_g = generate_rel_graph()
+rel_g = generate_rel_graph(
+    GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]]),
+    GaussianFunction([0., 0.], [[10., 5.], [5., 10.]]),
+    GaussianFunction([0., 0.], [[10., 7.], [7., 10.]]),
+)
 rel_g.ground_graph()
 
 data = {

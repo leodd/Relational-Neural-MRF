@@ -200,7 +200,7 @@ class PseudoMLELearner:
                 for potential, d_y in gradient_y.items():
                     _, d_param = potential.backward(d_y)
 
-                    c = (sample_size + 1) / d_y.shape[0]
+                    c = (sample_size - 1) / d_y.shape[0]
 
                     # Gradient ascent
                     for layer, (d_W, d_b) in d_param.items():
@@ -216,7 +216,7 @@ class PseudoMLELearner:
                 t += 1
 
                 print(t)
-                if t % 200 == 0:
+                if t % 100 == 0:
                     for p in self.trainable_potentials:
-                        domain = Domain([-20, 10], continuous=True)
-                        visualize_2d_neural_net(p, domain, domain, 3)
+                        domain = Domain([-50, 50], continuous=True)
+                        visualize_2d_neural_net(p, domain, domain, 2)

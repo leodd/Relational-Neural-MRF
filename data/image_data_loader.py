@@ -22,4 +22,5 @@ def load_data(ground_true_folder, noisy_folder):
     return gt_data, noisy_data
 
 if __name__ == '__main__':
-    load_data('gt', 'noise')
+    gt_data, noisy_data = load_data('gt', 'noise')
+    print(len(gt_data))
