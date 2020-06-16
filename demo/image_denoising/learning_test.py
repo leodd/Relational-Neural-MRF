@@ -1,10 +1,8 @@
-import matplotlib.image as img
 from utils import save, visualize_2d_neural_net
-import numpy as np
 from Graph import *
-from NeuralNetPotential import NeuralNetPotential, ReLU, ELU, LeakyReLU
+from NeuralNetPotential import NeuralNetPotential, ReLU
 from learning.PseudoMLE import PseudoMLELearner
-from data.image_data_loader import load_data
+from demo.image_denoising.image_data_loader import load_data
 
 
 gt_data, noisy_data = load_data('data/gt', 'data/noise')

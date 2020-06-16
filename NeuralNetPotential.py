@@ -1,5 +1,7 @@
 from Function import Function
+from Potentials import GaussianFunction
 import numpy as np
+from numpy.linalg import det, inv
 
 
 class NeuralNetFunction(Function):
@@ -152,3 +154,16 @@ class NeuralNetPotential(NeuralNetFunction):
 
     def __call__(self, *parameters):
         return np.exp(NeuralNetFunction.__call__(self, *parameters))
+
+
+class GaussianNeuralNetPotential(Function):
+    """
+    A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
+    """
+    def __init__(self, *args):
+        self.dimension = args[0][0]  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(self, *args)
+        self.gaussian = GaussianFunction(np.ones(self.dimension), np.eye(self.dimension))
+
+    def __call__(self, *parameters):
+        return self.nn(self, *parameters) * self.gaussian(*parameters)

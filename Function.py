@@ -2,9 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class Function(ABC):
-    def __init__(self):
-        pass
-
     @abstractmethod
     def __call__(self, *parameters):
         """A method return a function value.

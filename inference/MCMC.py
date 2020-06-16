@@ -93,7 +93,7 @@ class MCMC:
                 print(i)
 
         # generate MCMC samples
-        for i in range(iteration):
+        for i in range(iteration - 1):
             for rv in self.g.rvs:
                 if rv.value is None:
                     self.state[rv].append(self.generate_sample(rv))

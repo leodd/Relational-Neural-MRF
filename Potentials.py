@@ -50,6 +50,9 @@ class GaussianFunction(Function):
             sig: The covariance matrix (must be 2 dimensional).
         """
         Function.__init__(self)
+        self.set_parameters(mu, sig)
+
+    def set_parameters(self, mu, sig):
         self.mu = np.array(mu, dtype=float)
         self.sig = np.array(sig, dtype=float)
         self.inv_sig = inv(self.sig)

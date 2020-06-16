@@ -1,12 +1,10 @@
-import matplotlib.image as img
 from utils import visualize_2d_neural_net_torch
-import numpy as np
 import torch
 import torch.nn as nn
 from Graph import *
 from NeuralNetPotentialTorchVersion import NeuralNetPotential
 from learning.PseudoMLETorchVersion import PseudoMLELearner
-from data.image_data_loader import load_data
+from demo.image_denoising.image_data_loader import load_data
 
 
 gt_data, noisy_data = load_data('data/gt', 'data/noise')

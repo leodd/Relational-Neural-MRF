@@ -20,7 +20,12 @@ class PseudoMLELearner:
 
         self.M = len(self.data[next(iter(self.data))])  # Number of data frame
         self.latent_rvs = g.rvs - g.condition_rvs
-        self.potential_rvs_dict = self.get_potential_rvs_dict(g, trainable_potentials)
+        self.trainable_potential_rvs_dict = self.get_potential_rvs_dict(g, trainable_potentials)
+
+        self.rvs_trainable = set()
+        for _, rvs in self.trainable_potential_rvs_dict.items():
+            self.rvs_trainable |= rvs
+        self.rvs_trainable -= g.condition_rvs
 
     @staticmethod
     def get_potential_rvs_dict(g, potentials):
@@ -37,9 +42,6 @@ class PseudoMLELearner:
         for f in g.factors:  # Add all neighboring rvs
             if f.potential in potentials:
                 res[f.potential].update(f.nb)
-
-        for p in potentials:  # remove all condition rvs
-            res[p] = res[p] - g.condition_rvs
 
         return res
 
@@ -184,8 +186,8 @@ class PseudoMLELearner:
 
             # And sample a subset of rvs
             rvs = random.sample(
-                self.latent_rvs,
-                min(rvs_selection_size, len(self.latent_rvs))
+                self.rvs_trainable,
+                min(rvs_selection_size, len(self.rvs_trainable))
             )
 
             # The computed data set for training the potential function

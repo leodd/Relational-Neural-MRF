@@ -1,10 +1,6 @@
-from data_generator.rgm_generator import generate_rel_graph
+from demo.RGM.rgm_generator import generate_rel_graph
 from utils import log_likelihood
-from inference.VarInference import VarInference as VI
 from inference.LiftedVarInference import VarInference as LVI
-from inference.C2FVarInference import VarInference as C2FVI
-from inference.GaBP import GaBP
-
 
 rel_g = generate_rel_graph()
 rel_g.ground_graph()

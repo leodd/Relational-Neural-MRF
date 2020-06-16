@@ -1,6 +1,4 @@
-from data_generator.rgm_generator import *
-from utils import log_likelihood
-
+from demo.RGM.rgm_generator import *
 
 rel_g = generate_rel_graph(
     GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]]),
