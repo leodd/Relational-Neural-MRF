@@ -168,24 +168,26 @@ class PseudoMLELearner:
         Returns:
             A dictionary with potential as key, and gradient as value.
         """
-        data_y = dict()  # A dictionary with a array of output value of the potential functions
+        data_y_nn = dict()  # A dictionary with a array of output value of the potential nn
+        data_y_gaussian = dict()  # A dictionary with a array of output value of the potential gaussian
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y[potential] = potential.nn.forward(data_matrix, save_cache=True)
+            data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True)
+            data_y_gaussian[potential] = potential.gaussian.batch_call(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.ones(data_y[potential].shape) * alpha
+            gradient_y[potential] = np.ones(data_y_nn[potential].shape) * alpha
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
                 w = np.zeros(sample_size)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y[f.potential][idx:idx + sample_size, 0]
+                    w += data_y_nn[f.potential][idx:idx + sample_size, 0]
 
                 b = np.exp(w)
                 prior_diff = b - 1
@@ -193,10 +195,12 @@ class PseudoMLELearner:
                 w /= np.sum(self.quad_w * b)
                 w *= self.quad_w
 
+
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = -alpha * w + (alpha - 1) * prior_diff * b
+                        gradient_y[f.potential][idx:idx + sample_size, 0] = \
+                            -alpha * w * data_y_gaussian[idx:idx + sample_size, 0] + (alpha - 1) * prior_diff * b
 
         return gradient_y
 

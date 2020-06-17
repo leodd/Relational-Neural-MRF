@@ -66,6 +66,10 @@ class GaussianFunction(Function):
         x_mu = np.array(parameters, dtype=float) - self.mu
         return self.coeff * exp(-0.5 * (x_mu.T @ self.inv_sig @ x_mu))
 
+    def batch_call(self, x):
+        x_mu = x - self.mu
+        return self.coeff * exp(-0.5 * (x_mu @ self.inv_sig @ x_mu))
+
     def slice(self, *parameters):
         idx_latent, idx_condition = list(), list()
         for idx, val in enumerate(parameters):  # Create rearrange index
