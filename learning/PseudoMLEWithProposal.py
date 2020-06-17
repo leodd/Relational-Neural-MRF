@@ -173,21 +173,21 @@ class PseudoMLELearner:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True)
+            data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True).reshape(-1)
             data_y_gaussian[potential] = potential.gaussian.batch_call(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.ones(data_y_nn[potential].shape) * alpha
+            gradient_y[potential] = np.copy(data_y_gaussian[potential]).reshape(-1, 1) * alpha
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
                 w = np.zeros(sample_size)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y_nn[f.potential][idx:idx + sample_size, 0]
+                    w += data_y_nn[f.potential][idx:idx + sample_size]
 
                 b = np.exp(w)
                 prior_diff = b - 1
@@ -195,12 +195,12 @@ class PseudoMLELearner:
                 w /= np.sum(self.quad_w * b)
                 w *= self.quad_w
 
-
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
                         gradient_y[f.potential][idx:idx + sample_size, 0] = \
-                            -alpha * w * data_y_gaussian[idx:idx + sample_size, 0] + (alpha - 1) * prior_diff * b
+                            -alpha * w * data_y_gaussian[f.potential][idx:idx + sample_size] + \
+                            (alpha - 1) * prior_diff * b
 
         return gradient_y
 

@@ -35,7 +35,7 @@ for key, value in load_data('rgm-joint').items():
 leaner = PseudoMLELearner(g, {p1, p2, p3}, data)
 leaner.train(
     lr=0.001,
-    alpha=0.5,
+    alpha=0.8,
     regular=0.0001,
     max_iter=10000,
     batch_iter=20,
