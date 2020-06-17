@@ -138,6 +138,7 @@ class LinearLayer:
 
     def backward(self, d_y, x):
         d_W = x.T @ d_y
+
         d_b = np.sum(d_y, axis=0)
         d_x = d_y @ self.W.T
 
@@ -162,8 +163,9 @@ class GaussianNeuralNetPotential(Function):
     """
     def __init__(self, *args):
         self.dimension = args[0][0]  # The dimension of the input parameters
-        self.nn = NeuralNetFunction(self, *args)
+        self.nn = NeuralNetFunction(*args)
         self.gaussian = GaussianFunction(np.ones(self.dimension), np.eye(self.dimension))
 
     def __call__(self, *parameters):
-        return self.nn(self, *parameters) * self.gaussian(*parameters)
+        return np.exp(self.nn(*parameters)) * self.gaussian(*parameters)
+        # return np.exp(self.nn(*parameters))

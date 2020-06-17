@@ -1,21 +1,22 @@
 from demo.RGM.rgm_generator import *
-from NeuralNetPotential import NeuralNetPotential, ReLU
-from learning.PseudoMLE import PseudoMLELearner
+from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
+from learning.PseudoMLEWithProposal import PseudoMLELearner
+from utils import visualize_2d_potential
 
 
-p1 = NeuralNetPotential(
+p1 = GaussianNeuralNetPotential(
     (2, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
 )
 
-p2 = NeuralNetPotential(
+p2 = GaussianNeuralNetPotential(
     (2, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
 )
 
-p3 = NeuralNetPotential(
+p3 = GaussianNeuralNetPotential(
     (2, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
@@ -24,9 +25,8 @@ p3 = NeuralNetPotential(
 rel_g = generate_rel_graph(p1, p2, p3)
 g, rvs_dict = rel_g.ground_graph()
 
-conditional_rvs = {rvs_dict[('recession', 'all')]}
-
-g.condition_rvs = conditional_rvs
+# conditional_rvs = {rvs_dict[('recession', 'all')]}
+# g.condition_rvs = conditional_rvs
 
 data = dict()
 for key, value in load_data('rgm-joint').items():
@@ -43,3 +43,8 @@ leaner.train(
     rvs_selection_size=100,
     sample_size=20
 )
+
+domain = Domain([-50, 50], continuous=True)
+visualize_2d_potential(p1, domain, domain, 2)
+visualize_2d_potential(p2, domain, domain, 2)
+visualize_2d_potential(p3, domain, domain, 2)

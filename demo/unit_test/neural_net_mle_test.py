@@ -1,6 +1,6 @@
 from NeuralNetPotential import NeuralNetPotential, LeakyReLU, ReLU, ELU
 from learning.PseudoMLE import PseudoMLELearner
-from utils import visualize_1d_neural_net
+from utils import visualize_1d_potential
 from Graph import *
 import numpy as np
 import seaborn as sns
@@ -30,8 +30,8 @@ f = F(nn, nb=[rv])
 
 g = Graph({rv}, {f})
 
-visualize_1d_neural_net(nn, domain, 0.3, True)
-visualize_1d_neural_net(nn, domain, 0.3, False)
+visualize_1d_potential(nn, domain, 0.3, True)
+visualize_1d_potential(nn, domain, 0.3, False)
 
 leaner = PseudoMLELearner(g, {nn}, data)
 leaner.train(
@@ -45,5 +45,5 @@ leaner.train(
     sample_size=20
 )
 
-visualize_1d_neural_net(nn, domain, 0.3, True)
-visualize_1d_neural_net(nn, domain, 0.3, False)
+visualize_1d_potential(nn, domain, 0.3, True)
+visualize_1d_potential(nn, domain, 0.3, False)

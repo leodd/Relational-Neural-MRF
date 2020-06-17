@@ -1,5 +1,5 @@
 import matplotlib.image as img
-from utils import show_images, save, visualize_2d_neural_net
+from utils import show_images, save, visualize_2d_potential
 import numpy as np
 import glob
 

@@ -1,7 +1,7 @@
 from NeuralNetPotential import NeuralNetPotential, ReLU, ELU, LeakyReLU
 import numpy as np
 from Graph import *
-from utils import visualize_1d_neural_net
+from utils import visualize_1d_potential
 from optimization_tools import AdamOptimizer
 
 
@@ -44,4 +44,4 @@ for t in range(1, 5000):
 
     print(np.sum((predict - target) ** 2))
 
-visualize_1d_neural_net(nn, Domain([-15, 15]), 0.3, is_exp=True)
+visualize_1d_potential(nn, Domain([-15, 15]), 0.3, is_exp=True)

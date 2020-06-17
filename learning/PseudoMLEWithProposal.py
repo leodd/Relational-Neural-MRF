@@ -4,7 +4,7 @@ from numpy.polynomial.hermite import hermgauss
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
-from utils import load, visualize_2d_neural_net, visualize_1d_neural_net
+from utils import load, visualize_2d_potential, visualize_1d_potential
 
 
 class PseudoMLELearner:
@@ -31,6 +31,10 @@ class PseudoMLELearner:
         self.trainable_potential_proposal = self.initialize_factor_proposal()
         self.trainable_rvs_proposal = dict()
 
+        for p in self.trainable_potentials:
+            domain = Domain([-10, 10], continuous=True)
+            visualize_2d_potential(p, domain, domain, 0.5)
+
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
         """
@@ -50,7 +54,7 @@ class PseudoMLELearner:
                 rvs_dict[f.potential].update(f.nb)
                 factors_dict[f.potential].add(f)
 
-        return rvs_dict
+        return rvs_dict, factors_dict
 
     def initialize_factor_proposal(self):
         for p, fs in self.trainable_potential_factors_dict.items():
@@ -62,7 +66,7 @@ class PseudoMLELearner:
                     assignment[:, idx] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.gaussian = (np.mean(assignment, axis=1), np.cov(assignment))
+            p.gaussian.set_parameters(np.mean(assignment, axis=1), np.cov(assignment))
 
     def get_rvs_proposal(self, rvs, batch, res_dict=None):
         if res_dict is None:
@@ -75,7 +79,7 @@ class PseudoMLELearner:
                 rv_proposal = None
                 for f in rv.nb:
                     rv_proposal = f.potential.gaussian.slice(
-                        *[None if rv_ is rv else self.data[rv_][m] for rv_ in rvs]
+                        *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_proposal
                 res_dict[(rv, m)] = (rv_proposal.mu.squeeze(), rv_proposal.sig.squeeze())
 
@@ -261,5 +265,5 @@ class PseudoMLELearner:
                 print(t)
                 if t % 100 == 0:
                     for p in self.trainable_potentials:
-                        domain = Domain([-50, 50], continuous=True)
-                        visualize_2d_neural_net(p, domain, domain, 2)
+                        domain = Domain([-10, 10], continuous=True)
+                        visualize_2d_potential(p, domain, domain, 0.5)

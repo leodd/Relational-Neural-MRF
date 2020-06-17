@@ -1,4 +1,4 @@
-from utils import save, visualize_2d_neural_net
+from utils import save, visualize_2d_potential
 from Graph import *
 from NeuralNetPotential import NeuralNetPotential, ReLU
 from learning.PseudoMLE import PseudoMLELearner
@@ -71,8 +71,8 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-visualize_2d_neural_net(pxo, domain, domain, 0.05)
-visualize_2d_neural_net(pxy, domain, domain, 0.05)
+visualize_2d_potential(pxo, domain, domain, 0.05)
+visualize_2d_potential(pxy, domain, domain, 0.05)
 
 leaner = PseudoMLELearner(g, {pxo, pxy}, data)
 leaner.train(
@@ -86,8 +86,8 @@ leaner.train(
     sample_size=20
 )
 
-visualize_2d_neural_net(pxo, domain, domain, 0.05)
-visualize_2d_neural_net(pxy, domain, domain, 0.05)
+visualize_2d_potential(pxo, domain, domain, 0.05)
+visualize_2d_potential(pxy, domain, domain, 0.05)
 
 save(
     'demo/image_denoising/learned-potentials',

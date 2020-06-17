@@ -7,9 +7,11 @@ rel_g = generate_rel_graph(
 )
 rel_g.ground_graph()
 
-data = {
-    ('recession', 'all'): 25
-}
+# data = {
+#     ('recession', 'all'): 25
+# }
+
+data = dict()
 
 sample = generate_samples(rel_g, data, 1000, 30)
 

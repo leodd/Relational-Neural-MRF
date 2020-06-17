@@ -1,6 +1,6 @@
 from NeuralNetPotential import NeuralNetPotential, LeakyReLU, ReLU, ELU
 from optimization_tools import AdamOptimizer
-from utils import visualize_1d_neural_net
+from utils import visualize_1d_potential
 from Graph import *
 import numpy as np
 import seaborn as sns
@@ -56,7 +56,7 @@ def create_training_data(log=False):
     ys /= np.sum(ys_ * ws)
 
     if log:
-        visualize_1d_neural_net(nn, domain, 0.3, True)
+        visualize_1d_potential(nn, domain, 0.3, True)
         # plt.plot(xs.reshape(-1), ys)
         # plt.show()
 
@@ -73,8 +73,8 @@ def create_training_data(log=False):
     return nn_data, nn_data_gradient
 
 
-visualize_1d_neural_net(nn, domain, 0.3, True)
-visualize_1d_neural_net(nn, domain, 0.3, False)
+visualize_1d_potential(nn, domain, 0.3, True)
+visualize_1d_potential(nn, domain, 0.3, False)
 
 lr = 0.001
 regular = 0.001
@@ -101,5 +101,5 @@ for t in range(1, 10000):
 
     print(t)
 
-visualize_1d_neural_net(nn, domain, 0.3, True)
-visualize_1d_neural_net(nn, domain, 0.3, False)
+visualize_1d_potential(nn, domain, 0.3, True)
+visualize_1d_potential(nn, domain, 0.3, False)
