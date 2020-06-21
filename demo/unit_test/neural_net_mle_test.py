@@ -36,13 +36,13 @@ visualize_1d_potential(p, domain, 0.3)
 leaner = PseudoMLELearner(g, {p}, data)
 leaner.train(
     lr=0.0001,
-    alpha=0.8,
+    alpha=0.999,
     regular=0.0001,
     max_iter=5000,
     batch_iter=10,
-    batch_size=100,
+    batch_size=300,
     rvs_selection_size=1,
-    sample_size=100
+    sample_size=30
 )
 
 visualize_1d_potential(p, domain, 0.3)

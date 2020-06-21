@@ -1,6 +1,5 @@
 from Graph import *
 import numpy as np
-from numpy.polynomial.hermite import hermgauss
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
@@ -133,7 +132,7 @@ class PseudoMLELearner:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
 
-            rv_proposal = [
+            rv_prior = [
                 self.trainable_rvs_prior[(rv, m)]
                 for m in batch
             ]
@@ -147,11 +146,11 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
-                    mu, sig = rv_proposal[k]
+                    mu, sig = rv_prior[k]
+                    samples = np.random.randn() * np.sqrt(sig) + mu
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
-                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = \
-                        self.quad_x * np.sqrt(2 * sig) + mu
+                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
 
                     data_idx_matrix[k, c] = current_idx + r
                     current_idx = next_idx
@@ -193,10 +192,9 @@ class PseudoMLELearner:
                     w += data_y_nn[f.potential][idx:idx + sample_size]
 
                 b = np.exp(w)
-                prior_diff = b - 1
+                prior_diff = b - 0.01
 
-                w /= np.sum(self.quad_w * b)
-                w *= self.quad_w
+                w /= np.sum(b)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
@@ -219,9 +217,6 @@ class PseudoMLELearner:
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
         """
-        self.quad_x, self.quad_w = hermgauss(sample_size)
-        self.quad_w /= np.sqrt(np.pi)
-
         adam = AdamOptimizer(lr)
         moments = dict()
         t = 0
