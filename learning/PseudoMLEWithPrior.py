@@ -5,6 +5,7 @@ import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import load, visualize_2d_potential, visualize_1d_potential
+import seaborn as sns
 
 
 class PseudoMLELearner:
@@ -28,12 +29,12 @@ class PseudoMLELearner:
             self.trainable_rvs |= rvs
         self.trainable_rvs -= g.condition_rvs
 
-        self.trainable_potential_proposal = self.initialize_factor_proposal()
-        self.trainable_rvs_proposal = dict()
+        self.initialize_factor_prior()
+        self.trainable_rvs_prior = dict()
 
         for p in self.trainable_potentials:
             domain = Domain([-10, 10], continuous=True)
-            visualize_2d_potential(p, domain, domain, 0.5)
+            visualize_1d_potential(p, domain, 0.5)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -56,7 +57,7 @@ class PseudoMLELearner:
 
         return rvs_dict, factors_dict
 
-    def initialize_factor_proposal(self):
+    def initialize_factor_prior(self):
         for p, fs in self.trainable_potential_factors_dict.items():
             assignment = np.empty([p.dimension, len(fs) * self.M])
 
@@ -66,9 +67,13 @@ class PseudoMLELearner:
                     assignment[:, idx] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.gaussian.set_parameters(np.mean(assignment, axis=1), np.cov(assignment))
+            p.gaussian.set_parameters(
+                np.mean(assignment, axis=1).reshape(-1),
+                np.cov(assignment).reshape(p.dimension, p.dimension)
+            )
+            # sns.jointplot(x=assignment[0], y=assignment[1], kind="kde")
 
-    def get_rvs_proposal(self, rvs, batch, res_dict=None):
+    def get_rvs_prior(self, rvs, batch, res_dict=None):
         if res_dict is None:
             res_dict = dict()
 
@@ -76,12 +81,12 @@ class PseudoMLELearner:
             for rv in rvs:
                 if (rv, m) in res_dict: continue  # Skip if already computed before
 
-                rv_proposal = None
+                rv_prior = None
                 for f in rv.nb:
-                    rv_proposal = f.potential.gaussian.slice(
+                    rv_prior = f.potential.gaussian.slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
-                    ) * rv_proposal
-                res_dict[(rv, m)] = (rv_proposal.mu.squeeze(), rv_proposal.sig.squeeze())
+                    ) * rv_prior
+                res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
 
         return res_dict
 
@@ -119,7 +124,7 @@ class PseudoMLELearner:
         ) for p in potential_count}
 
         # Compute variable proposal
-        self.get_rvs_proposal(rvs, batch, self.trainable_rvs_proposal)
+        self.get_rvs_prior(rvs, batch, self.trainable_rvs_prior)
 
         data_info = dict()  # rv as key, data indexing, shift, spacing as value
 
@@ -129,7 +134,7 @@ class PseudoMLELearner:
             data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
 
             rv_proposal = [
-                self.trainable_rvs_proposal[(rv, m)]
+                self.trainable_rvs_prior[(rv, m)]
                 for m in batch
             ]
 
@@ -169,18 +174,16 @@ class PseudoMLELearner:
             A dictionary with potential as key, and gradient as value.
         """
         data_y_nn = dict()  # A dictionary with a array of output value of the potential nn
-        data_y_gaussian = dict()  # A dictionary with a array of output value of the potential gaussian
 
         # Forward pass
         for potential, data_matrix in data_x.items():
             data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True).reshape(-1)
-            data_y_gaussian[potential] = potential.gaussian.batch_call(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.copy(data_y_gaussian[potential]).reshape(-1, 1) * alpha
+            gradient_y[potential] = np.ones(data_y_nn[potential].shape).reshape(-1, 1) * alpha
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
@@ -199,8 +202,7 @@ class PseudoMLELearner:
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
                         gradient_y[f.potential][idx:idx + sample_size, 0] = \
-                            -alpha * w * data_y_gaussian[f.potential][idx:idx + sample_size] + \
-                            (alpha - 1) * prior_diff * b
+                            -alpha * w + (alpha - 1) * prior_diff * b
 
         return gradient_y
 
@@ -267,7 +269,7 @@ class PseudoMLELearner:
                 t += 1
 
                 print(t)
-                if t % 100 == 0:
+                if t % 300 == 0:
                     for p in self.trainable_potentials:
-                        domain = Domain([-10, 10], continuous=True)
-                        visualize_2d_potential(p, domain, domain, 0.5)
+                        domain = Domain([-20, 20], continuous=True)
+                        visualize_1d_potential(p, domain, 0.5)

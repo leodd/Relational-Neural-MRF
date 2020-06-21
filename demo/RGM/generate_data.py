@@ -13,6 +13,6 @@ rel_g.ground_graph()
 
 data = dict()
 
-sample = generate_samples(rel_g, data, 1000, 30)
+sample = generate_samples(rel_g, data, 1000, 1000)
 
 save_data('rgm-joint', sample)

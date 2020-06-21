@@ -23,7 +23,7 @@ from utils import visualize_2d_potential
 # print(fun.table)
 # print(fun.slice(None, False).table)
 
-domain = Domain([-50, 50], continuous=True)
-visualize_2d_potential(GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]]), domain, domain, 2)
-visualize_2d_potential(GaussianFunction([0., 0.], [[10., 5.], [5., 10.]]), domain, domain, 2)
-visualize_2d_potential(GaussianFunction([0., 0.], [[10., 7.], [7., 10.]]), domain, domain, 2)
+domain = Domain([-10, 10], continuous=True)
+visualize_2d_potential(GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]]), domain, domain, 0.5)
+visualize_2d_potential(GaussianFunction([0., 0.], [[10., 5.], [5., 10.]]), domain, domain, 0.5)
+visualize_2d_potential(GaussianFunction([0., 0.], [[10., 7.], [7., 10.]]), domain, domain, 0.5)

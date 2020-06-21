@@ -17,12 +17,12 @@ def generate_rel_graph(*args):
 
     instance_category = []
     instance_bank = []
-    for i in range(100):
+    for i in range(1):
         instance_category.append(f'c{i}')
-    for i in range(10):
+    for i in range(1):
         instance_bank.append(f'b{i}')
 
-    d = Domain((-50, 50), continuous=True)
+    d = Domain((-10, 10), continuous=True)
 
     lv_recession = LV(('all',))
     lv_category = LV(instance_category)

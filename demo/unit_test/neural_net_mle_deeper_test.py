@@ -25,7 +25,7 @@ data = np.array(data)
 
 sns.distplot(data)
 
-nn = NeuralNetPotential(
+p = NeuralNetPotential(
     (1, 64, ReLU()),
     (64, 64, ReLU()),
     (64, 64, ReLU()),
@@ -50,13 +50,13 @@ def create_training_data(log=False):
     nn_data[:num_samples, 0] = points
     xs = points.reshape(-1, 1)
 
-    ys = nn.forward(xs, save_cache=False)
+    ys = p.forward(xs, save_cache=False)
     ys = ys.reshape(-1)
     ys_ = np.exp(ys)
     ys /= np.sum(ys_ * ws)
 
     if log:
-        visualize_1d_potential(nn, domain, 0.3, True)
+        visualize_1d_potential(p, domain, 0.3, True)
         # plt.plot(xs.reshape(-1), ys)
         # plt.show()
 
@@ -73,8 +73,8 @@ def create_training_data(log=False):
     return nn_data, nn_data_gradient
 
 
-visualize_1d_potential(nn, domain, 0.3, True)
-visualize_1d_potential(nn, domain, 0.3, False)
+visualize_1d_potential(p, domain, 0.3, True)
+visualize_1d_potential(p, domain, 0.3, False)
 
 lr = 0.001
 regular = 0.001
@@ -84,8 +84,8 @@ moments = dict()
 
 for t in range(1, 10000):
     x, d_y = create_training_data(t % 500 == 0)
-    nn.forward(x)
-    _, d_network = nn.backward(d_y)
+    p.forward(x)
+    _, d_network = p.backward(d_y)
 
     for layer, (d_W, d_b) in d_network.items():
         step, moment = adam(d_W - layer.W * regular, moments.get((layer, 'W'), (0, 0)), t)
@@ -101,5 +101,5 @@ for t in range(1, 10000):
 
     print(t)
 
-visualize_1d_potential(nn, domain, 0.3, True)
-visualize_1d_potential(nn, domain, 0.3, False)
+visualize_1d_potential(p, domain, 0.3, True)
+visualize_1d_potential(p, domain, 0.3, False)

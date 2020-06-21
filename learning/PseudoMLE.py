@@ -220,5 +220,5 @@ class PseudoMLELearner:
                 print(t)
                 if t % 100 == 0:
                     for p in self.trainable_potentials:
-                        domain = Domain([-50, 50], continuous=True)
-                        visualize_2d_potential(p, domain, domain, 2)
+                        domain = Domain([-15, 15], continuous=True)
+                        visualize_1d_potential(p, domain, 0.5)

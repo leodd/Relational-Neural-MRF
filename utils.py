@@ -163,7 +163,7 @@ def visualize_1d_potential(p, d, spacing=2):
     xs = np.arange(d.values[0], d.values[1], spacing)
     xs = xs.reshape(-1, 1)
 
-    ys = [p(x) for x in xs]
+    ys = [p(*x) for x in xs]
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

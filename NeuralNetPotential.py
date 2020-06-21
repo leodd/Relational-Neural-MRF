@@ -145,16 +145,19 @@ class LinearLayer:
         return d_x, (d_W, d_b)
 
 
-class NeuralNetPotential(NeuralNetFunction):
+class NeuralNetPotential(Function):
     """
     A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
     """
     def __init__(self, *args):
-        NeuralNetFunction.__init__(self, *args)
         self.dimension = args[0][0]  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(*args)
 
     def __call__(self, *parameters):
-        return np.exp(NeuralNetFunction.__call__(self, *parameters))
+        return np.exp(self.nn(*parameters))
+
+    def batch_call(self, x):
+        return np.exp(self.nn.forward(x, save_cache=False))
 
 
 class GaussianNeuralNetPotential(Function):
@@ -168,4 +171,6 @@ class GaussianNeuralNetPotential(Function):
 
     def __call__(self, *parameters):
         return np.exp(self.nn(*parameters)) * self.gaussian(*parameters)
-        # return np.exp(self.nn(*parameters))
+
+    def batch_call(self, x):
+        return np.exp(self.nn.forward(x, save_cache=False)) * self.gaussian.batch_call(x)
