@@ -34,17 +34,17 @@ for key, value in load_data('rgm-joint').items():
 
 leaner = PseudoMLELearner(g, {p1, p2, p3}, data)
 leaner.train(
-    lr=0.01,
-    alpha=0.8,
+    lr=0.0001,
+    alpha=0.999,
     regular=0.0001,
     max_iter=10000,
     batch_iter=20,
-    batch_size=300,
-    rvs_selection_size=100,
-    sample_size=20
+    batch_size=10,
+    rvs_selection_size=300,
+    sample_size=30
 )
 
-domain = Domain([-10, 10], continuous=True)
-visualize_2d_potential(p1, domain, domain, 2)
-visualize_2d_potential(p2, domain, domain, 2)
-visualize_2d_potential(p3, domain, domain, 2)
+domain = Domain([-20, 20], continuous=True)
+visualize_2d_potential(p1, domain, domain, 1)
+visualize_2d_potential(p2, domain, domain, 1)
+visualize_2d_potential(p3, domain, domain, 1)

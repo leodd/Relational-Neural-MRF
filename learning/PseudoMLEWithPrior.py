@@ -4,7 +4,7 @@ import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import load, visualize_2d_potential, visualize_1d_potential
-import seaborn as sns
+# import seaborn as sns
 
 
 class PseudoMLELearner:
@@ -32,8 +32,8 @@ class PseudoMLELearner:
         self.trainable_rvs_prior = dict()
 
         for p in self.trainable_potentials:
-            domain = Domain([-10, 10], continuous=True)
-            visualize_1d_potential(p, domain, 0.5)
+            domain = Domain([-20, 20], continuous=True)
+            visualize_1d_potential(p, domain, 1)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -68,9 +68,10 @@ class PseudoMLELearner:
 
             p.gaussian.set_parameters(
                 np.mean(assignment, axis=1).reshape(-1),
+                # np.eye(p.dimension) * 20
                 np.cov(assignment).reshape(p.dimension, p.dimension)
             )
-            # sns.jointplot(x=assignment[0], y=assignment[1], kind="kde")
+            # sns.jointplot(x=assignment[0], y=assignment[1])
 
     def get_rvs_prior(self, rvs, batch, res_dict=None):
         if res_dict is None:
@@ -192,7 +193,7 @@ class PseudoMLELearner:
                     w += data_y_nn[f.potential][idx:idx + sample_size]
 
                 b = np.exp(w)
-                prior_diff = b - 0.01
+                prior_diff = b - 1.0
 
                 w /= np.sum(b)
 

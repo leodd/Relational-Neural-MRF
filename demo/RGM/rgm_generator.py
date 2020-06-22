@@ -17,12 +17,12 @@ def generate_rel_graph(*args):
 
     instance_category = []
     instance_bank = []
-    for i in range(1):
+    for i in range(100):
         instance_category.append(f'c{i}')
-    for i in range(1):
+    for i in range(10):
         instance_bank.append(f'b{i}')
 
-    d = Domain((-10, 10), continuous=True)
+    d = Domain((-20, 20), continuous=True)
 
     lv_recession = LV(('all',))
     lv_category = LV(instance_category)
@@ -107,10 +107,19 @@ def load_data(f):
 
 
 if __name__ == "__main__":
-    rel_g = generate_rel_graph()
-    data = generate_observation(rel_g, 0.2)
-    # for i in range(5):
-    #     # evidence_ratio = np.random.uniform(0.05, 0.2)
-    #     evidence_ratio = 0.2
-    #     f = str(i)
-    #     generate_data(f, rel_g, evidence_ratio)
+    rel_g = generate_rel_graph(
+        GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]]),
+        GaussianFunction([0., 0.], [[10., 5.], [5., 10.]]),
+        GaussianFunction([0., 0.], [[10., 7.], [7., 10.]]),
+    )
+    rel_g.ground_graph()
+
+    # data = {
+    #     ('recession', 'all'): 25
+    # }
+
+    data = dict()
+
+    sample = generate_samples(rel_g, data, 1000, 100)
+
+    save_data('rgm-joint', sample)
