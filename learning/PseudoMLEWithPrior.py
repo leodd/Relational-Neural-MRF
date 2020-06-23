@@ -4,7 +4,7 @@ import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import load, visualize_2d_potential, visualize_1d_potential
-# import seaborn as sns
+import seaborn as sns
 
 
 class PseudoMLELearner:
@@ -32,8 +32,8 @@ class PseudoMLELearner:
         self.trainable_rvs_prior = dict()
 
         for p in self.trainable_potentials:
-            domain = Domain([-20, 20], continuous=True)
-            visualize_1d_potential(p, domain, 1)
+            domain = Domain([0, 1], continuous=True)
+            visualize_2d_potential(p, domain, domain, 0.05)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -267,5 +267,5 @@ class PseudoMLELearner:
                 print(t)
                 if t % 300 == 0:
                     for p in self.trainable_potentials:
-                        domain = Domain([-20, 20], continuous=True)
-                        visualize_1d_potential(p, domain, 0.5)
+                        domain = Domain([0, 1], continuous=True)
+                        visualize_2d_potential(p, domain, domain, 0.05)

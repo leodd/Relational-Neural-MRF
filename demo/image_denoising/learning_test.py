@@ -1,24 +1,24 @@
 from utils import save, visualize_2d_potential
 from Graph import *
-from NeuralNetPotential import NeuralNetPotential, ReLU
-from learning.PseudoMLE import PseudoMLELearner
+from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
+from learning.PseudoMLEWithPrior import PseudoMLELearner
 from demo.image_denoising.image_data_loader import load_data
 
 
-gt_data, noisy_data = load_data('data/gt', 'data/noise')
+gt_data, noisy_data = load_data('gt', 'noise')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = NeuralNetPotential(
+pxo = GaussianNeuralNetPotential(
     (2, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
 )
 
-pxy = NeuralNetPotential(
+pxy = GaussianNeuralNetPotential(
     (2, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
@@ -71,23 +71,23 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-visualize_2d_potential(pxo, domain, domain, 0.05)
-visualize_2d_potential(pxy, domain, domain, 0.05)
+# visualize_2d_potential(pxo, domain, domain, 0.05)
+# visualize_2d_potential(pxy, domain, domain, 0.05)
 
 leaner = PseudoMLELearner(g, {pxo, pxy}, data)
 leaner.train(
     lr=0.001,
-    alpha=0.5,
-    regular=0.001,
+    alpha=0.999,
+    regular=0.0001,
     max_iter=10000,
     batch_iter=20,
-    batch_size=30,
+    batch_size=20,
     rvs_selection_size=1000,
-    sample_size=20
+    sample_size=30
 )
 
-visualize_2d_potential(pxo, domain, domain, 0.05)
-visualize_2d_potential(pxy, domain, domain, 0.05)
+# visualize_2d_potential(pxo, domain, domain, 0.05)
+# visualize_2d_potential(pxy, domain, domain, 0.05)
 
 save(
     'demo/image_denoising/learned-potentials',
