@@ -71,10 +71,7 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-# visualize_2d_potential(pxo, domain, domain, 0.05)
-# visualize_2d_potential(pxy, domain, domain, 0.05)
-
-leaner = PseudoMLELearner(g, {pxo, pxy}, data)
+leaner = PseudoMLELearner(g, [pxo, pxy], data)
 leaner.train(
     lr=0.001,
     alpha=0.999,
@@ -83,13 +80,6 @@ leaner.train(
     batch_iter=20,
     batch_size=20,
     rvs_selection_size=1000,
-    sample_size=30
-)
-
-# visualize_2d_potential(pxo, domain, domain, 0.05)
-# visualize_2d_potential(pxy, domain, domain, 0.05)
-
-save(
-    'demo/image_denoising/learned-potentials',
-    pxo, pxy
+    sample_size=30,
+    save_dir='learned_potentials'
 )

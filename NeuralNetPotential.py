@@ -46,6 +46,25 @@ class NeuralNetFunction(Function):
 
         self.cache = None  # Cache for storing the forward propagation results
 
+    def set_parameters(self, parameters):
+        idx = 0
+
+        for layer in self.layers:
+            if type(layer) is LinearLayer:
+                layer.W, layer.b = parameters[idx]
+                idx += 1
+
+    def model_parameters(self):
+        parameters = list()
+
+        for layer in self.layers:
+            if type(layer) is LinearLayer:
+                parameters.append(
+                    (layer.W, layer.b)
+                )
+
+        return parameters
+
     def __call__(self, *parameters):
         x = np.array(parameters, dtype=float)
         x = x[np.newaxis]
@@ -159,6 +178,12 @@ class NeuralNetPotential(Function):
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False))
 
+    def set_parameters(self, parameters):
+        self.nn.set_parameters(parameters)
+
+    def model_parameters(self):
+        return self.nn.model_parameters()
+
 
 class GaussianNeuralNetPotential(Function):
     """
@@ -174,3 +199,13 @@ class GaussianNeuralNetPotential(Function):
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)) * self.gaussian.batch_call(x)
+
+    def set_parameters(self, parameters):
+        self.nn.set_parameters(parameters[0])
+        self.gaussian.set_parameters(*parameters[1])
+
+    def model_parameters(self):
+        return (
+            self.nn.model_parameters(),
+            (self.gaussian.mu, self.gaussian.sig)
+        )

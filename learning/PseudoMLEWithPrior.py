@@ -3,7 +3,8 @@ import numpy as np
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
-from utils import load, visualize_2d_potential, visualize_1d_potential
+from utils import save, load, visualize_2d_potential, visualize_1d_potential
+import os
 import seaborn as sns
 
 
@@ -12,11 +13,12 @@ class PseudoMLELearner:
         """
         Args:
             g: The Graph object.
-            trainable_potentials: A set of potential functions that need to be trained.
+            trainable_potentials: A list of potential functions that need to be trained.
             data: A dictionary that maps each rv to a list of m observed data (list could contain None elements).
         """
         self.g = g
-        self.trainable_potentials = trainable_potentials
+        self.trainable_potentials_ordered = trainable_potentials
+        self.trainable_potentials = set(trainable_potentials)
         self.data = data
 
         self.M = len(self.data[next(iter(self.data))])  # Number of data frame
@@ -206,7 +208,8 @@ class PseudoMLELearner:
         return gradient_y
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
-              max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10):
+              max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
+              save_dir=None, save_period=1000):
         """
         Args:
             lr: Learning rate.
@@ -217,6 +220,7 @@ class PseudoMLELearner:
             batch_size: The number of data frame in a mini batch.
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
+            save_dir: The directory for the saved potentials.
         """
         adam = AdamOptimizer(lr)
         moments = dict()
@@ -265,7 +269,14 @@ class PseudoMLELearner:
                 t += 1
 
                 print(t)
-                if t % 300 == 0:
-                    for p in self.trainable_potentials:
+                if t % 100 == 0:
+                    for p in self.trainable_potentials_ordered:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential(p, domain, domain, 0.05)
+
+                if t % save_period == 0:
+                    model_parameters = [p.model_parameters() for p in self.trainable_potentials_ordered]
+                    save(os.path.join(save_dir, str(t)), *model_parameters)
+
+        model_parameters = [p.model_parameters() for p in self.trainable_potentials_ordered]
+        save(os.path.join(save_dir, str(t)), *model_parameters)

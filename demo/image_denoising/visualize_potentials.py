@@ -1,14 +1,28 @@
 from utils import load, visualize_2d_potential
 from Graph import Domain
+from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
 
-
-pxo, pxy = load(
-    'learned-potentials'
-)
 
 domain = Domain([0, 1], continuous=True)
 
-is_exp = True
+pxo = GaussianNeuralNetPotential(
+    (2, 64, ReLU()),
+    (64, 32, ReLU()),
+    (32, 1, None)
+)
 
-visualize_2d_potential(pxo, domain, domain, 0.05, is_exp)
-visualize_2d_potential(pxy, domain, domain, 0.05, is_exp)
+pxy = GaussianNeuralNetPotential(
+    (2, 64, ReLU()),
+    (64, 32, ReLU()),
+    (32, 1, None)
+)
+
+pxo_params, pxy_params = load(
+    'learned_potentials/test'
+)
+
+pxo.set_parameters(pxo_params)
+pxy.set_parameters(pxy_params)
+
+visualize_2d_potential(pxo, domain, domain, 0.05)
+visualize_2d_potential(pxy, domain, domain, 0.05)
