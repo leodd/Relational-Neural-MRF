@@ -163,7 +163,7 @@ def visualize_1d_potential(p, d, spacing=2):
     xs = np.arange(d.values[0], d.values[1], spacing)
     xs = xs.reshape(-1, 1)
 
-    ys = [p(*x) for x in xs]
+    ys = p.batch_call(xs)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -180,7 +180,7 @@ def visualize_2d_potential(p, d1, d2, spacing=2):
     x1, x2 = np.meshgrid(d1, d2)
     xs = np.array([x1, x2]).T.reshape(-1, 2)
 
-    ys = [p(*x) for x in xs]
+    ys = p.batch_call(xs)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -191,17 +191,14 @@ def visualize_2d_potential(p, d1, d2, spacing=2):
     plt.show()
 
 
-def visualize_1d_neural_net_torch(nn, d, spacing=2, is_exp=True):
-    device = next(nn.parameters()).device
+def visualize_1d_potential_torch(p, d, spacing=2):
+    device = next(p.parameters()).device
 
     xs = torch.arange(d.values[0], d.values[1], spacing, device=device)
     xs = xs.reshape(-1, 1)
 
     with torch.no_grad():
-        ys = nn(xs)
-
-        if is_exp:
-            ys = torch.exp(ys)
+        ys = p.batch_call(xs)
 
     xs = xs.cpu().numpy()
     ys = ys.cpu().numpy()
@@ -214,8 +211,8 @@ def visualize_1d_neural_net_torch(nn, d, spacing=2, is_exp=True):
     plt.show()
 
 
-def visualize_2d_neural_net_torch(nn, d1, d2, spacing=2, is_exp=True):
-    device = next(nn.parameters()).device
+def visualize_2d_potential_torch(p, d1, d2, spacing=2):
+    device = next(p.parameters()).device
 
     d1 = np.arange(d1.values[0], d1.values[1], spacing)
     d2 = np.arange(d2.values[0], d2.values[1], spacing)
@@ -226,10 +223,7 @@ def visualize_2d_neural_net_torch(nn, d1, d2, spacing=2, is_exp=True):
     xs = torch.FloatTensor(xs).to(device)
 
     with torch.no_grad():
-        ys = nn(xs)
-
-        if is_exp:
-            ys = torch.exp(ys)
+        ys = p.batch_call(xs)
 
     ys = ys.cpu().numpy()
 

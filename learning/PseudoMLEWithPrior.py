@@ -150,7 +150,7 @@ class PseudoMLELearner:
                     next_idx = current_idx + sample_size + r
 
                     mu, sig = rv_prior[k]
-                    samples = np.random.randn() * np.sqrt(sig) + mu
+                    samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
@@ -274,9 +274,10 @@ class PseudoMLELearner:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential(p, domain, domain, 0.05)
 
-                if t % save_period == 0:
-                    model_parameters = [p.model_parameters() for p in self.trainable_potentials_ordered]
+                if save_dir is not None and t % save_period == 0:
+                    model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
                     save(os.path.join(save_dir, str(t)), *model_parameters)
 
-        model_parameters = [p.model_parameters() for p in self.trainable_potentials_ordered]
-        save(os.path.join(save_dir, str(t)), *model_parameters)
+        if save_dir is not None:
+            model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
+            save(os.path.join(save_dir, str(t)), *model_parameters)

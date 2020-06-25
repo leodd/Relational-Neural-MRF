@@ -54,7 +54,7 @@ class NeuralNetFunction(Function):
                 layer.W, layer.b = parameters[idx]
                 idx += 1
 
-    def model_parameters(self):
+    def parameters(self):
         parameters = list()
 
         for layer in self.layers:
@@ -181,8 +181,8 @@ class NeuralNetPotential(Function):
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters)
 
-    def model_parameters(self):
-        return self.nn.model_parameters()
+    def parameters(self):
+        return self.nn.parameters()
 
 
 class GaussianNeuralNetPotential(Function):
@@ -204,8 +204,8 @@ class GaussianNeuralNetPotential(Function):
         self.nn.set_parameters(parameters[0])
         self.gaussian.set_parameters(*parameters[1])
 
-    def model_parameters(self):
+    def parameters(self):
         return (
-            self.nn.model_parameters(),
+            self.nn.parameters(),
             (self.gaussian.mu, self.gaussian.sig)
         )

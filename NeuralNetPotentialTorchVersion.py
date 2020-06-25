@@ -2,6 +2,7 @@ from Function import Function
 import numpy as np
 import torch
 import torch.nn as nn
+from Potentials import GaussianFunction
 
 
 class NeuralNetModule(nn.Module):
@@ -50,17 +51,53 @@ class NeuralNetPotential(Function):
         self.nn = NeuralNetModule(*args)  # The wrapped neural net
         self.nn.to(device)  # Place the network on specified device
 
-        self.out = None  # The cache out the forward output tensor
+        self.out = None  # The cache for the batch call output
 
     def parameters(self):
-        return self.nn.parameters()
+        return self.nn.state_dict()
+
+    def set_parameters(self, parameters):
+        self.nn.load_state_dict(parameters)
 
     def __call__(self, *parameters):
-        return torch.exp(self.nn(parameters))
+        x = torch.Tensor(parameters).reshape(1, -1).to(self.device)
+        return torch.exp(self.nn(x)).reshape(-1)
 
-    def forward(self, x):
-        self.out = self.nn(x)
-        return self.out
+    def bath_call(self, x):
+        return torch.exp(self.nn(x))
 
-    def backward(self, d_y):
-        return self.out.backward(d_y)
+
+class GaussianNeuralNetPotential(Function):
+    """
+    A wrapper for PyTorch neural net, such that the function call will return the value of exp(nn(x)).
+    """
+    def __init__(self, *args, device=None):
+        Function.__init__(self)
+        self.dimension = args[0][0]  # The dimension of the input parameters
+
+        if device is None:
+            self.device = torch.device('cpu')
+        else:
+            self.device = device
+
+        self.nn = NeuralNetModule(*args)  # The wrapped neural net
+        self.nn.to(device)  # Place the network on specified device
+
+        self.gaussian = GaussianFunction(np.ones(self.dimension), np.eye(self.dimension))
+
+    def parameters(self):
+        return (
+            self.nn.state_dict(),
+            (self.gaussian.mu, self.gaussian.sig)
+        )
+
+    def set_parameters(self, parameters):
+        self.nn.load_state_dict(parameters[0])
+        self.gaussian.set_parameters(*parameters[1])
+
+    def __call__(self, *parameters):
+        x = torch.FloatTensor(parameters).reshape(1, -1).to(self.device)
+        return torch.exp(self.nn(x)).reshape(-1) * torch.from_numpy(self.gaussian(*parameters)).float()
+
+    def bath_call(self, x):
+        return torch.exp(self.nn(x)) * torch.from_numpy(self.gaussian.batch_call(x)).float()

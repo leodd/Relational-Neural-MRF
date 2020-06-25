@@ -3,7 +3,9 @@ import numpy as np
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
-from utils import load, visualize_2d_potential, visualize_1d_potential
+from utils import save, load, visualize_2d_potential, visualize_1d_potential
+import os
+import seaborn as sns
 
 
 class PseudoMLELearner:
@@ -11,24 +13,25 @@ class PseudoMLELearner:
         """
         Args:
             g: The Graph object.
-            trainable_potentials: A set of potential functions that need to be trained.
+            trainable_potentials: A list of potential functions that need to be trained.
             data: A dictionary that maps each rv to a list of m observed data (list could contain None elements).
         """
         self.g = g
-        self.trainable_potentials = trainable_potentials
+        self.trainable_potentials_ordered = trainable_potentials
+        self.trainable_potentials = set(trainable_potentials)
         self.data = data
 
         self.M = len(self.data[next(iter(self.data))])  # Number of data frame
-        self.latent_rvs = g.rvs - g.condition_rvs
-        self.trainable_potential_rvs_dict = self.get_potential_rvs_dict(g, trainable_potentials)
+        self.trainable_potential_rvs_dict, self.trainable_potential_factors_dict \
+            = self.get_potential_rvs_factors_dict(g, trainable_potentials)
 
-        self.rvs_trainable = set()
+        self.trainable_rvs = set()
         for _, rvs in self.trainable_potential_rvs_dict.items():
-            self.rvs_trainable |= rvs
-        self.rvs_trainable -= g.condition_rvs
+            self.trainable_rvs |= rvs
+        self.trainable_rvs -= g.condition_rvs
 
     @staticmethod
-    def get_potential_rvs_dict(g, potentials):
+    def get_potential_rvs_factors_dict(g, potentials):
         """
         Args:
             g: The Graph object.
@@ -36,14 +39,17 @@ class PseudoMLELearner:
 
         Returns:
             A dictionary with potential as key and a set of rv as value.
+            & A dictionary with potential as key and a set of factor as value.
         """
-        res = {p: set() for p in potentials}
+        rvs_dict = {p: set() for p in potentials}
+        factors_dict = {p: set() for p in potentials}
 
         for f in g.factors:  # Add all neighboring rvs
             if f.potential in potentials:
-                res[f.potential].update(f.nb)
+                rvs_dict[f.potential].update(f.nb)
+                factors_dict[f.potential].add(f)
 
-        return res
+        return rvs_dict, factors_dict
 
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
@@ -54,7 +60,7 @@ class PseudoMLELearner:
 
         Returns:
             A dictionary with potential as key, and data pairs (x, y) as value.
-            Also the data indexing, shift and spacing information.
+            Also the data indexing information.
         """
         potential_count = Counter()  # A counter of potential occurrence
         f_MB = dict()  # A dictionary with factor as key, and local assignment vector as value
@@ -85,11 +91,6 @@ class PseudoMLELearner:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
 
-            samples = np.linspace(rv.domain.values[0], rv.domain.values[1], num=sample_size)
-
-            shift = np.random.random(K)
-            s = (rv.domain.values[1] - rv.domain.values[0]) / (sample_size - 1)
-
             for c, f in enumerate(rv.nb):
                 rv_idx = f.nb.index(rv)
                 r = 1 if f.potential in self.trainable_potentials else 0
@@ -99,17 +100,17 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
+                    samples = np.random.uniform(rv.domain.values[0], rv.domain.values[1], sample_size)
+
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
-                    temp = samples + shift[k] * s
-                    temp[0], temp[-1] = samples[0] + shift[k] * s * 0.5, samples[-1] - (1 - shift[k]) * s * 0.5
-                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = temp
+                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
 
                     data_idx_matrix[k, c] = current_idx + r
                     current_idx = next_idx
 
                 current_idx_counter[f.potential] = current_idx
 
-            data_info[rv] = data_idx_matrix, shift, s
+            data_info[rv] = data_idx_matrix
 
         return (data_x, data_info)
 
@@ -124,42 +125,41 @@ class PseudoMLELearner:
         Returns:
             A dictionary with potential as key, and gradient as value.
         """
-        data_y = dict()  # A dictionary with a array of output value of the potential functions
+        data_y_nn = dict()  # A dictionary with a array of output value of the potential nn
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y[potential] = potential.forward(data_matrix, save_cache=True)
+            data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True).reshape(-1)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.ones(data_y[potential].shape) * alpha
+            gradient_y[potential] = np.ones(data_y_nn[potential].shape).reshape(-1, 1) * alpha
 
-        for rv, (data_idx, shift, s) in data_info.items():
-            for start_idx, shift_k in zip(data_idx, shift):
+        for rv, data_idx in data_info.items():
+            for start_idx in data_idx:
                 w = np.zeros(sample_size)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y[f.potential][idx:idx + sample_size, 0]
+                    w += data_y_nn[f.potential][idx:idx + sample_size]
 
                 b = np.exp(w)
                 prior_diff = b - 1 / (rv.domain.values[1] - rv.domain.values[0])
 
-                w = b * s
-                w[0] *= shift_k
-                w[-1] *= (1 - shift_k)
-                w /= np.sum(w)
+                w /= np.sum(b)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = -alpha * w + (alpha - 1) * prior_diff * b
+                        gradient_y[f.potential][idx:idx + sample_size, 0] = \
+                            -alpha * w + (alpha - 1) * prior_diff * b
 
         return gradient_y
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
-              max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10):
+              max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
+              save_dir=None, save_period=1000):
         """
         Args:
             lr: Learning rate.
@@ -170,6 +170,7 @@ class PseudoMLELearner:
             batch_size: The number of data frame in a mini batch.
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
+            save_dir: The directory for the saved potentials.
         """
         adam = AdamOptimizer(lr)
         moments = dict()
@@ -186,8 +187,8 @@ class PseudoMLELearner:
 
             # And sample a subset of rvs
             rvs = random.sample(
-                self.rvs_trainable,
-                min(rvs_selection_size, len(self.rvs_trainable))
+                self.trainable_rvs,
+                min(rvs_selection_size, len(self.trainable_rvs))
             )
 
             # The computed data set for training the potential function
@@ -200,7 +201,7 @@ class PseudoMLELearner:
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    _, d_param = potential.backward(d_y)
+                    _, d_param = potential.nn.backward(d_y)
 
                     c = (sample_size - 1) / d_y.shape[0]
 
@@ -219,6 +220,14 @@ class PseudoMLELearner:
 
                 print(t)
                 if t % 100 == 0:
-                    for p in self.trainable_potentials:
-                        domain = Domain([-15, 15], continuous=True)
-                        visualize_1d_potential(p, domain, 0.5)
+                    for p in self.trainable_potentials_ordered:
+                        domain = Domain([0, 1], continuous=True)
+                        visualize_2d_potential(p, domain, domain, 0.05)
+
+                if save_dir is not None and t % save_period == 0:
+                    model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
+                    save(os.path.join(save_dir, str(t)), *model_parameters)
+
+        if save_dir is not None:
+            model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
+            save(os.path.join(save_dir, str(t)), *model_parameters)

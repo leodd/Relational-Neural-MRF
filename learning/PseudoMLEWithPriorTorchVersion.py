@@ -37,6 +37,9 @@ class PseudoMLELearner:
             self.trainable_rvs |= rvs
         self.trainable_rvs -= g.condition_rvs
 
+        self.initialize_factor_prior()
+        self.trainable_rvs_prior = dict()
+
         for p in self.trainable_potentials:
             domain = Domain([0, 1], continuous=True)
             visualize_2d_potential_torch(p, domain, domain, 0.05)
@@ -61,6 +64,39 @@ class PseudoMLELearner:
                 factors_dict[f.potential].add(f)
 
         return rvs_dict, factors_dict
+
+    def initialize_factor_prior(self):
+        for p, fs in self.trainable_potential_factors_dict.items():
+            assignment = np.empty([p.dimension, len(fs) * self.M])
+
+            idx = 0
+            for f in fs:
+                for m in range(self.M):
+                    assignment[:, idx] = [self.data[rv][m] for rv in f.nb]
+                    idx += 1
+
+            p.gaussian.set_parameters(
+                np.mean(assignment, axis=1).reshape(-1),
+                # np.eye(p.dimension) * 20
+                np.cov(assignment).reshape(p.dimension, p.dimension)
+            )
+
+    def get_rvs_prior(self, rvs, batch, res_dict=None):
+        if res_dict is None:
+            res_dict = dict()
+
+        for m in batch:
+            for rv in rvs:
+                if (rv, m) in res_dict: continue  # Skip if already computed before
+
+                rv_prior = None
+                for f in rv.nb:
+                    rv_prior = f.potential.gaussian.slice(
+                        *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
+                    ) * rv_prior
+                res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
+
+        return res_dict
 
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
@@ -96,12 +132,20 @@ class PseudoMLELearner:
             device=self.device
         ) for p in potential_count}
 
+        # Compute variable proposal
+        self.get_rvs_prior(rvs, batch, self.trainable_rvs_prior)
+
         data_info = dict()  # rv as key, data indexing, shift, spacing as value
 
         current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = torch.empty([K, len(rv.nb)], dtype=torch.int32)
+
+            rv_prior = [
+                self.trainable_rvs_prior[(rv, m)]
+                for m in batch
+            ]
 
             for c, f in enumerate(rv.nb):
                 rv_idx = f.nb.index(rv)
@@ -112,8 +156,8 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
-                    samples = torch.rand(sample_size) * (rv.domain.values[1] - rv.domain.values[0]) \
-                              + rv.domain.values[0]
+                    mu, sig = rv_prior[k]
+                    samples = torch.randn(sample_size) * torch.sqrt(sig) + mu
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
@@ -158,7 +202,7 @@ class PseudoMLELearner:
                     w += data_y_nn[f.potential][idx:idx + sample_size]
 
                 b = torch.exp(w)
-                prior_diff = b - 1 / (rv.domain.values[1] - rv.domain.values[0])
+                prior_diff = b - 1.0
 
                 w /= torch.sum(b)
 
