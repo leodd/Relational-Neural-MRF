@@ -18,7 +18,7 @@ pxy = GaussianNeuralNetPotential(
 )
 
 pxo_params, pxy_params = load(
-    'demo/image_denoising/learned_potentials/model_1/3000'
+    'learned_potentials/model_1/9000'
 )
 
 pxo.set_parameters(pxo_params)

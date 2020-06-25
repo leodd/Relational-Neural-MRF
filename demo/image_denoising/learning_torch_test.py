@@ -1,4 +1,4 @@
-from utils import visualize_2d_neural_net_torch
+from utils import visualize_2d_potential_torch
 import torch
 import torch.nn as nn
 from Graph import *
