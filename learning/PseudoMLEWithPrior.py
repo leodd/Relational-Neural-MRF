@@ -70,7 +70,6 @@ class PseudoMLELearner:
 
             p.gaussian.set_parameters(
                 np.mean(assignment, axis=1).reshape(-1),
-                # np.eye(p.dimension) * 20
                 np.cov(assignment).reshape(p.dimension, p.dimension)
             )
             # sns.jointplot(x=assignment[0], y=assignment[1])

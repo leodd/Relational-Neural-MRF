@@ -63,7 +63,7 @@ class NeuralNetPotential(Function):
         x = torch.Tensor(parameters).reshape(1, -1).to(self.device)
         return torch.exp(self.nn(x)).reshape(-1)
 
-    def bath_call(self, x):
+    def batch_call(self, x):
         return torch.exp(self.nn(x))
 
 
@@ -97,7 +97,8 @@ class GaussianNeuralNetPotential(Function):
 
     def __call__(self, *parameters):
         x = torch.FloatTensor(parameters).reshape(1, -1).to(self.device)
-        return torch.exp(self.nn(x)).reshape(-1) * torch.from_numpy(self.gaussian(*parameters)).float()
+        return torch.exp(self.nn(x)).reshape(-1) * torch.from_numpy(self.gaussian(*parameters)).float().to(self.device)
 
-    def bath_call(self, x):
-        return torch.exp(self.nn(x)) * torch.from_numpy(self.gaussian.batch_call(x)).float()
+    def batch_call(self, x):
+        return torch.exp(self.nn(x)) * \
+               torch.from_numpy(self.gaussian.batch_call(x.cpu().numpy())).float().to(self.device)

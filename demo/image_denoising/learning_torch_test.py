@@ -2,12 +2,12 @@ from utils import visualize_2d_potential_torch
 import torch
 import torch.nn as nn
 from Graph import *
-from NeuralNetPotentialTorchVersion import NeuralNetPotential
-from learning.PseudoMLETorchVersion import PseudoMLELearner
+from NeuralNetPotentialTorchVersion import GaussianNeuralNetPotential
+from learning.PseudoMLEWithPriorTorchVersion import PseudoMLELearner
 from demo.image_denoising.image_data_loader import load_data
 
 
-gt_data, noisy_data = load_data('data/gt', 'data/noise')
+gt_data, noisy_data = load_data('gt', 'noise')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
@@ -16,14 +16,14 @@ domain = Domain([0, 1], continuous=True)
 
 device = torch.device('cuda:0')
 
-pxo = NeuralNetPotential(
+pxo = GaussianNeuralNetPotential(
     (2, 64, nn.ReLU()),
     (64, 32, nn.ReLU()),
     (32, 1, None),
     device=device
 )
 
-pxy = NeuralNetPotential(
+pxy = GaussianNeuralNetPotential(
     (2, 64, nn.ReLU()),
     (64, 32, nn.ReLU()),
     (32, 1, None),
@@ -77,20 +77,15 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-visualize_2d_neural_net_torch(pxo.nn, domain, domain, 5)
-visualize_2d_neural_net_torch(pxy.nn, domain, domain, 5)
-
-leaner = PseudoMLELearner(g, {pxo, pxy}, data, device=device)
+leaner = PseudoMLELearner(g, [pxo, pxy], data, device=device)
 leaner.train(
     lr=0.001,
-    alpha=0.3,
+    alpha=0.999,
     regular=0.001,
     max_iter=10000,
-    batch_iter=10,
-    batch_size=1,
+    batch_iter=20,
+    batch_size=20,
     rvs_selection_size=1000,
-    sample_size=20
+    sample_size=30,
+    save_dir='learned_potentials/model_1_torch'
 )
-
-visualize_2d_neural_net_torch(pxo.nn, domain, domain, 5)
-visualize_2d_neural_net_torch(pxy.nn, domain, domain, 5)

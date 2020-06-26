@@ -37,10 +37,6 @@ class PseudoMLELearner:
             self.trainable_rvs |= rvs
         self.trainable_rvs -= g.condition_rvs
 
-        for p in self.trainable_potentials:
-            domain = Domain([0, 1], continuous=True)
-            visualize_2d_potential_torch(p, domain, domain, 0.05)
-
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
         """
@@ -142,7 +138,7 @@ class PseudoMLELearner:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y_nn[potential] = potential.nn(data_matrix).data
+            data_y_nn[potential] = potential.nn(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
@@ -152,13 +148,13 @@ class PseudoMLELearner:
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
-                w = torch.zeros(sample_size)
+                w = torch.zeros(sample_size, device=self.device)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y_nn[f.potential][idx:idx + sample_size]
+                    w += data_y_nn[f.potential].data[idx:idx + sample_size].reshape(-1)
 
                 b = torch.exp(w)
-                prior_diff = b - 1 / (rv.domain.values[1] - rv.domain.values[0])
+                prior_diff = b - 1.0 / (rv.domain.values[1] - rv.domain.values[0])
 
                 w /= torch.sum(b)
 
@@ -168,7 +164,7 @@ class PseudoMLELearner:
                         gradient_y[f.potential][idx:idx + sample_size, 0] = \
                             -alpha * w + (alpha - 1) * prior_diff * b
 
-        return gradient_y
+        return gradient_y, data_y_nn
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
@@ -213,19 +209,17 @@ class PseudoMLELearner:
 
             i = 0
             while i < batch_iter and t < max_iter:
-                gradient_y = self.get_gradient(data_x, data_info, sample_size, alpha)
+                for potential in self.trainable_potentials:
+                    optimizers[potential].zero_grad()
+
+                gradient_y, data_y_nn = self.get_gradient(data_x, data_info, sample_size, alpha)
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    optimizer = optimizers[potential]
-                    optimizer.zero_grad()
-
                     c = (sample_size + 1) / d_y.shape[0]
-                    potential.nn.backward(-d_y * c)
+                    data_y_nn[potential].backward(-d_y * c)
 
-                    optimizer.step()
-
-                    del potential.out
+                    optimizers[potential].step()
 
                 i += 1
                 t += 1
@@ -236,9 +230,10 @@ class PseudoMLELearner:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential_torch(p, domain, domain, 0.05)
 
-                if t % save_period == 0:
+                if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
                     save(os.path.join(save_dir, str(t)), *model_parameters)
 
-        model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
-        save(os.path.join(save_dir, str(t)), *model_parameters)
+        if save_dir is not None:
+            model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
+            save(os.path.join(save_dir, str(t)), *model_parameters)

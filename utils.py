@@ -192,7 +192,7 @@ def visualize_2d_potential(p, d1, d2, spacing=2):
 
 
 def visualize_1d_potential_torch(p, d, spacing=2):
-    device = next(p.parameters()).device
+    device = next(p.nn.parameters()).device
 
     xs = torch.arange(d.values[0], d.values[1], spacing, device=device)
     xs = xs.reshape(-1, 1)
@@ -212,7 +212,7 @@ def visualize_1d_potential_torch(p, d, spacing=2):
 
 
 def visualize_2d_potential_torch(p, d1, d2, spacing=2):
-    device = next(p.parameters()).device
+    device = next(p.nn.parameters()).device
 
     d1 = np.arange(d1.values[0], d1.values[1], spacing)
     d2 = np.arange(d2.values[0], d2.values[1], spacing)
