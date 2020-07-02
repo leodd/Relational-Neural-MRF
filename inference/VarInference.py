@@ -9,7 +9,7 @@ from optimization_tools import AdamOptimizer
 
 
 class VarInference:
-    var_threshold = 0.1
+    var_threshold = 0.01
 
     def __init__(self, g, num_mixtures=5, num_quadrature_points=3):
         self.g = g
@@ -203,10 +203,10 @@ class VarInference:
                 continue
             elif rv.domain.continuous:
                 temp = np.ones((self.K, 2))
-                temp[:, 0] = np.random.rand(self.K) * 3 - 1.5
+                temp[:, 0] = np.random.rand(self.K) * 100
                 self.eta[rv] = temp
             else:
-                self.eta_tau[rv] = np.random.rand(self.K, len(rv.domain.values)) * 10
+                self.eta_tau[rv] = np.random.rand(self.K, len(rv.domain.values))
 
         # update w and categorical distribution
         self.w = self.softmax(self.w_tau)

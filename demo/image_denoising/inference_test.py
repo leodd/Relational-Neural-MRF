@@ -2,25 +2,44 @@ import matplotlib.image as img
 from utils import show_images, load
 import numpy as np
 from Graph import *
+from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
 from Potentials import ImageNodePotential, ImageEdgePotential
 from inference.VarInference import VarInference
+from inference.EPBPLogVersion import EPBP
 
-gt_image = img.imread('data/ground-true-image.png')
-gt_image = gt_image[:, :, 0] * 100
+gt_image = img.imread('ground-true-image.png')
+gt_image = gt_image[:, :, 0]
 
-noisy_image = img.imread('data/noisy-image.png')
-noisy_image = noisy_image[:, :, 0] * 100
+noisy_image = img.imread('noisy-image.png')
+noisy_image = noisy_image[:, :, 0]
 
 row = gt_image.shape[0]
 col = gt_image.shape[1]
 
-domain = Domain([-30, 130], continuous=True)
+domain = Domain([0, 1], continuous=True)
+domain.integral_points = np.linspace(domain.values[0], domain.values[1], 50)
 
 # pxo = ImageNodePotential(0, 5)
 # pxy = ImageEdgePotential(0, 3.5, 25)
-pxo, pxy = load(
-    'demo/image_denoising/learned-potentials'
+
+pxo = GaussianNeuralNetPotential(
+    (2, 64, ReLU()),
+    (64, 32, ReLU()),
+    (32, 1, None)
 )
+
+pxy = GaussianNeuralNetPotential(
+    (2, 64, ReLU()),
+    (64, 32, ReLU()),
+    (32, 1, None)
+)
+
+pxo_params, pxy_params = load(
+    'learned_potentials/model_1/3000'
+)
+
+pxo.set_parameters(pxo_params)
+pxy.set_parameters(pxy_params)
 
 evidence = [None] * (col * row)
 for i in range(row):
@@ -63,9 +82,11 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = VarInference(g, num_mixtures=1, num_quadrature_points=3)
+# infer = EPBP(g, n=50, proposal_approximation='simple')
+# infer.run(10, log_enable=True)
 
-infer.run(200, lr=0.1)
+infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
+infer.run(1000, lr=0.01)
 
 predict_image = np.empty([row, col])
 
@@ -74,4 +95,4 @@ for i in range(row):
         predict_image[i, j] = infer.map(rvs[i * col + j])
         print(predict_image[i, j])
 
-show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=100)
+show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1)
