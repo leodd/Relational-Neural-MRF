@@ -176,7 +176,7 @@ class NeuralNetPotential(Function):
         return np.exp(self.nn(*parameters))
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False))
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1)
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters)
@@ -198,7 +198,7 @@ class GaussianNeuralNetPotential(Function):
         return np.exp(self.nn(*parameters)) * self.gaussian(*parameters) + 0.001
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)) * self.gaussian.batch_call(x) + 0.001
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.gaussian.batch_call(x) + 0.001
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters[0])

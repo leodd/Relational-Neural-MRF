@@ -64,7 +64,7 @@ class NeuralNetPotential(Function):
         return torch.exp(self.nn(x)).reshape(-1)
 
     def batch_call(self, x):
-        return torch.exp(self.nn(x))
+        return torch.exp(self.nn(x)).reshape(-1)
 
 
 class GaussianNeuralNetPotential(Function):
@@ -100,5 +100,5 @@ class GaussianNeuralNetPotential(Function):
         return torch.exp(self.nn(x)).reshape(-1) * torch.from_numpy(self.gaussian(*parameters)).float().to(self.device)
 
     def batch_call(self, x):
-        return torch.exp(self.nn(x)) * \
+        return torch.exp(self.nn(x)).reshape(-1) * \
                torch.from_numpy(self.gaussian.batch_call(x.cpu().numpy())).float().to(self.device)

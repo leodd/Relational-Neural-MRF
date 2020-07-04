@@ -68,7 +68,7 @@ class GaussianFunction(Function):
 
     def batch_call(self, x):
         x_mu = x - self.mu
-        return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1)).reshape(-1, 1)
+        return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1))
 
     def slice(self, *parameters):
         idx_latent, idx_condition = list(), list()
