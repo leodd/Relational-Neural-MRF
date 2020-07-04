@@ -4,7 +4,6 @@ from scipy.stats import norm
 from scipy.optimize import fminbound
 from statistics import mean
 from itertools import product
-
 import time
 
 
