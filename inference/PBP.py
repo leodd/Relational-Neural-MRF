@@ -37,7 +37,7 @@ class PBP:
                         a_max=rv.domain.values[1]
                     )
                 else:
-                    x[rv] = rv.domain.values
+                    x[rv] = np.array(rv.domain.values)
         return x
 
     def initial_proposal(self):
@@ -67,15 +67,16 @@ class PBP:
             res = 1 / self.norm_pdf(x, mu, np.sqrt(sig)).clip(1e-200)
             res[x == rv.domain.values[0]] = 1e-200
             res[x == rv.domain.values[1]] = 1e-200
+            return res
         else:
             return 1
 
     def message_rv_to_f(self, x, rv, f):
-        res = 0
+        res = np.log(self.important_weight(x, rv))
         for nb in rv.nb:
             if nb != f:
                 res += self.message[(nb, rv)]
-        return res + np.log(self.important_weight(x, rv))
+        return res
 
     def message_f_to_rv(self, x, f, rv):
         rv_idx = f.nb.index(rv)
@@ -127,13 +128,13 @@ class PBP:
 
     def run(self, iteration=10, log_enable=False):
         self.initial_proposal()
-        self.sample = self.generate_sample()
+        self.x = self.generate_sample()
 
         # Message initialization
         for rv in self.g.rvs:
             if rv.value is None:
                 for f in rv.nb:
-                    self.message[(rv, f)] = np.zeros(self.n)
+                    self.message[(f, rv)] = np.zeros(self.n)
 
         # BP iteration
         for i in range(iteration):
@@ -191,9 +192,9 @@ class PBP:
             #     rv.domain.values[0], rv.domain.values[1]
             # )[0]
 
-            z, b, _ = self.belief_integration(rv, rv.domain.values[0], rv.domain.values[1], 20)
+            z, _, shift = self.belief_integration(rv, rv.domain.values[0], rv.domain.values[1], 20)
 
-            return b / z
+            return np.exp(self.log_belief(x.reshape(-1), rv) - shift).squeeze() / z
         else:
             return 1 if x == rv.value else 0
 
@@ -212,7 +213,7 @@ class PBP:
     def map(self, rv):
         if rv.value is None:
             return fminbound(
-                lambda x: -self.log_belief(x, rv),
+                lambda x: -np.squeeze(self.log_belief(x.reshape(-1), rv)),
                 rv.domain.values[0], rv.domain.values[1],
                 disp=False
             )
