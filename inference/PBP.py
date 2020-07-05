@@ -1,8 +1,5 @@
-from Graph import *
 import numpy as np
-from scipy.stats import norm
 from scipy.optimize import fminbound
-from statistics import mean
 from itertools import product
 import time
 
@@ -60,7 +57,7 @@ class PBP:
                 mu = np.sum(x * b)
                 sig = np.sum((x - mu) ** 2 * b)
 
-                self.q[rv] = (mu, sig)
+                self.q[rv] = (mu, max(sig, self.var_threshold))
 
     def important_weight(self, x, rv):
         if rv.value is None:

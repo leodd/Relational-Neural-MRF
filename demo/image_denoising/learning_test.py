@@ -5,7 +5,7 @@ from learning.PseudoMLEWithPrior import PseudoMLELearner
 from demo.image_denoising.image_data_loader import load_data
 
 
-gt_data, noisy_data = load_data('gt', 'noise')
+gt_data, noisy_data = load_data('training/gt', 'training/noisy')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]

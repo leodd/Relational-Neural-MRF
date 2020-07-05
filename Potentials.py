@@ -165,6 +165,9 @@ class ImageNodePotential(Function):
         u = (parameters[0] - parameters[1] - self.mu) / self.sig
         return exp(-u * u * 0.5) / (2.506628274631 * self.sig)
 
+    def batch_call(self, x):
+        u = (x[:, 0] - x[:, 1] - self.mu) / self.sig
+        return np.exp(-u * u * 0.5) / (2.506628274631 * self.sig)
 
 class ImageEdgePotential(Function):
     def __init__(self, distant_cof, scaling_cof, max_threshold):
@@ -180,3 +183,11 @@ class ImageEdgePotential(Function):
             return d * self.distant_cof + self.v
         else:
             return d * self.distant_cof + pow(e, -d / self.scaling_cof)
+
+    def batch_call(self, x):
+        d = np.abs(x[:, 0] - x[:, 1])
+        return np.where(
+            d > self.max_threshold,
+            d * self.distant_cof + self.v,
+            d * self.distant_cof + np.exp(-d / self.scaling_cof)
+        )

@@ -1,5 +1,6 @@
 import matplotlib.image as img
 from utils import show_images, load
+from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
@@ -7,6 +8,9 @@ from Potentials import ImageNodePotential, ImageEdgePotential
 from inference.VarInference import VarInference
 from inference.EPBPLogVersion import EPBP
 from inference.PBP import PBP
+
+
+USE_MANUAL_POTENTIALS = True
 
 gt_image = img.imread('ground-true-image.png')
 gt_image = gt_image[:, :, 0]
@@ -18,29 +22,29 @@ row = gt_image.shape[0]
 col = gt_image.shape[1]
 
 domain = Domain([0, 1], continuous=True)
-domain.integral_points = np.linspace(domain.values[0], domain.values[1], 50)
 
-# pxo = ImageNodePotential(0, 5)
-# pxy = ImageEdgePotential(0, 3.5, 25)
+if USE_MANUAL_POTENTIALS:
+    pxo = ImageNodePotential(0, 0.05)
+    pxy = ImageEdgePotential(0, 0.035, 0.25)
+else:
+    pxo = GaussianNeuralNetPotential(
+        (2, 64, ReLU()),
+        (64, 32, ReLU()),
+        (32, 1, None)
+    )
 
-pxo = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None)
-)
+    pxy = GaussianNeuralNetPotential(
+        (2, 64, ReLU()),
+        (64, 32, ReLU()),
+        (32, 1, None)
+    )
 
-pxy = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None)
-)
+    pxo_params, pxy_params = load(
+        'learned_potentials/model_1/3000'
+    )
 
-pxo_params, pxy_params = load(
-    'learned_potentials/model_1/3000'
-)
-
-pxo.set_parameters(pxo_params)
-pxy.set_parameters(pxy_params)
+    pxo.set_parameters(pxo_params)
+    pxy.set_parameters(pxy_params)
 
 evidence = [None] * (col * row)
 for i in range(row):
@@ -83,7 +87,7 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=50)
+infer = PBP(g, n=20)
 infer.run(10, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
@@ -94,6 +98,6 @@ predict_image = np.empty([row, col])
 for i in range(row):
     for j in range(col):
         predict_image[i, j] = infer.map(rvs[i * col + j])
-        print(predict_image[i, j])
+        # print(predict_image[i, j])
 
 show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1)
