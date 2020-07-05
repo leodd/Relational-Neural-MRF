@@ -26,8 +26,8 @@ g, rvs_dict = rel_g.add_evidence(data)
 # infer = GaBP(g)
 # infer.run(20)
 
-infer = PBP(g, n=30)
-infer.run(20, log_enable=False)
+infer = PBP(g, n=50)
+infer.run(10, log_enable=False)
 
 map_res = dict()
 for key, rv in rvs_dict.items():

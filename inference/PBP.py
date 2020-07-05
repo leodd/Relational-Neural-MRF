@@ -53,6 +53,7 @@ class PBP:
                 b = np.log(self.important_weight(x, rv))
                 for nb in rv.nb:
                     b += self.message[(nb, rv)]
+                b, _ = self.log_message_balance(b)
                 b = np.exp(b)
                 b /= np.sum(b)
 

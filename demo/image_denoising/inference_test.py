@@ -6,6 +6,7 @@ from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
 from Potentials import ImageNodePotential, ImageEdgePotential
 from inference.VarInference import VarInference
 from inference.EPBPLogVersion import EPBP
+from inference.PBP import PBP
 
 gt_image = img.imread('ground-true-image.png')
 gt_image = gt_image[:, :, 0]
@@ -82,11 +83,11 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-# infer = EPBP(g, n=50, proposal_approximation='simple')
-# infer.run(10, log_enable=True)
+infer = PBP(g, n=50)
+infer.run(10, log_enable=True)
 
-infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
-infer.run(1000, lr=0.01)
+# infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
+# infer.run(1000, lr=0.01)
 
 predict_image = np.empty([row, col])
 

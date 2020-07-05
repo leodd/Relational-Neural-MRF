@@ -17,7 +17,7 @@ class EPBP:
     var_threshold = 0.05
     max_log_value = 700
 
-    def __init__(self, g=None, n=50, proposal_approximation='EP'):
+    def __init__(self, g=None, n=50, proposal_approximation='simple'):
         self.g = g
         self.n = n
         self.proposal_approximation = proposal_approximation
