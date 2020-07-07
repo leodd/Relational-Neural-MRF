@@ -36,7 +36,7 @@ else:
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1/3000'
+        'learned_potentials/model_2/3000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -85,7 +85,7 @@ for noisy_image, gt_image in zip(noisy_data, gt_data):
     g = Graph(rvs + evidence, fs)
 
     infer = PBP(g, n=20)
-    infer.run(10, log_enable=False)
+    infer.run(10, log_enable=True)
 
     predict_image = np.empty([row, col])
 

@@ -18,7 +18,7 @@ pxy = GaussianNeuralNetPotential(
 )
 
 pxo_params, pxy_params = load(
-    'learned_potentials/model_1/9000'
+    'learned_potentials/model_2/10000'
 )
 
 pxo.set_parameters(pxo_params)

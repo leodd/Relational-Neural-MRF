@@ -10,7 +10,7 @@ from inference.EPBPLogVersion import EPBP
 from inference.PBP import PBP
 
 
-USE_MANUAL_POTENTIALS = True
+USE_MANUAL_POTENTIALS = False
 
 gt_image = img.imread('ground-true-image.png')
 gt_image = gt_image[:, :, 0]
@@ -40,7 +40,7 @@ else:
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1/3000'
+        'learned_potentials/model_2/8000'
     )
 
     pxo.set_parameters(pxo_params)
