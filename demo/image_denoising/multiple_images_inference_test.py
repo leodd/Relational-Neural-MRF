@@ -42,6 +42,8 @@ else:
     pxo.set_parameters(pxo_params)
     pxy.set_parameters(pxy_params)
 
+loss = list()
+
 for noisy_image, gt_image in zip(noisy_data, gt_data):
     evidence = [None] * (col * row)
     for i in range(row):
@@ -95,4 +97,8 @@ for noisy_image, gt_image in zip(noisy_data, gt_data):
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1)
 
-    print(np.mean((predict_image - gt_image) ** 2))
+    loss.append(np.sum((predict_image - gt_image) ** 2))
+    print(loss[-1])
+
+print(loss)
+print(np.mean(loss))
