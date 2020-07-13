@@ -68,7 +68,7 @@ class PseudoMLELearner:
                     assignment[:, idx] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.gaussian.set_parameters(
+            p.prior.set_parameters(
                 np.mean(assignment, axis=1).reshape(-1),
                 np.cov(assignment).reshape(p.dimension, p.dimension)
             )
@@ -84,7 +84,7 @@ class PseudoMLELearner:
 
                 rv_prior = None
                 for f in rv.nb:
-                    rv_prior = f.potential.gaussian.slice(
+                    rv_prior = f.potential.prior.slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_prior
                 res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())

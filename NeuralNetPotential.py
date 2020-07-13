@@ -186,26 +186,36 @@ class NeuralNetPotential(Function):
 
 
 class GaussianNeuralNetPotential(Function):
-    """
-    A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
-    """
     def __init__(self, *args):
         self.dimension = args[0][0]  # The dimension of the input parameters
         self.nn = NeuralNetFunction(*args)
-        self.gaussian = GaussianFunction(np.ones(self.dimension), np.eye(self.dimension))
+        self.prior = None
 
     def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * (self.gaussian(*parameters) + 0.001)
+        return np.exp(self.nn(*parameters)) * (self.prior(*parameters) + 0.001)
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.gaussian.batch_call(x) + 0.001)
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def set_empirical_prior(self, data):
+        mu = np.mean(data, axis=0).reshape(-1)
+        sig = np.cov(data.T).reshape(self.dimension, self.dimension)
+
+        if self.prior is None:
+            self.prior = GaussianFunction(mu, sig)
+        else:
+            self.prior.set_parameters(mu, sig)
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters[0])
-        self.gaussian.set_parameters(*parameters[1])
+
+        if self.prior is None:
+            self.prior = GaussianFunction(*parameters[1])
+        else:
+            self.prior.set_parameters(*parameters[1])
 
     def parameters(self):
         return (
             self.nn.parameters(),
-            (self.gaussian.mu, self.gaussian.sig)
+            (self.prior.mu, self.prior.sig)
         )

@@ -1,5 +1,5 @@
 from NeuralNetPotentialTorchVersion import NeuralNetPotential
-from learning.PseudoMLETorchVersion import PseudoMLELearner
+from learning.torch.PseudoMLETorchVersion import PseudoMLELearner
 from utils import visualize_1d_neural_net_torch
 from Graph import *
 import numpy as np

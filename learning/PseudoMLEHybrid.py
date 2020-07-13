@@ -4,8 +4,8 @@ import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import save, load, visualize_2d_potential, visualize_1d_potential
+from Potentials import GaussianFunction, TableFunction
 import os
-import seaborn as sns
 
 
 class PseudoMLELearner:
@@ -33,9 +33,9 @@ class PseudoMLELearner:
         self.initialize_factor_prior()
         self.trainable_rvs_prior = dict()
 
-        for p in self.trainable_potentials:
-            domain = Domain([0, 1], continuous=True)
-            visualize_2d_potential(p, domain, domain, 0.05)
+        # for p in self.trainable_potentials:
+        #     domain = Domain([0, 1], continuous=True)
+        #     visualize_2d_potential(p, domain, domain, 0.05)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -60,19 +60,18 @@ class PseudoMLELearner:
 
     def initialize_factor_prior(self):
         for p, fs in self.trainable_potential_factors_dict.items():
-            assignment = np.empty([p.dimension, len(fs) * self.M])
+            if p.prior is not None:  # Skip if the prior is given
+                continue
+
+            assignment = np.empty([len(fs) * self.M, p.dimension])
 
             idx = 0
             for f in fs:
                 for m in range(self.M):
-                    assignment[:, idx] = [self.data[rv][m] for rv in f.nb]
+                    assignment[idx, :] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.gaussian.set_parameters(
-                np.mean(assignment, axis=1).reshape(-1),
-                np.cov(assignment).reshape(p.dimension, p.dimension)
-            )
-            # sns.jointplot(x=assignment[0], y=assignment[1])
+            p.set_empirical_prior(assignment)
 
     def get_rvs_prior(self, rvs, batch, res_dict=None):
         if res_dict is None:
@@ -84,12 +83,18 @@ class PseudoMLELearner:
 
                 rv_prior = None
                 for f in rv.nb:
-                    rv_prior = f.potential.gaussian.slice(
+                    rv_prior = f.potential.prior.slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_prior
-                res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
+                res_dict[(rv, m)] = rv_prior
 
         return res_dict
+
+    def get_samples(self, prior, sample_size):
+        if type(prior) is GaussianFunction:  # Continuous case
+            return np.random.randn(sample_size) * np.sqrt(prior.sig.squeeze()) + prior.mu.squeeze()
+        else:  # Discrete case
+            return None
 
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
@@ -148,8 +153,7 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
-                    mu, sig = rv_prior[k]
-                    samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
+                    samples = self.get_samples(rv_prior[k], sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples

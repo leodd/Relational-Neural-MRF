@@ -17,6 +17,9 @@ class TableFunction(Function):
     def __call__(self, *parameters):
         return self.table[tuple(parameters)]
 
+    def batch_call(self, x):
+        return np.array([self.table[tuple(v)] for v in x])
+
     def slice(self, *parameters):
         parameters_new = {idx: set() for idx, val in enumerate(parameters) if val is None}
         for k in self.table:  # Collect variable domain
