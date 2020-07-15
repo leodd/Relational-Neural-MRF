@@ -86,35 +86,41 @@ class GaussianFunction(Function):
 
 
 class CategoricalGaussianFunction(Function):
-    def __init__(self, table):
+    def __init__(self, weight_table, distribution_table, distributions, domains):
         """
         Args:
-            table: A dictionary that maps a set of assignment to a multivariate Gaussian distribution,
-            e.g. {True: (mu, sig), ...}
-            or {(True, False): (mu, sig), ...}
-            and also, mu and sig are single value.
+            weight_table: Table of the weights for the discrete conditions.
+            distribution_table: Table of index of the distribution in the distribution list.
+            distributions: List of Gaussian distributions.
+            domains: List of variables' domain
         """
-        self.table = dict()
-        Function.__init__(self)
-        for k, (mu, sig) in table.items():
-            self.table[k] = GaussianFunction([mu], [[sig]])
+        self.w_table = weight_table
+        self.dis_table = distribution_table.astype(int)
+        self.dis = distributions
+        self.domains = domains
+
+        self.c_idx = [i for i, d in enumerate(domains) if d.continuous]
+        self.d_idx = [i for i, d in enumerate(domains) if not d.continuous]
 
     def __call__(self, *parameters):
-        """
-        Args:
-            *parameters: A vector of assignment [d, c],
-            where d and c represent discrete and continuous variable assignment.
-        """
-        return self.table[parameters[0]](parameters[1])
+        parameters = np.array(parameters, dtype=float)
+        d_x, c_x = parameters[self.d_idx].astype(int), parameters[self.c_idx]
+        return self.w_table[tuple(d_x)] * self.dis[self.dis_table[tuple(d_x)]](*c_x)
 
-    def slice(self, *parameters):
-        if parameters[0] is None:
-            table_new = dict()
-            for k, fun in self.table.items():
-                table_new[k] = fun(parameters[1])
-            return TableFunction(table_new)
+    def batch_call(self, x):
+        d_x, c_x = x[:, self.d_idx].astype(int), x[:, self.c_idx].astype(float)
+        idx = tuple(d_x.T)
+        return self.w_table[idx] * np.array([self.dis[i](*c_x_) for i, c_x_ in zip(self.dis_table[idx], c_x)])
+
+    def slice(self, *parameters):  # Only one None is allowed
+        if self.domains[parameters.index(None)].continuous:
+            idx = tuple([int(parameters[i]) for i in self.d_idx])
+            return self.dis[self.dis_table[idx]].slice(*[parameters[i] for i in self.c_idx])
         else:
-            return self.table[parameters[0]]
+            idx = tuple([slice(None) if parameters[i] is None else int(parameters[i]) for i in self.d_idx])
+            c_x = np.array([parameters[i] for i in self.c_idx], dtype=float)
+            table = self.w_table[idx] * np.array([self.dis[i](*c_x) for i in self.dis_table[idx]])
+            return TableFunction(table)
 
 
 class LinearGaussianFunction(Function):

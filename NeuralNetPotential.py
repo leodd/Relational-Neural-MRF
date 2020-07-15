@@ -239,6 +239,47 @@ class TableNeuralNetPotential(Function):
 
         idx, count = np.unique(data, return_counts=True, axis=0)
         table[tuple(idx.T)] = count
+        table /= np.sum(table)
+
+        if self.prior is None:
+            self.prior = TableFunction(table)
+        else:
+            self.prior.table = table
+
+    def set_parameters(self, parameters):
+        self.nn.set_parameters(parameters[0])
+
+        if self.prior is None:
+            self.prior = TableFunction(parameters[1])
+        else:
+            self.prior.table = parameters[1]
+
+    def parameters(self):
+        return (
+            self.nn.parameters(),
+            self.prior.table
+        )
+
+
+class CGNeuralNetPotential(Function):
+    def __init__(self, *args, domains):
+        self.dimension = args[0][0]  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(*args)
+        self.domains = domains
+        self.prior = None
+
+    def __call__(self, *parameters):
+        return np.exp(self.nn(*parameters)) * (self.prior(*parameters) + 0.001)
+
+    def batch_call(self, x):
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def set_empirical_prior(self, data):
+        table = np.zeros(shape=[len(d.values) for d in self.domains])
+
+        idx, count = np.unique(data, return_counts=True, axis=0)
+        table[tuple(idx.T)] = count
+        table /= np.sum(table)
 
         if self.prior is None:
             self.prior = TableFunction(table)

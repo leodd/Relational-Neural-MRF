@@ -15,8 +15,8 @@ for i in range(1, 3):
     Line.append(f'LA{i}')
 
 domain_bool = Domain((0, 1))
-domain_length = Domain((0, 1), continuous=True, integral_points=linspace(0, 1, 20))
-domain_depth = Domain((0, 0.5), continuous=True, integral_points=linspace(0, 1, 20))
+domain_length = Domain((0, 1), continuous=True)
+domain_depth = Domain((0, 0.5), continuous=True)
 
 lv_seg = LV(Seg)
 lv_type = LV(Type)

@@ -15,7 +15,7 @@ for i in range(num_topic):
     Topic.append(f't{i}')
 
 domain_bool = Domain((0, 1))
-domain_real = Domain((-15, 15), continuous=True, integral_points=linspace(0, 10, 20))
+domain_real = Domain((-15, 15), continuous=True)
 
 lv_paper = LV(Paper)
 lv_topic = LV(Topic)
