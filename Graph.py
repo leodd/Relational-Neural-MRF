@@ -15,11 +15,18 @@ class Domain:
         self.values = tuple(values)
         self.continuous = continuous
 
+        if not continuous:
+            self.idx_dict = {v: idx for idx, v in enumerate(values)}
+
     def sample(self):
         if self.continuous:
             return normal(0, 1)
         else:
             return self.values[randint(len(self.values))]
+
+    def value_to_idx(self, values):
+        if self.continuous:
+            return [self.idx_dict[v] for v in values]
 
 
 class RV:

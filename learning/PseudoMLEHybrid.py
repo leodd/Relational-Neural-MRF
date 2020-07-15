@@ -86,15 +86,13 @@ class PseudoMLELearner:
                     rv_prior = f.potential.prior.slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_prior
-                res_dict[(rv, m)] = rv_prior
+
+                if rv.domain.continuous:  # Continuous case
+                    res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
+                else:  # Discrete case
+                    res_dict[(rv, m)] = rv_prior.table / np.sum(rv_prior.table)
 
         return res_dict
-
-    def get_samples(self, prior, sample_size):
-        if type(prior) is GaussianFunction:  # Continuous case
-            return np.random.randn(sample_size) * np.sqrt(prior.sig.squeeze()) + prior.mu.squeeze()
-        else:  # Discrete case
-            return None
 
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
@@ -153,7 +151,11 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
-                    samples = self.get_samples(rv_prior[k], sample_size)
+                    if rv.domain.continuous:  # Continuous case
+                        mu, sig = rv_prior[k]
+                        samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
+                    else:  # Discrete case
+                        samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples

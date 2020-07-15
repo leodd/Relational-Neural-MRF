@@ -1,6 +1,6 @@
 from NeuralNetPotentialTorchVersion import NeuralNetPotential
 from learning.torch.PseudoMLETorchVersion import PseudoMLELearner
-from utils import visualize_1d_neural_net_torch
+from utils import visualize_1d_potential_torch
 from Graph import *
 import numpy as np
 import torch
@@ -34,8 +34,8 @@ f = F(p, nb=[rv])
 
 g = Graph({rv}, {f})
 
-visualize_1d_neural_net_torch(p.nn, domain, 0.3, True)
-visualize_1d_neural_net_torch(p.nn, domain, 0.3, False)
+visualize_1d_potential_torch(p.nn, domain, 0.3, True)
+visualize_1d_potential_torch(p.nn, domain, 0.3, False)
 
 leaner = PseudoMLELearner(g, {p}, data, device=device)
 leaner.train(
@@ -49,5 +49,5 @@ leaner.train(
     sample_size=20
 )
 
-visualize_1d_neural_net_torch(p.nn, domain, 0.3, True)
-visualize_1d_neural_net_torch(p.nn, domain, 0.3, False)
+visualize_1d_potential_torch(p.nn, domain, 0.3, True)
+visualize_1d_potential_torch(p.nn, domain, 0.3, False)

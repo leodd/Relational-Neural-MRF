@@ -9,40 +9,25 @@ class TableFunction(Function):
     def __init__(self, table):
         """
         Args:
-            table: A dictionary that maps a set of assignment to a value.
+            table: A n-dimension tensor that maps a set of assignment to a value.
         """
         Function.__init__(self)
         self.table = table
 
     def __call__(self, *parameters):
-        return self.table[tuple(parameters)]
+        return self.table[tuple(np.array(parameters, dtype=int))]
 
     def batch_call(self, x):
-        return np.array([self.table[tuple(v)] for v in x])
+        return self.table[tuple(np.array(x, dtype=int).T)]
 
     def slice(self, *parameters):
-        parameters_new = {idx: set() for idx, val in enumerate(parameters) if val is None}
-        for k in self.table:  # Collect variable domain
-            for idx in parameters_new:
-                parameters_new[idx].add(k[idx])
-
-        table_new = dict()
-        args = [list(parameters_new[idx]) if val is None else [val] for idx, val in enumerate(parameters)]
-        for assignment in product(*args):  # Create slice table
-            table_new[tuple([val for idx, val in enumerate(assignment) if idx in parameters_new])] \
-                = self.table[tuple(assignment)]
-
-        return TableFunction(table_new)
+        idx = tuple([slice(None) if v is None else v for v in parameters])
+        return TableFunction(self.table[idx])
 
     def __mul__(self, other):
         if other is None:
             return self
-
-        table_new = dict()
-        for k, val in self.table.items():
-            table_new[k] = val * other.table[k]
-
-        return TableFunction(table_new)
+        return TableFunction(self.table * other.table)
 
 
 class GaussianFunction(Function):
@@ -74,12 +59,8 @@ class GaussianFunction(Function):
         return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1))
 
     def slice(self, *parameters):
-        idx_latent, idx_condition = list(), list()
-        for idx, val in enumerate(parameters):  # Create rearrange index
-            if val is None:
-                idx_latent.append(idx)
-            else:
-                idx_condition.append(idx)
+        idx_latent = [i for i, v in enumerate(parameters) if v is None]
+        idx_condition = [i for i, v in enumerate(parameters) if v is not None]
 
         parameters = np.array(parameters, dtype=float)
 
@@ -171,6 +152,7 @@ class ImageNodePotential(Function):
     def batch_call(self, x):
         u = (x[:, 0] - x[:, 1] - self.mu) / self.sig
         return np.exp(-u * u * 0.5) / (2.506628274631 * self.sig)
+
 
 class ImageEdgePotential(Function):
     def __init__(self, distant_cof, scaling_cof, max_threshold):
