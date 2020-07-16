@@ -1,5 +1,5 @@
 from Function import Function
-from Potentials import GaussianFunction, TableFunction
+from Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction
 import numpy as np
 from numpy.linalg import det, inv
 
@@ -275,27 +275,46 @@ class CGNeuralNetPotential(Function):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
 
     def set_empirical_prior(self, data):
-        table = np.zeros(shape=[len(d.values) for d in self.domains])
+        c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
+        d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
-        idx, count = np.unique(data, return_counts=True, axis=0)
-        table[tuple(idx.T)] = count
-        table /= np.sum(table)
+        w_table = np.zeros(shape=[len(self.domains[i].values) for i in d_idx])
+        dis_table = np.zeros(shape=w_table.shape, dtype=int)
+
+        idx, count = np.unique(data[:, d_idx].astype(int), return_counts=True, axis=0)
+        w_table[tuple(idx.T)] = count
+        w_table /= np.sum(w_table)
+
+        dis = [GaussianFunction(np.zeros(len(d_idx)), np.eye(len(d_idx)))]
+
+        for row in idx:
+            row_idx = np.where(np.all(data[:, d_idx] == row, axis=1))
+            row_data = data[row_idx][:, c_idx]
+
+            if len(row_data) <= 1:
+                continue
+
+            mu = np.mean(row_data, axis=0).reshape(-1)
+            sig = np.cov(row_data.T).reshape(len(c_idx), len(c_idx))
+
+            dis_table[tuple(row)] = len(dis)
+            dis.append(GaussianFunction(mu, sig))
 
         if self.prior is None:
-            self.prior = TableFunction(table)
+            self.prior = CategoricalGaussianFunction(w_table, dis_table, dis, self.domains)
         else:
-            self.prior.table = table
+            self.prior.set_parameters(w_table, dis_table, dis, self.domains)
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters[0])
 
         if self.prior is None:
-            self.prior = TableFunction(parameters[1])
+            self.prior = CategoricalGaussianFunction(*parameters[1], self.domains)
         else:
-            self.prior.table = parameters[1]
+            self.prior.set_parameters(*parameters[1], self.domains)
 
     def parameters(self):
         return (
             self.nn.parameters(),
-            self.prior.table
+            (self.prior.w_table, self.prior.dis_table, self.prior.dis)
         )

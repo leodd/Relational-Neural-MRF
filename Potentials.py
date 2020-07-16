@@ -94,6 +94,9 @@ class CategoricalGaussianFunction(Function):
             distributions: List of Gaussian distributions.
             domains: List of variables' domain
         """
+        self.set_parameters(weight_table, distribution_table, distributions, domains)
+
+    def set_parameters(self, weight_table, distribution_table, distributions, domains):
         self.w_table = weight_table
         self.dis_table = distribution_table.astype(int)
         self.dis = distributions
