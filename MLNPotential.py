@@ -1,6 +1,8 @@
 from Function import Function
-from math import e
 import numpy as np
+from Potentials import TableFunction, GaussianFunction, CategoricalGaussianFunction
+from itertools import product
+import re
 
 
 def and_op(x, y):
@@ -23,24 +25,54 @@ def bic_op(x, y):
     return imp_op(x, y) * imp_op(y, x)
 
 
-def eq_op(x, y):
-    return -(x - y) ** 2
-
-
 class MLNPotential(Function):
-    def __init__(self, formula, w=1):
+    def __init__(self, formula, domains, w=1):
         Function.__init__(self)
         self.formula = formula
+        self.domains = domains
         self.w = w
 
     def __call__(self, *parameters):
-        return e ** (self.formula(parameters) * self.w)
+        return np.exp(self.formula(parameters) * self.w)
 
 
-class MLNHardPotential(Function):
-    def __init__(self, formula):
+class HMLNPotential(Function):
+    def __init__(self, condition_formula, distributions, domains, w=1):
         Function.__init__(self)
-        self.formula = formula
+        self.formula = condition_formula
+        self.dis = distributions
+        self.domains = domains
+        self.w = w
+
+        self.c_idx = [i for i, d in enumerate(domains) if d.continuous]
 
     def __call__(self, *parameters):
-        return 1 if self.formula(parameters) > 0 else 0
+        parameters = np.array(parameters)
+        if self.formula(parameters) == 1:
+            return np.exp(self.w) * self.dis[1](*parameters[self.c_idx])
+        else:
+            return self.dis[1](*parameters[self.c_idx])
+
+
+def value_to_idx(x, domains):
+    return [d.idx_dict[v] for v, d in zip(x, domains)]
+
+
+def parse_mln(mln):
+    if type(mln) is MLNPotential:
+        table = np.zeros(shape=[len(d.values) for d in mln.domains])
+
+        for x in product(*[d.values for d in mln.domains]):
+            table[tuple(value_to_idx(x, mln.domains))] = mln(*x)
+
+        return TableFunction(table / np.sum(table))
+    else:
+        w_table = np.zeros(shape=[len(d.values) for d in mln.domains if not d.continuous])
+        dis_table = np.zeros(shape=w_table.shape, dtype=int)
+
+        for x in product(*[d.values for d in mln.domains]):
+            v = mln.formula(x)
+            w_table[tuple(value_to_idx(x, mln.domains))] = np.exp(mln.w * v)
+            dis_table[tuple(value_to_idx(x, mln.domains))] = int(v)
+
+        return CategoricalGaussianFunction(w_table, dis_table, mln.dis, mln.domains)

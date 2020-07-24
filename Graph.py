@@ -25,7 +25,7 @@ class Domain:
             return self.values[randint(len(self.values))]
 
     def value_to_idx(self, values):
-        if self.continuous:
+        if not self.continuous:
             return [self.idx_dict[v] for v in values]
 
 
