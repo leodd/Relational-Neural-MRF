@@ -43,10 +43,10 @@ class RelationalGraph:
         self.grounding = None
 
     def atom_substitution(self, atom_expression, substitution):
-        # atom_expression e.g. 'PartOf(s,l)' or ('PartOf', 's', 'l')
-        # substitution e.g. {'s': 'seg_0', 'l': 'line_0'}
+        # atom_expression e.g. 'partOf(S,L)' or ('partOf', 'S', 'L')
+        # substitution e.g. {'S': 'seg_0', 'L': 'line_0'}
         if type(atom_expression) == str:
-            expression_parts = re.findall(r'\$?\w+', atom_expression)
+            expression_parts = re.findall(r'\w+', atom_expression)
         else:
             expression_parts = atom_expression
 
@@ -55,8 +55,8 @@ class RelationalGraph:
         key = [expression_parts[0]]
         for i in range(1, len(expression_parts)):
             s = expression_parts[i]
-            if s[0] == '$':
-                key.append(s[1:])
+            if s[0].islower():
+                key.append(s)
             else:
                 key.append(substitution[s])
 
@@ -71,12 +71,12 @@ class RelationalGraph:
         if type(lvs) is not dict:
             lvs = dict()
 
-        expression_parts = re.findall(r'\$?\w+', atom_expression)
+        expression_parts = re.findall(r'\w+', atom_expression)
         atom = self.atoms_dict[expression_parts[0]]
 
         for i in range(len(atom.lvs)):
             s = expression_parts[i + 1]
-            if s[0] != '$':
+            if s[0].isupper():
                 lvs[s] = atom.lvs[i].instances
 
         return lvs
@@ -113,7 +113,7 @@ class RelationalGraph:
 
             atoms_tuple_expression = list()
             for atom_expression in param_f.nb:
-                atoms_tuple_expression.append(re.findall(r'\$?\w+', atom_expression))
+                atoms_tuple_expression.append(re.findall(r'\w+', atom_expression))
 
             for substitution in self.lvs_iter(lvs):
                 if param_f.constrain is None or param_f.constrain(substitution):
