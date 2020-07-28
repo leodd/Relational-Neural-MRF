@@ -62,7 +62,7 @@ class PseudoMLELearner:
     @staticmethod
     def gaussian_slice(gaussian, x, slice_idx):
         idx_latent = [slice_idx]
-        idx_condition = [i for i in range(gaussian.n) if i != slice_idx]
+        idx_condition = [i for i in range(len(gaussian.mu)) if i != slice_idx]
 
         mu_new = gaussian.mu[idx_latent] + \
                  gaussian.sig[np.ix_(idx_latent, idx_condition)] @ \
@@ -110,7 +110,7 @@ class PseudoMLELearner:
         rvs, f_MB, K, potential_count = data_info
 
         gradient = {
-            p: (np.zeros(p.mu.shape), np.zeros(p.sig.shape)) for p in self.trainable_potentials
+            p: [np.zeros(p.mu.shape), np.zeros(p.sig.shape)] for p in self.trainable_potentials
         }
 
         for rv in rvs:
@@ -120,7 +120,7 @@ class PseudoMLELearner:
             for k in range(K):
                 # Compute the local variable distribution
                 gauss_dis[k, :] = self.gaussian_product(
-                    *[self.gaussian_slice(f.potential, f_MB[f][k], f.nb.index(rv)) for f in rv.nb]
+                    *[self.gaussian_slice(f.potential, np.array(f_MB[f][k]), f.nb.index(rv)) for f in rv.nb]
                 )
 
             for c, f in enumerate(rv.nb):
@@ -154,7 +154,7 @@ class PseudoMLELearner:
 
         return gradient
 
-    def train(self, lr=0.01, alpha=0.5, regular=0.5,
+    def train(self, lr=0.01,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
               save_dir=None, save_period=1000):
         """
@@ -198,7 +198,7 @@ class PseudoMLELearner:
                 gradient = self.get_gradient(data_info, sample_size)
 
                 # Update neural net parameters with back propagation
-                for potential, d_mu, d_sig in gradient.items():
+                for potential, (d_mu, d_sig) in gradient.items():
                     # Gradient ascent
                     mu, sig = potential.mu, potential.sig
 
