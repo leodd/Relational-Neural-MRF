@@ -31,19 +31,20 @@ class TableFunction(Function):
 
 
 class GaussianFunction(Function):
-    def __init__(self, mu, sig):
+    def __init__(self, mu, sig, is_inv=False):
         """
         Args:
             mu: The mean vector (must be 1 dimensional).
             sig: The covariance matrix (must be 2 dimensional).
+            is_inv: A boolean value indicating if sig is inverse of sig
         """
         Function.__init__(self)
-        self.set_parameters(mu, sig)
+        self.set_parameters(mu, sig, is_inv)
 
-    def set_parameters(self, mu, sig):
+    def set_parameters(self, mu, sig, is_inv=False):
         self.mu = np.array(mu, dtype=float)
-        self.sig = np.array(sig, dtype=float)
-        self.inv_sig = inv(self.sig)
+        sig = np.array(sig, dtype=float)
+        self.sig, self.inv_sig = (inv(sig), sig) if is_inv else (sig, inv(sig))
         n = float(len(mu))
         det_sig = det(self.sig)
         if det_sig == 0:
@@ -77,10 +78,8 @@ class GaussianFunction(Function):
         if other is None:
             return self
 
-        inv_sig_1, inv_sig_2 = inv(self.sig), inv(other.sig)
-
-        sig_new = inv(inv_sig_1 + inv_sig_2)
-        mu_new = sig_new @ (inv_sig_1 @ self.mu + inv_sig_2 @ other.mu)
+        sig_new = inv(self.inv_sig + other.inv_sig)
+        mu_new = sig_new @ (self.inv_sig @ self.mu + other.inv_sig @ other.mu)
 
         return GaussianFunction(mu_new, sig_new)
 

@@ -27,7 +27,7 @@ class VarInference:
     @staticmethod
     def norm_pdf(x, eta):
         u = (x - eta[0])
-        y = e ** (-u * u * 0.5 / eta[1]) / (2.506628274631 * eta[1])
+        y = np.exp(-u * u * 0.5 / eta[1]) / (2.5066282746310002 * np.sqrt(eta[1]))
         return y
 
     @staticmethod
