@@ -47,17 +47,17 @@ class GaussianFunction(Function):
         self.sig, self.inv_sig = (inv(sig), sig) if is_inv else (sig, inv(sig))
         n = float(len(mu))
         det_sig = det(self.sig)
-        if det_sig == 0:
-            raise NameError("The covariance matrix can't be singular")
+        if det_sig <= 0:
+            raise NameError("The covariance matrix is invalid")
         self.coeff = ((2 * pi) ** n * det_sig) ** -0.5
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
-        return self.coeff * np.exp(-0.5 * (x_mu.T @ self.inv_sig @ x_mu))
+        return self.coeff * np.exp(-0.5 * (x_mu.T @ self.inv_sig @ x_mu)) + 0.001
 
     def batch_call(self, x):
         x_mu = x - self.mu
-        return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1))
+        return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1)) + 0.001
 
     def slice(self, *parameters):
         idx_latent = [i for i, v in enumerate(parameters) if v is None]

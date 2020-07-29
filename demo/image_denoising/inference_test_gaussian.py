@@ -30,7 +30,7 @@ else:
     pxy = GaussianFunction([0.5, 0.5], np.eye(2))
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1_gaussian/8000'
+        'learned_potentials/model_1_gaussian/1000'
     )
 
     pxo.set_parameters(*pxo_params)
@@ -77,8 +77,8 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=20)
-infer.run(10, log_enable=True)
+infer = PBP(g, n=10)
+infer.run(50, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
 # infer.run(1000, lr=0.01)

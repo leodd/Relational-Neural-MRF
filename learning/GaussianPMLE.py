@@ -200,7 +200,7 @@ class PseudoMLELearner:
                 # Update neural net parameters with back propagation
                 for potential, (d_mu, d_sig) in gradient.items():
                     # Gradient ascent
-                    mu, sig = potential.mu, potential.sig
+                    mu, sig = np.copy(potential.mu), np.copy(potential.sig)
 
                     step, moment = adam(d_mu, moments.get((potential, 'mu'), (0, 0)), t + 1)
                     mu += step
@@ -210,7 +210,8 @@ class PseudoMLELearner:
                     sig += step
                     moments[(potential, 'sig')] = moment
 
-                    if np.linalg.det(sig) > 0:
+                    sig_det = np.linalg.det(sig)
+                    if sig_det > 0:
                         potential.set_parameters(mu, sig)
                     else:
                         moments[(potential, 'mu')] = (0, 0)
@@ -224,6 +225,7 @@ class PseudoMLELearner:
                     for p in self.trainable_potentials_ordered:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential(p, domain, domain, 0.05)
+                        print(p.sig)
 
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [(p.mu, p.sig) for p in self.trainable_potentials_ordered]

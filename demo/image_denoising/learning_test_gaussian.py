@@ -14,7 +14,6 @@ col = gt_data.shape[2]
 domain = Domain([0, 1], continuous=True)
 
 pxo = GaussianFunction([0.5, 0.5], np.eye(2))
-
 pxy = GaussianFunction([0.5, 0.5], np.eye(2))
 
 data = dict()
@@ -66,10 +65,10 @@ g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
 leaner = PseudoMLELearner(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.005,
+    lr=0.001,
     max_iter=1000,
     batch_iter=5,
-    batch_size=5,
+    batch_size=20,
     rvs_selection_size=1000,
     sample_size=5,
     save_dir='learned_potentials/model_1_gaussian',
