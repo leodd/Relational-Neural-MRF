@@ -49,7 +49,7 @@ class GaussianFunction(Function):
         det_sig = det(self.sig)
         if det_sig == 0:
             raise NameError("The covariance matrix can't be singular")
-        self.coeff = 1 / sqrt((2 * pi) ** n * det_sig)
+        self.coeff = ((2 * pi) ** n * det_sig) ** -0.5
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu

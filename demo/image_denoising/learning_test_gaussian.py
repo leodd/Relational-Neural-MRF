@@ -66,11 +66,12 @@ g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
 leaner = PseudoMLELearner(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.001,
-    max_iter=10000,
-    batch_iter=20,
-    batch_size=20,
+    lr=0.005,
+    max_iter=1000,
+    batch_iter=5,
+    batch_size=5,
     rvs_selection_size=1000,
-    sample_size=30,
-    save_dir='learned_potentials/model_1_gaussian'
+    sample_size=5,
+    save_dir='learned_potentials/model_1_gaussian',
+    save_period=100
 )

@@ -210,21 +210,25 @@ class PseudoMLELearner:
                     sig += step
                     moments[(potential, 'sig')] = moment
 
-                    potential.set_parameters(mu, sig)
+                    if np.linalg.det(sig) > 0:
+                        potential.set_parameters(mu, sig)
+                    else:
+                        moments[(potential, 'mu')] = (0, 0)
+                        moments[(potential, 'sig')] = (0, 0)
 
                 i += 1
                 t += 1
 
                 print(t)
-                if t % 100 == 0:
+                if t % 10 == 0:
                     for p in self.trainable_potentials_ordered:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential(p, domain, domain, 0.05)
 
                 if save_dir is not None and t % save_period == 0:
-                    model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
+                    model_parameters = [(p.mu, p.sig) for p in self.trainable_potentials_ordered]
                     save(os.path.join(save_dir, str(t)), *model_parameters)
 
         if save_dir is not None:
-            model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
+            model_parameters = [(p.mu, p.sig) for p in self.trainable_potentials_ordered]
             save(os.path.join(save_dir, str(t)), *model_parameters)

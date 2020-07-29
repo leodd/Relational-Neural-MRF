@@ -33,8 +33,8 @@ else:
         'learned_potentials/model_1_gaussian/8000'
     )
 
-    pxo.set_parameters(pxo_params)
-    pxy.set_parameters(pxy_params)
+    pxo.set_parameters(*pxo_params)
+    pxy.set_parameters(*pxy_params)
 
 evidence = [None] * (col * row)
 for i in range(row):
