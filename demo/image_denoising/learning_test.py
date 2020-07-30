@@ -1,6 +1,6 @@
 from utils import save, visualize_2d_potential
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
+from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
 from learning.PseudoMLEWithPrior import PseudoMLELearner
 from demo.image_denoising.image_data_loader import load_data
 
@@ -12,14 +12,26 @@ col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
+# pxo = GaussianNeuralNetPotential(
+#     (2, 64, ReLU()),
+#     (64, 32, ReLU()),
+#     (32, 1, None)
+# )
+#
+# pxy = GaussianNeuralNetPotential(
+#     (2, 64, ReLU()),
+#     (64, 32, ReLU()),
+#     (32, 1, None)
+# )
+
+pxo = ContrastiveNeuralNetPotential(
+    (1, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
 )
 
-pxy = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
+pxy = ContrastiveNeuralNetPotential(
+    (1, 64, ReLU()),
     (64, 32, ReLU()),
     (32, 1, None)
 )
@@ -77,7 +89,7 @@ leaner.train(
     alpha=0.999,
     regular=0.0001,
     max_iter=10000,
-    batch_iter=20,
+    batch_iter=5,
     batch_size=20,
     rvs_selection_size=1000,
     sample_size=30,

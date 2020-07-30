@@ -318,3 +318,42 @@ class CGNeuralNetPotential(Function):
             self.nn.parameters(),
             (self.prior.w_table, self.prior.dis_table, self.prior.dis)
         )
+
+
+class ContrastiveNeuralNetPotential(Function):
+    def __init__(self, *args):
+        self.dimension = 2  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(*args)
+        self.prior = None
+
+    def __call__(self, *parameters):
+        z = np.abs(parameters[0] - parameters[1])
+        return np.exp(self.nn(z)) * (self.prior(z) + 0.001)
+
+    def batch_call(self, x):
+        x = np.abs(x[:, [0]] - x[:, [1]])
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def set_empirical_prior(self, data):
+        data = np.abs(data[:, [0]] - data[:, [1]])
+        mu = np.mean(data, axis=0).reshape(-1)
+        sig = np.cov(data.T).reshape(1, 1)
+
+        if self.prior is None:
+            self.prior = GaussianFunction(mu, sig)
+        else:
+            self.prior.set_parameters(mu, sig)
+
+    def set_parameters(self, parameters):
+        self.nn.set_parameters(parameters[0])
+
+        if self.prior is None:
+            self.prior = GaussianFunction(*parameters[1])
+        else:
+            self.prior.set_parameters(*parameters[1])
+
+    def parameters(self):
+        return (
+            self.nn.parameters(),
+            (self.prior.mu, self.prior.sig)
+        )
