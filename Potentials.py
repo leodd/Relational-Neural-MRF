@@ -126,25 +126,34 @@ class CategoricalGaussianFunction(Function):
 
 
 class LinearGaussianFunction(Function):
-    def __init__(self, sig):
+    def __init__(self, w, b, sig):
         """
         Args:
             sig: The variance value.
         """
         Function.__init__(self)
+        self.set_parameters(w, b, sig)
+
+    def set_parameters(self, w, b, sig):
+        self.w = w
+        self.b = b
         self.sig = sig
 
     def __call__(self, *parameters):
-        diff = parameters[1] - parameters[0]
-        return np.exp(-0.5 * diff * diff / self.sig)
+        z = parameters[1] - parameters[0] * self.w - self.b
+        return np.exp(-0.5 * z * z / self.sig)
+
+    def batch_call(self, x):
+        z = x[:, 1] - x[:, 0] * self.w - self.b
+        return np.exp(-0.5 * z * z / self.sig)
 
     def slice(self, *parameters):
-        mu = 0
-        for val in parameters:
-            if val is not None:
-                mu = val
+        if parameters[0] is not None:
+            mu = parameters[0] * self.w + self.b
+        else:
+            mu = (parameters[1] - self.b) / self.w
 
-        return GaussianFunction(mu, self.sig)
+        return GaussianFunction([mu], [[self.sig]])
 
 
 class ImageNodePotential(Function):

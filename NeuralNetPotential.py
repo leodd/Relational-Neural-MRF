@@ -1,5 +1,5 @@
 from Function import Function
-from Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction
+from Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction, LinearGaussianFunction
 import numpy as np
 from numpy.linalg import det, inv
 
@@ -335,25 +335,24 @@ class ContrastiveNeuralNetPotential(Function):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
 
     def set_empirical_prior(self, data):
-        data = np.abs(data[:, [0]] - data[:, [1]])
-        mu = np.mean(data, axis=0).reshape(-1)
-        sig = np.cov(data.T).reshape(1, 1)
+        data = np.abs(data[:, 0] - data[:, 1])
+        sig = np.var(data)
 
         if self.prior is None:
-            self.prior = GaussianFunction(mu, sig)
+            self.prior = LinearGaussianFunction(1, 0, sig)
         else:
-            self.prior.set_parameters(mu, sig)
+            self.prior.set_parameters(1, 0, sig)
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters[0])
 
         if self.prior is None:
-            self.prior = GaussianFunction(*parameters[1])
+            self.prior = LinearGaussianFunction(1, 0, parameters[1])
         else:
-            self.prior.set_parameters(*parameters[1])
+            self.prior.set_parameters(1, 0, parameters[1])
 
     def parameters(self):
         return (
             self.nn.parameters(),
-            (self.prior.mu, self.prior.sig)
+            self.prior.sig
         )

@@ -60,19 +60,18 @@ class PseudoMLELearner:
 
     def initialize_factor_prior(self):
         for p, fs in self.trainable_potential_factors_dict.items():
-            assignment = np.empty([p.dimension, len(fs) * self.M])
+            if p.prior is not None:  # Skip if the prior is given
+                continue
+
+            assignment = np.empty([len(fs) * self.M, p.dimension])
 
             idx = 0
             for f in fs:
                 for m in range(self.M):
-                    assignment[:, idx] = [self.data[rv][m] for rv in f.nb]
+                    assignment[idx, :] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.prior.set_parameters(
-                np.mean(assignment, axis=1).reshape(-1),
-                np.cov(assignment).reshape(p.dimension, p.dimension)
-            )
-            # sns.jointplot(x=assignment[0], y=assignment[1])
+            p.set_empirical_prior(assignment)
 
     def get_rvs_prior(self, rvs, batch, res_dict=None):
         if res_dict is None:
