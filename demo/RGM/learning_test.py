@@ -1,6 +1,6 @@
 from demo.RGM.rgm_generator import *
 from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
-from learning.PseudoMLEWithPrior import PseudoMLELearner
+from learning.NeuralPMLEPrior import PMLE
 from utils import visualize_2d_potential
 
 
@@ -32,7 +32,7 @@ data = dict()
 for key, value in load_data('rgm-joint').items():
     data[rvs_dict[key]] = value
 
-leaner = PseudoMLELearner(g, {p1, p2, p3}, data)
+leaner = PMLE(g, {p1, p2, p3}, data)
 leaner.train(
     lr=0.0001,
     alpha=0.999,

@@ -1,5 +1,5 @@
 from NeuralNetPotential import GaussianNeuralNetPotential, LeakyReLU, ReLU, ELU
-from learning.PseudoMLEWithPrior import PseudoMLELearner
+from learning.NeuralPMLEPrior import PMLE
 from utils import visualize_1d_potential
 from Graph import *
 import numpy as np
@@ -33,7 +33,7 @@ g = Graph({rv}, {f})
 visualize_1d_potential(p, domain, 0.3)
 visualize_1d_potential(p, domain, 0.3)
 
-leaner = PseudoMLELearner(g, {p}, data)
+leaner = PMLE(g, {p}, data)
 leaner.train(
     lr=0.0001,
     alpha=0.999,

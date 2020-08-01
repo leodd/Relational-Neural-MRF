@@ -8,7 +8,7 @@ import os
 import seaborn as sns
 
 
-class PseudoMLELearner:
+class PMLE:
     def __init__(self, g, trainable_potentials, data):
         """
         Args:
@@ -29,13 +29,6 @@ class PseudoMLELearner:
         for _, rvs in self.trainable_potential_rvs_dict.items():
             self.trainable_rvs |= rvs
         self.trainable_rvs -= g.condition_rvs
-
-        self.initialize_factor_prior()
-        self.trainable_rvs_prior = dict()
-
-        for p in self.trainable_potentials:
-            domain = Domain([0, 1], continuous=True)
-            visualize_2d_potential(p, domain, domain, 0.05)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -58,38 +51,6 @@ class PseudoMLELearner:
 
         return rvs_dict, factors_dict
 
-    def initialize_factor_prior(self):
-        for p, fs in self.trainable_potential_factors_dict.items():
-            if p.prior is not None:  # Skip if the prior is given
-                continue
-
-            assignment = np.empty([len(fs) * self.M, p.dimension])
-
-            idx = 0
-            for f in fs:
-                for m in range(self.M):
-                    assignment[idx, :] = [self.data[rv][m] for rv in f.nb]
-                    idx += 1
-
-            p.set_empirical_prior(assignment)
-
-    def get_rvs_prior(self, rvs, batch, res_dict=None):
-        if res_dict is None:
-            res_dict = dict()
-
-        for m in batch:
-            for rv in rvs:
-                if (rv, m) in res_dict: continue  # Skip if already computed before
-
-                rv_prior = None
-                for f in rv.nb:
-                    rv_prior = f.potential.prior.slice(
-                        *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
-                    ) * rv_prior
-                res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
-
-        return res_dict
-
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
         Args:
@@ -99,7 +60,7 @@ class PseudoMLELearner:
 
         Returns:
             A dictionary with potential as key, and data pairs (x, y) as value.
-            Also the data indexing, shift and spacing information.
+            Also the data indexing information.
         """
         potential_count = Counter()  # A counter of potential occurrence
         f_MB = dict()  # A dictionary with factor as key, and local assignment vector as value
@@ -123,20 +84,12 @@ class PseudoMLELearner:
             ]
         ) for p in potential_count}
 
-        # Compute variable proposal
-        self.get_rvs_prior(rvs, batch, self.trainable_rvs_prior)
-
         data_info = dict()  # rv as key, data indexing, shift, spacing as value
 
         current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
-
-            rv_prior = [
-                self.trainable_rvs_prior[(rv, m)]
-                for m in batch
-            ]
 
             for c, f in enumerate(rv.nb):
                 rv_idx = f.nb.index(rv)
@@ -147,8 +100,7 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
-                    mu, sig = rv_prior[k]
-                    samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
+                    samples = np.random.uniform(rv.domain.values[0], rv.domain.values[1], sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
@@ -193,7 +145,7 @@ class PseudoMLELearner:
                     w += data_y_nn[f.potential][idx:idx + sample_size]
 
                 b = np.exp(w)
-                prior_diff = b - 1.0
+                prior_diff = b - 1 / (rv.domain.values[1] - rv.domain.values[0])
 
                 w /= np.sum(b)
 

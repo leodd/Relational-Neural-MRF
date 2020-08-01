@@ -1,7 +1,7 @@
 from utils import save, visualize_2d_potential
 from Graph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
-from learning.PseudoMLEWithPrior import PseudoMLELearner
+from learning.NeuralPMLEPrior import PMLE
 from demo.image_denoising.image_data_loader import load_data
 
 
@@ -83,7 +83,7 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-leaner = PseudoMLELearner(g, [pxo, pxy], data)
+leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
     lr=0.001,
     alpha=0.999,

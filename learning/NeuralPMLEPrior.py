@@ -4,11 +4,11 @@ import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import save, load, visualize_2d_potential, visualize_1d_potential
-from Potentials import GaussianFunction, TableFunction
 import os
+import seaborn as sns
 
 
-class PseudoMLELearner:
+class PMLE:
     def __init__(self, g, trainable_potentials, data):
         """
         Args:
@@ -33,9 +33,9 @@ class PseudoMLELearner:
         self.initialize_factor_prior()
         self.trainable_rvs_prior = dict()
 
-        # for p in self.trainable_potentials:
-        #     domain = Domain([0, 1], continuous=True)
-        #     visualize_2d_potential(p, domain, domain, 0.05)
+        for p in self.trainable_potentials:
+            domain = Domain([0, 1], continuous=True)
+            visualize_2d_potential(p, domain, domain, 0.05)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -83,14 +83,10 @@ class PseudoMLELearner:
 
                 rv_prior = None
                 for f in rv.nb:
-                    rv_prior = f.potential.prior.slice(
+                    rv_prior = f.potential.prior_slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_prior
-
-                if rv.domain.continuous:  # Continuous case
-                    res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
-                else:  # Discrete case
-                    res_dict[(rv, m)] = rv_prior.table / np.sum(rv_prior.table)
+                res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
 
         return res_dict
 
@@ -151,11 +147,8 @@ class PseudoMLELearner:
                 for k in range(K):
                     next_idx = current_idx + sample_size + r
 
-                    if rv.domain.continuous:  # Continuous case
-                        mu, sig = rv_prior[k]
-                        samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
-                    else:  # Discrete case
-                        samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
+                    mu, sig = rv_prior[k]
+                    samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
@@ -184,7 +177,7 @@ class PseudoMLELearner:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True).reshape(-1)
+            data_y_nn[potential] = potential.nn_forward(data_matrix, save_cache=True).reshape(-1)
 
         gradient_y = dict()  # Store of the computed derivative
 
@@ -256,7 +249,7 @@ class PseudoMLELearner:
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    _, d_param = potential.nn.backward(d_y)
+                    _, d_param = potential.nn_backward(d_y)
 
                     c = (sample_size - 1) / d_y.shape[0]
 

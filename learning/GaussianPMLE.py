@@ -10,7 +10,7 @@ import os
 import seaborn as sns
 
 
-class PseudoMLELearner:
+class PMLE:
     def __init__(self, g, trainable_potentials, data):
         """
         Args:

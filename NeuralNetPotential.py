@@ -178,6 +178,12 @@ class NeuralNetPotential(Function):
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1)
 
+    def nn_forward(self, x, save_cache=True):
+        return self.nn.forward(x, save_cache)
+
+    def nn_backward(self, dy):
+        return self.nn.backward(dy)
+
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters)
 
@@ -196,6 +202,15 @@ class GaussianNeuralNetPotential(Function):
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def nn_forward(self, x, save_cache=True):
+        return self.nn.forward(x, save_cache)
+
+    def nn_backward(self, dy):
+        return self.nn.backward(dy)
+
+    def prior_slice(self, *parameters):
+        return self.prior.slice(*parameters)
 
     def set_empirical_prior(self, data):
         mu = np.mean(data, axis=0).reshape(-1)
@@ -233,6 +248,15 @@ class TableNeuralNetPotential(Function):
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def nn_forward(self, x, save_cache=True):
+        return self.nn.forward(x, save_cache)
+
+    def nn_backward(self, dy):
+        return self.nn.backward(dy)
+
+    def prior_slice(self, *parameters):
+        return self.prior.slice(*parameters)
 
     def set_empirical_prior(self, data):
         table = np.zeros(shape=[len(d.values) for d in self.domains])
@@ -273,6 +297,15 @@ class CGNeuralNetPotential(Function):
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def nn_forward(self, x, save_cache=True):
+        return self.nn.forward(x, save_cache)
+
+    def nn_backward(self, dy):
+        return self.nn.backward(dy)
+
+    def prior_slice(self, *parameters):
+        return self.prior.slice(*parameters)
 
     def set_empirical_prior(self, data):
         c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
@@ -333,6 +366,16 @@ class ContrastiveNeuralNetPotential(Function):
     def batch_call(self, x):
         x = np.abs(x[:, [0]] - x[:, [1]])
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+
+    def nn_forward(self, x, save_cache=True):
+        x = np.abs(x[:, [0]] - x[:, [1]])
+        return self.nn.forward(x, save_cache)
+
+    def nn_backward(self, dy):
+        return self.nn.backward(dy)
+
+    def prior_slice(self, *parameters):
+        return self.prior.slice(*parameters)
 
     def set_empirical_prior(self, data):
         data = np.abs(data[:, 0] - data[:, 1])

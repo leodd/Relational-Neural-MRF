@@ -1,7 +1,7 @@
 from utils import save, visualize_2d_potential
 from Graph import *
 from Potentials import GaussianFunction
-from learning.GaussianPMLE import PseudoMLELearner
+from learning.GaussianPMLE import PMLE
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 
@@ -63,7 +63,7 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
-leaner = PseudoMLELearner(g, [pxo, pxy], data)
+leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
     lr=0.001,
     max_iter=1000,
