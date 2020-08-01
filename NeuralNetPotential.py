@@ -360,8 +360,8 @@ class ContrastiveNeuralNetPotential(Function):
         self.prior = None
 
     def __call__(self, *parameters):
-        z = np.abs(parameters[0] - parameters[1])
-        return np.exp(self.nn(z)) * (self.prior(z) + 0.001)
+        x = np.abs(parameters[0] - parameters[1])
+        return np.exp(self.nn(x)) * (self.prior(x) + 0.001)
 
     def batch_call(self, x):
         x = np.abs(x[:, [0]] - x[:, [1]])
@@ -375,24 +375,27 @@ class ContrastiveNeuralNetPotential(Function):
         return self.nn.backward(dy)
 
     def prior_slice(self, *parameters):
-        return self.prior.slice(*parameters)
+        if parameters[0] is not None:
+            return GaussianFunction([parameters[0]], self.prior.sig)
+        else:
+            return GaussianFunction([parameters[1]], self.prior.sig)
 
     def set_empirical_prior(self, data):
         data = np.abs(data[:, 0] - data[:, 1])
-        sig = np.var(data)
+        sig = np.var(data).reshape(1, 1)
 
         if self.prior is None:
-            self.prior = LinearGaussianFunction(1, 0, sig)
+            self.prior = GaussianFunction([0], sig)
         else:
-            self.prior.set_parameters(1, 0, sig)
+            self.prior.set_parameters([0], sig)
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters[0])
 
         if self.prior is None:
-            self.prior = LinearGaussianFunction(1, 0, parameters[1])
+            self.prior = GaussianFunction([0], parameters[1])
         else:
-            self.prior.set_parameters(1, 0, parameters[1])
+            self.prior.set_parameters([0], parameters[1])
 
     def parameters(self):
         return (
