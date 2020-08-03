@@ -1,5 +1,6 @@
 import matplotlib.image as img
 from utils import show_images, load
+import pandas as pd
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
@@ -17,8 +18,11 @@ gt_image = gt_image[:, :, 0]
 noisy_image = img.imread('testing-simple/noisy-image.png')
 noisy_image = noisy_image[:, :, 0]
 
-row = gt_image.shape[0]
-col = gt_image.shape[1]
+# data = pd.read_fwf('testing-simple/noisy-image.dat', header=None)
+# noisy_image = data.values
+
+row = noisy_image.shape[0]
+col = noisy_image.shape[1]
 
 domain = Domain([0, 1], continuous=True)
 
@@ -26,7 +30,7 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.0001)
+    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.000001)
     pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
 
     pxo_params, pxy_params = load(
