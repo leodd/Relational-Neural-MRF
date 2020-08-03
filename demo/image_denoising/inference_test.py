@@ -1,5 +1,6 @@
 import matplotlib.image as img
 from utils import show_images, load
+import pandas as pd
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
@@ -12,14 +13,17 @@ from inference.PBP import PBP
 
 USE_MANUAL_POTENTIALS = False
 
-gt_image = img.imread('testing-simple/ground-true-image.png')
-gt_image = gt_image[:, :, 0]
+# gt_image = img.imread('testing-simple/ground-true-image.png')
+# gt_image = gt_image[:, :, 0]
+#
+# noisy_image = img.imread('testing-simple/noisy-image.png')
+# noisy_image = noisy_image[:, :, 0]
 
-noisy_image = img.imread('testing-simple/noisy-image.png')
-noisy_image = noisy_image[:, :, 0]
+data = pd.read_fwf('testing-simple/noisy-image.dat', header=None)
+noisy_image = data.iloc.values
 
-row = gt_image.shape[0]
-col = gt_image.shape[1]
+row = noisy_image.shape[0]
+col = noisy_image.shape[1]
 
 domain = Domain([0, 1], continuous=True)
 
@@ -102,4 +106,4 @@ for i in range(row):
         predict_image[i, j] = infer.map(rvs[i * col + j])
         # print(predict_image[i, j])
 
-show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1)
+show_images([noisy_image, predict_image], vmin=0, vmax=1)
