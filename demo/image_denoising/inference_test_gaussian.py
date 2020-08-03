@@ -11,10 +11,10 @@ from inference.PBP import PBP
 
 USE_MANUAL_POTENTIALS = False
 
-gt_image = img.imread('ground-true-image.png')
+gt_image = img.imread('testing-simple/ground-true-image.png')
 gt_image = gt_image[:, :, 0]
 
-noisy_image = img.imread('noisy-image.png')
+noisy_image = img.imread('testing-simple/noisy-image.png')
 noisy_image = noisy_image[:, :, 0]
 
 row = gt_image.shape[0]

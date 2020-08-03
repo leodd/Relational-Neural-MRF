@@ -199,10 +199,10 @@ class GaussianNeuralNetPotential(Function):
         self.eps = eps
 
     def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * (self.prior(*parameters) + self.eps)
+        return np.exp(self.nn(*parameters)) * self.prior(*parameters) + self.eps
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + self.eps)
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
     def nn_forward(self, x, save_cache=True):
         return self.nn.forward(x, save_cache)
@@ -246,10 +246,10 @@ class TableNeuralNetPotential(Function):
         self.eps = eps
 
     def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * (self.prior(*parameters) + self.eps)
+        return np.exp(self.nn(*parameters)) * self.prior(*parameters) + self.eps
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + self.eps)
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
     def nn_forward(self, x, save_cache=True):
         return self.nn.forward(x, save_cache)
@@ -296,10 +296,10 @@ class CGNeuralNetPotential(Function):
         self.eps = eps
 
     def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * (self.prior(*parameters) + self.eps)
+        return np.exp(self.nn(*parameters)) * self.prior(*parameters) + self.eps
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + self.eps)
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
     def nn_forward(self, x, save_cache=True):
         return self.nn.forward(x, save_cache)
