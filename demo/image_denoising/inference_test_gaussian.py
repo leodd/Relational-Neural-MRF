@@ -78,7 +78,7 @@ for i in range(row - 1):
 g = Graph(rvs + evidence, fs)
 
 infer = PBP(g, n=10)
-infer.run(50, log_enable=True)
+infer.run(10, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
 # infer.run(1000, lr=0.01)

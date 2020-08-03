@@ -361,11 +361,11 @@ class ContrastiveNeuralNetPotential(Function):
 
     def __call__(self, *parameters):
         x = np.abs(parameters[0] - parameters[1])
-        return np.exp(self.nn(x)) * (self.prior(x) + 0.001)
+        return np.exp(self.nn(x)) * self.prior(x) + 0.5
 
     def batch_call(self, x):
         x = np.abs(x[:, [0]] - x[:, [1]])
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * (self.prior.batch_call(x) + 0.001)
+        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + 0.5
 
     def nn_forward(self, x, save_cache=True):
         x = np.abs(x[:, [0]] - x[:, [1]])
@@ -381,7 +381,7 @@ class ContrastiveNeuralNetPotential(Function):
             return GaussianFunction([parameters[1]], self.prior.sig)
 
     def set_empirical_prior(self, data):
-        data = np.abs(data[:, 0] - data[:, 1])
+        data = data[:, 0] - data[:, 1]
         sig = np.var(data).reshape(1, 1)
 
         if self.prior is None:

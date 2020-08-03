@@ -3,7 +3,7 @@ from utils import show_images, load
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
+from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
 from Potentials import ImageNodePotential, ImageEdgePotential
 from inference.VarInference import VarInference
 from inference.EPBPLogVersion import EPBP
@@ -27,20 +27,20 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = GaussianNeuralNetPotential(
-        (2, 64, ReLU()),
+    pxo = ContrastiveNeuralNetPotential(
+        (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None)
     )
 
-    pxy = GaussianNeuralNetPotential(
-        (2, 64, ReLU()),
+    pxy = ContrastiveNeuralNetPotential(
+        (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None)
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_2/8000'
+        'learned_potentials/model_2/10000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -87,7 +87,7 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=10)
+infer = PBP(g, n=50)
 infer.run(10, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
