@@ -31,7 +31,7 @@ else:
         (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None),
-        eps=0.0001
+        eps=0.001
     )
 
     pxy = ContrastiveNeuralNetPotential(
