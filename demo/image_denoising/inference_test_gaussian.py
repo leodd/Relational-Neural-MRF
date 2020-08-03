@@ -26,8 +26,8 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = GaussianFunction([0.5, 0.5], np.eye(2))
-    pxy = GaussianFunction([0.5, 0.5], np.eye(2))
+    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.0001)
+    pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
 
     pxo_params, pxy_params = load(
         'learned_potentials/model_1_gaussian/1000'
@@ -77,7 +77,7 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=10)
+infer = PBP(g, n=50)
 infer.run(10, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)

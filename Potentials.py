@@ -31,7 +31,7 @@ class TableFunction(Function):
 
 
 class GaussianFunction(Function):
-    def __init__(self, mu, sig, is_inv=False):
+    def __init__(self, mu, sig, is_inv=False, eps=0):
         """
         Args:
             mu: The mean vector (must be 1 dimensional).
@@ -40,6 +40,7 @@ class GaussianFunction(Function):
         """
         Function.__init__(self)
         self.set_parameters(mu, sig, is_inv)
+        self.eps = eps
 
     def set_parameters(self, mu, sig, is_inv=False):
         self.mu = np.array(mu, dtype=float)
@@ -53,11 +54,11 @@ class GaussianFunction(Function):
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
-        return self.coeff * np.exp(-0.5 * (x_mu.T @ self.inv_sig @ x_mu)) + 0.001
+        return self.coeff * np.exp(-0.5 * (x_mu.T @ self.inv_sig @ x_mu)) + self.eps
 
     def batch_call(self, x):
         x_mu = x - self.mu
-        return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1)) + 0.001
+        return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1)) + self.eps
 
     def slice(self, *parameters):
         idx_latent = [i for i, v in enumerate(parameters) if v is None]

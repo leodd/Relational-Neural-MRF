@@ -30,13 +30,15 @@ else:
     pxo = ContrastiveNeuralNetPotential(
         (1, 64, ReLU()),
         (64, 32, ReLU()),
-        (32, 1, None)
+        (32, 1, None),
+        eps=0.0001
     )
 
     pxy = ContrastiveNeuralNetPotential(
         (1, 64, ReLU()),
         (64, 32, ReLU()),
-        (32, 1, None)
+        (32, 1, None),
+        eps=0.1
     )
 
     pxo_params, pxy_params = load(
