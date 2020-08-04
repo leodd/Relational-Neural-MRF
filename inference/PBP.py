@@ -136,7 +136,7 @@ class PBP:
         for i in range(iteration):
             print(f'iteration: {i + 1}')
             if log_enable:
-                time_start = time.clock()
+                time_start = time.time()
 
             # Compute messages from rv to f
             for rv in self.g.rvs:
@@ -146,14 +146,14 @@ class PBP:
                         self.message[(rv, f)], _ = self.log_message_balance(m)
 
             if log_enable:
-                print(f'\trv to f {time.clock() - time_start}')
-                time_start = time.clock()
+                print(f'\trv to f {time.time() - time_start}')
+                time_start = time.time()
 
             if i < iteration - 1:
                 self.update_proposal()
 
                 if log_enable:
-                    print(f'\tproposal {time.clock() - time_start}')
+                    print(f'\tproposal {time.time() - time_start}')
 
                 x_new = self.generate_sample()
 
@@ -166,8 +166,8 @@ class PBP:
                 self.x = x_new
 
                 if log_enable:
-                    print(f'\tf to rv {time.clock() - time_start}')
-                    time_start = time.clock()
+                    print(f'\tf to rv {time.time() - time_start}')
+                    time_start = time.time()
 
     def belief_integration(self, rv, a, b, n, shift=None):
         x = np.linspace(a, b, n, endpoint=True)

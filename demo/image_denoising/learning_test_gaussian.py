@@ -66,11 +66,11 @@ g = Graph(set(rvs + evidence), set(fs), set(evidence))
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
     lr=0.001,
-    max_iter=1000,
+    max_iter=10000,
     batch_iter=5,
     batch_size=20,
     rvs_selection_size=1000,
     sample_size=5,
     save_dir='learned_potentials/model_1_gaussian',
-    save_period=100
+    save_period=1000
 )

@@ -221,7 +221,7 @@ class PMLE:
                 t += 1
 
                 print(t)
-                if t % 10 == 0:
+                if t % 100 == 0:
                     for p in self.trainable_potentials_ordered:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential(p, domain, domain, 0.05)
