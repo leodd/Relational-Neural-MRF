@@ -93,17 +93,15 @@ class PBP:
         f_x = np.array(list(product(*f_x)))
         m = np.exp(np.array(list(product(*m))).sum(axis=1))
 
-        res = np.empty(x.shape)
+        batch_len = len(f_x)
+        f_x = np.tile(f_x, (len(x), 1))
+        f_x[:, rv_idx] = np.repeat(x, batch_len)
 
-        for i, v in enumerate(x):
-            f_x[:, rv_idx] = v
-            temp = np.sum(f.potential.batch_call(f_x) * m)
-            if temp == 0:
-                res[i] = -700
-            else:
-                res[i] = np.log(temp)
+        res = f.potential.batch_call(f_x).reshape(len(x), -1) * m.reshape(1, -1)
+        res = np.sum(res, axis=1)
+        res[res == 0] = -700
 
-        return res
+        return np.log(res)
 
     def log_belief(self, x, rv):
         res = 0.0
