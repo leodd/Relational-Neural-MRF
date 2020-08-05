@@ -68,39 +68,6 @@ class GaBP:
 
             return mu, sig
 
-        elif type(f.potential) == LinearGaussianFunction:
-            h = f.potential.coeff
-            s1 = f.potential.sig
-
-            if h == 0:
-                return 0, Inf
-
-            rv_idx = 0
-            rv_ = None
-            for idx, nb in enumerate(f.nb):
-                if nb == rv:
-                    rv_idx = idx
-                else:
-                    rv_ = nb
-
-            if rv_.value is None:
-                u, s2 = self.message[(rv_, f)]
-                if rv_idx == 0:
-                    mu = u / h
-                    sig = (s1 + s2) / h ** 2
-                else:
-                    mu = u * h
-                    sig = s1 + s2 * h ** 2
-            else:
-                if rv_idx == 0:
-                    mu = rv_.value / h
-                    sig = s1 / h ** 2
-                else:
-                    mu = h * rv_.value
-                    sig = s1
-
-            return mu, sig
-
         return 0, Inf
 
     def run(self, iteration=10, log_enable=False):

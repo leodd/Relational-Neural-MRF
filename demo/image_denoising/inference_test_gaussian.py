@@ -5,8 +5,7 @@ from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
 from Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
-from inference.VarInference import VarInference
-from inference.EPBPLogVersion import EPBP
+from inference.GaBP import GaBP
 from inference.PBP import PBP
 
 
@@ -84,8 +83,8 @@ g = Graph(rvs + evidence, fs)
 infer = PBP(g, n=100)
 infer.run(50, log_enable=True)
 
-# infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
-# infer.run(1000, lr=0.01)
+# infer = GaBP(g)
+# infer.run(10, log_enable=True)
 
 predict_image = np.empty([row, col])
 
