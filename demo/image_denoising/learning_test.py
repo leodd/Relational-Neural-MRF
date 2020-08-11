@@ -1,5 +1,6 @@
 from utils import save, visualize_2d_potential
 from Graph import *
+from Potentials import GaussianFunction
 from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
 from learning.NeuralPMLEPrior import PMLE
 from demo.image_denoising.image_data_loader import load_data
@@ -27,13 +28,15 @@ domain = Domain([0, 1], continuous=True)
 pxo = ContrastiveNeuralNetPotential(
     (1, 64, ReLU()),
     (64, 32, ReLU()),
-    (32, 1, None)
+    (32, 1, None),
+    prior=GaussianFunction([0], [[0.1]])
 )
 
 pxy = ContrastiveNeuralNetPotential(
     (1, 64, ReLU()),
     (64, 32, ReLU()),
-    (32, 1, None)
+    (32, 1, None),
+    prior=GaussianFunction([0], [[0.1]])
 )
 
 data = dict()
@@ -86,12 +89,13 @@ g = Graph(set(rvs + evidence), set(fs), set(evidence))
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
     lr=0.001,
-    alpha=0.999,
-    regular=0.0001,
+    alpha=0.9999,
+    regular=0.00001,
     max_iter=10000,
     batch_iter=5,
     batch_size=20,
     rvs_selection_size=1000,
     sample_size=30,
-    save_dir='learned_potentials/model_2'
+    save_dir='learned_potentials/model_3',
+    save_period=200
 )

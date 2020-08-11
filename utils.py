@@ -132,7 +132,7 @@ def kl_normal(mu1, mu2, sig1, sig2):
     return res
 
 
-def show_images(images, cols=1, titles=None, vmin=0, vmax=1):
+def show_images(images, cols=1, titles=None, vmin=0, vmax=1, save_path=None):
     """Display a list of images in a single figure with matplotlib.
 
     Parameters
@@ -156,7 +156,11 @@ def show_images(images, cols=1, titles=None, vmin=0, vmax=1):
         plt.imshow(image, vmin=vmin, vmax=vmax)
         a.set_title(title)
     fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
-    plt.show()
+
+    if save_path is None:
+        plt.show()
+    else:
+        plt.savefig(save_path)
 
 
 def visualize_1d_potential(p, d, spacing=2):

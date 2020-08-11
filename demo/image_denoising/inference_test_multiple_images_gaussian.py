@@ -3,8 +3,8 @@ from utils import show_images, load
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
-from Potentials import ImageNodePotential, ImageEdgePotential
+from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
+from Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
 from inference.VarInference import VarInference
 from inference.EPBPLogVersion import EPBP
 from inference.PBP import PBP
@@ -23,26 +23,15 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = ContrastiveNeuralNetPotential(
-        (1, 64, ReLU()),
-        (64, 32, ReLU()),
-        (32, 1, None),
-        eps=0.0001
-    )
-
-    pxy = ContrastiveNeuralNetPotential(
-        (1, 64, ReLU()),
-        (64, 32, ReLU()),
-        (32, 1, None),
-        eps=0.1
-    )
+    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
+    pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_2/10000'
+        'learned_potentials/model_1_gaussian/10000'
     )
 
-    pxo.set_parameters(pxo_params)
-    pxy.set_parameters(pxy_params)
+    pxo.set_parameters(*pxo_params)
+    pxy.set_parameters(*pxy_params)
 
 l1_loss = list()
 l2_loss = list()
@@ -99,7 +88,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
             predict_image[i, j] = infer.map(rvs[i * col + j])
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1,
-                save_path='testing/neural_mrf_result/' + str(image_idx) + '.png')
+                save_path='testing/gaussian_mrf_result/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))

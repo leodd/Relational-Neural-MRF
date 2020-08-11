@@ -29,11 +29,11 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.00001)
-    pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.0001)
+    pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.1)
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1_gaussian/1000'
+        'learned_potentials/model_1_gaussian/10000'
     )
 
     pxo.set_parameters(*pxo_params)

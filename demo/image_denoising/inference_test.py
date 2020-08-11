@@ -35,18 +35,18 @@ else:
         (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None),
-        eps=0.0001
+        eps=0.
     )
 
     pxy = ContrastiveNeuralNetPotential(
         (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None),
-        eps=0.1
+        eps=0.
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_2/10000'
+        'learned_potentials/model_3/800'
     )
 
     pxo.set_parameters(pxo_params)
@@ -93,7 +93,7 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=100)
+infer = PBP(g, n=50)
 infer.run(50, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
