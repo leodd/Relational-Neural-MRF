@@ -87,6 +87,9 @@ class PMLE:
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_prior
 
+                    if not rv.domain.continuous:
+                        rv_prior.table /= np.sum(rv_prior.table)
+
                 if rv.domain.continuous:  # Continuous case
                     res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
                 else:  # Discrete case
@@ -202,7 +205,7 @@ class PMLE:
                 b = np.exp(w)
                 prior_diff = b - 1.0
 
-                w /= np.sum(b)
+                w = b / np.sum(b)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
@@ -274,10 +277,10 @@ class PMLE:
                 t += 1
 
                 print(t)
-                if t % 100 == 0:
-                    for p in self.trainable_potentials_ordered:
-                        domain = Domain([0, 1], continuous=True)
-                        visualize_2d_potential(p, domain, domain, 0.05)
+                # if t % 100 == 0:
+                #     for p in self.trainable_potentials_ordered:
+                #         domain = Domain([0, 1], continuous=True)
+                #         visualize_2d_potential(p, domain, domain, 0.05)
 
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]

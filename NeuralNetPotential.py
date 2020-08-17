@@ -192,7 +192,7 @@ class NeuralNetPotential(Function):
 
 
 class GaussianNeuralNetPotential(Function):
-    def __init__(self, *args, prior=None, eps=0.1):
+    def __init__(self, *args, prior=None, eps=0):
         self.dimension = args[0][0]  # The dimension of the input parameters
         self.nn = NeuralNetFunction(*args)
         self.prior = prior
@@ -238,7 +238,7 @@ class GaussianNeuralNetPotential(Function):
 
 
 class TableNeuralNetPotential(Function):
-    def __init__(self, *args, domains, prior=None, eps):
+    def __init__(self, *args, domains, prior=None, eps=0):
         self.dimension = args[0][0]  # The dimension of the input parameters
         self.nn = NeuralNetFunction(*args)
         self.domains = domains
@@ -261,6 +261,7 @@ class TableNeuralNetPotential(Function):
         return self.prior.slice(*parameters)
 
     def set_empirical_prior(self, data):
+        data = data.astype(int)
         table = np.zeros(shape=[len(d.values) for d in self.domains])
 
         idx, count = np.unique(data, return_counts=True, axis=0)
@@ -288,7 +289,7 @@ class TableNeuralNetPotential(Function):
 
 
 class CGNeuralNetPotential(Function):
-    def __init__(self, *args, domains, prior=None, eps=0.1):
+    def __init__(self, *args, domains, prior=None, eps=0):
         self.dimension = args[0][0]  # The dimension of the input parameters
         self.nn = NeuralNetFunction(*args)
         self.domains = domains
@@ -357,7 +358,7 @@ class CGNeuralNetPotential(Function):
 
 
 class ContrastiveNeuralNetPotential(Function):
-    def __init__(self, *args, prior=None, eps=0.1):
+    def __init__(self, *args, prior=None, eps=0):
         self.dimension = 2  # The dimension of the input parameters
         self.nn = NeuralNetFunction(*args)
         self.prior = prior

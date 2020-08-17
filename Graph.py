@@ -1,3 +1,4 @@
+import numpy as np
 from numpy.random import normal, randint
 
 
@@ -27,6 +28,11 @@ class Domain:
     def value_to_idx(self, values):
         if not self.continuous:
             return [self.idx_dict[v] for v in values]
+
+    def normalize_value(self, values, range=(0, 1)):
+        if self.continuous:
+            temp = (np.array(values) - self.values[0]) / (self.values[1] - self.values[0])
+            return temp * (range[1] - range[0]) + range[0]
 
 
 class RV:
