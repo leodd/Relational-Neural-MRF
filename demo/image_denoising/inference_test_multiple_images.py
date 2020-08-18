@@ -27,18 +27,18 @@ else:
         (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None),
-        eps=0.0001
+        eps=0.
     )
 
     pxy = ContrastiveNeuralNetPotential(
         (1, 64, ReLU()),
         (64, 32, ReLU()),
         (32, 1, None),
-        eps=0.1
+        eps=0.
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_2/10000'
+        'learned_potentials/model_3/10000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -89,8 +89,8 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
 
     g = Graph(rvs + evidence, fs)
 
-    infer = PBP(g, n=100)
-    infer.run(20, log_enable=True)
+    infer = PBP(g, n=200)
+    infer.run(50, log_enable=True)
 
     predict_image = np.empty([row, col])
 
