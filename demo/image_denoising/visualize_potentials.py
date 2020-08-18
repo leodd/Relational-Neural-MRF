@@ -23,7 +23,7 @@ pxy = ContrastiveNeuralNetPotential(
 # pxy = GaussianFunction([0.5, 0.5], np.eye(2))
 
 pxo_params, pxy_params = load(
-    'learned_potentials/model_3/1000'
+    'learned_potentials/model_3/10000'
 )
 
 pxo.set_parameters(pxo_params)

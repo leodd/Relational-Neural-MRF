@@ -89,7 +89,7 @@ g = Graph(set(rvs + evidence), set(fs), set(evidence))
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
     lr=0.001,
-    alpha=0.999,
+    alpha=0.99,
     regular=0.001,
     max_iter=10000,
     batch_iter=5,

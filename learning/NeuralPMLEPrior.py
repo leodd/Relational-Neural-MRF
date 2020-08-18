@@ -9,6 +9,9 @@ import seaborn as sns
 
 
 class PMLE:
+
+    max_log_value = 700
+
     def __init__(self, g, trainable_potentials, data):
         """
         Args:
@@ -33,9 +36,9 @@ class PMLE:
         self.initialize_factor_prior()
         self.trainable_rvs_prior = dict()
 
-        # for p in self.trainable_potentials:
-        #     domain = Domain([0, 1], continuous=True)
-        #     visualize_2d_potential(p, domain, domain, 0.05)
+        for p in self.trainable_potentials:
+            domain = Domain([0, 1], continuous=True)
+            visualize_2d_potential(p, domain, domain, 0.05)
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -162,6 +165,19 @@ class PMLE:
 
         return (data_x, data_info)
 
+    def log_belief_balance(self, b):
+        mean_m = np.mean(b)
+        max_m = np.max(b)
+
+        if max_m - mean_m > self.max_log_value:
+            shift = max_m - self.max_log_value
+        else:
+            shift = mean_m
+
+        b -= shift
+
+        return b, shift
+
     def get_gradient(self, data_x, data_info, sample_size=10, alpha=0.5):
         """
         Args:
@@ -192,16 +208,18 @@ class PMLE:
                 for f, idx in zip(rv.nb, start_idx):
                     w += data_y_nn[f.potential][idx:idx + sample_size]
 
-                b = np.exp(w)
-                prior_diff = b - 1.0
-
-                w = b / np.sum(b)
+                w, _ = self.log_belief_balance(w)
+                w = np.exp(w)
+                w = w / np.sum(w)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = \
-                            -alpha * w + (alpha - 1) * prior_diff * b
+                        regular = data_y_nn[f.potential][idx - 1:idx + sample_size]
+                        regular[1:] /= sample_size
+
+                        gradient_y[f.potential][idx:idx + sample_size, 0] = -alpha * w
+                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] += (alpha - 1) * regular
 
         return gradient_y
 
@@ -267,10 +285,10 @@ class PMLE:
                 t += 1
 
                 print(t)
-                # if t % 100 == 0:
-                #     for p in self.trainable_potentials_ordered:
-                #         domain = Domain([0, 1], continuous=True)
-                #         visualize_2d_potential(p, domain, domain, 0.05)
+                if t % 20 == 0:
+                    for p in self.trainable_potentials_ordered:
+                        domain = Domain([0, 1], continuous=True)
+                        visualize_2d_potential(p, domain, domain, 0.05)
 
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]

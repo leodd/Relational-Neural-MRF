@@ -9,6 +9,9 @@ import os
 
 
 class PMLE:
+
+    max_log_value = 700
+
     def __init__(self, g, trainable_potentials, data):
         """
         Args:
@@ -172,6 +175,19 @@ class PMLE:
 
         return (data_x, data_info)
 
+    def log_belief_balance(self, b):
+        mean_m = np.mean(b)
+        max_m = np.max(b)
+
+        if max_m - mean_m > self.max_log_value:
+            shift = max_m - self.max_log_value
+        else:
+            shift = mean_m
+
+        b -= shift
+
+        return b, shift
+
     def get_gradient(self, data_x, data_info, sample_size=10, alpha=0.5):
         """
         Args:
@@ -202,16 +218,18 @@ class PMLE:
                 for f, idx in zip(rv.nb, start_idx):
                     w += data_y_nn[f.potential][idx:idx + sample_size]
 
-                b = np.exp(w)
-                prior_diff = b - 1.0
-
-                w = b / np.sum(b)
+                w, _ = self.log_belief_balance(w)
+                w = np.exp(w)
+                w = w / np.sum(w)
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = \
-                            -alpha * w + (alpha - 1) * prior_diff * b
+                        regular = data_y_nn[f.potential][idx - 1:idx + sample_size]
+                        regular[1:] /= sample_size
+
+                        gradient_y[f.potential][idx:idx + sample_size, 0] = -alpha * w
+                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] += (alpha - 1) * regular
 
         return gradient_y
 
