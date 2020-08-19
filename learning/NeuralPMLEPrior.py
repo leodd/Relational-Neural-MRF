@@ -199,7 +199,7 @@ class PMLE:
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.ones(data_y_nn[potential].shape).reshape(-1, 1) * alpha
+            gradient_y[potential] = np.empty(data_y_nn[potential].shape).reshape(-1, 1)
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
@@ -212,6 +212,8 @@ class PMLE:
                 w = np.exp(w)
                 w = w / np.sum(w)
 
+                w[0] -= 1
+
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
@@ -219,7 +221,6 @@ class PMLE:
                         y_ = np.exp(np.abs(y))
                         regular = np.where(y >= 0., y_, -y_)
 
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = 0.
                         gradient_y[f.potential][idx - 1:idx + sample_size, 0] += -alpha * w + (alpha - 1) * regular
 
         return gradient_y
