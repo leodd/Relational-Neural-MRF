@@ -96,6 +96,6 @@ leaner.train(
     batch_size=20,
     rvs_selection_size=1000,
     sample_size=5,
-    save_dir='learned_potentials/model_2',
+    # save_dir='learned_potentials/model_2',
     save_period=1000
 )

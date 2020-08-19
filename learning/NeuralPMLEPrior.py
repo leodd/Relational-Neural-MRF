@@ -221,7 +221,7 @@ class PMLE:
                         y_ = np.exp(np.abs(y))
                         regular = np.where(y >= 0., y_, -y_)
 
-                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] += -alpha * w + (alpha - 1) * regular
+                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] = -alpha * w + (alpha - 1) * regular
 
         return gradient_y
 
