@@ -88,14 +88,14 @@ g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.001,
+    lr=0.0005,
     alpha=0.99,
-    regular=0.001,
+    regular=0.0001,
     max_iter=10000,
     batch_iter=5,
     batch_size=20,
     rvs_selection_size=1000,
-    sample_size=30,
-    save_dir='learned_potentials/model_3',
-    save_period=200
+    sample_size=5,
+    save_dir='learned_potentials/model_2',
+    save_period=1000
 )

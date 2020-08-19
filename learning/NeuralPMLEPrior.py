@@ -203,10 +203,10 @@ class PMLE:
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
-                w = np.zeros(sample_size)
+                w = np.zeros(sample_size + 1)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y_nn[f.potential][idx:idx + sample_size]
+                    w += data_y_nn[f.potential][idx - 1:idx + sample_size]
 
                 w, _ = self.log_belief_balance(w)
                 w = np.exp(w)
@@ -215,11 +215,12 @@ class PMLE:
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        regular = data_y_nn[f.potential][idx - 1:idx + sample_size]
-                        regular[1:] /= sample_size
+                        y = data_y_nn[f.potential][idx - 1:idx + sample_size]
+                        y_ = np.exp(np.abs(y))
+                        regular = np.where(y >= 0., y_, -y_)
 
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = -alpha * w
-                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] += (alpha - 1) * regular
+                        gradient_y[f.potential][idx:idx + sample_size, 0] = 0.
+                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] += -alpha * w + (alpha - 1) * regular
 
         return gradient_y
 
@@ -285,7 +286,7 @@ class PMLE:
                 t += 1
 
                 print(t)
-                if t % 20 == 0:
+                if t % 50 == 0:
                     for p in self.trainable_potentials_ordered:
                         domain = Domain([0, 1], continuous=True)
                         visualize_2d_potential(p, domain, domain, 0.05)

@@ -46,7 +46,7 @@ else:
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_3/10000'
+        'learned_potentials/model_2/5000'
     )
 
     pxo.set_parameters(pxo_params)

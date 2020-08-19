@@ -186,6 +186,11 @@ def visualize_2d_potential(p, d1, d2, spacing=2):
 
     ys = p.batch_call(xs)
 
+    # ys = p.nn_forward(xs, save_cache=False)
+
+    # xs = np.abs(xs[:, [0]] - xs[:, [1]])
+    # ys = p.prior.batch_call(xs)
+
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(x1, x2, ys)

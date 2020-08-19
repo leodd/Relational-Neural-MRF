@@ -33,7 +33,7 @@ else:
     pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1_gaussian/10000'
+        'learned_potentials/model_1_gaussian/5000'
     )
 
     pxo.set_parameters(*pxo_params)
