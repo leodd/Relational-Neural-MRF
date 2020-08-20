@@ -74,7 +74,7 @@ for key, rv in rvs_dict.items():
 leaner = PMLE(g, [p1, p2, p3], data)
 leaner.train(
     lr=0.001,
-    alpha=1,
+    alpha=0.99,
     regular=0.001,
     max_iter=10000,
     batch_iter=5,
@@ -82,5 +82,5 @@ leaner.train(
     rvs_selection_size=1000,
     sample_size=30,
     save_dir='learned_potentials/model_1',
-    save_period=200
+    save_period=1000
 )

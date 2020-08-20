@@ -86,6 +86,11 @@ for i in range(row - 1):
 
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
+def visualize(ps, t):
+    if t % 50 == 0:
+        for p in ps:
+            visualize_2d_potential(p, domain, domain, spacing=0.05)
+
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
     lr=0.0005,
@@ -97,5 +102,6 @@ leaner.train(
     rvs_selection_size=1000,
     sample_size=5,
     # save_dir='learned_potentials/model_2',
-    save_period=1000
+    save_period=1000,
+    visualize=visualize
 )

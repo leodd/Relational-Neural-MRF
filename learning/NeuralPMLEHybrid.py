@@ -36,10 +36,6 @@ class PMLE:
         self.initialize_factor_prior()
         self.trainable_rvs_prior = dict()
 
-        # for p in self.trainable_potentials:
-        #     domain = Domain([0, 1], continuous=True)
-        #     visualize_2d_potential(p, domain, domain, 0.05)
-
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
         """
@@ -237,7 +233,7 @@ class PMLE:
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
-              save_dir=None, save_period=1000):
+              save_dir=None, save_period=1000, visualize=None):
         """
         Args:
             lr: Learning rate.
@@ -249,6 +245,7 @@ class PMLE:
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
             save_dir: The directory for the saved potentials.
+            visualize: An optional visualization function.
         """
         adam = AdamOptimizer(lr)
         moments = dict()
@@ -297,10 +294,8 @@ class PMLE:
                 t += 1
 
                 print(t)
-                # if t % 100 == 0:
-                #     for p in self.trainable_potentials_ordered:
-                #         domain = Domain([0, 1], continuous=True)
-                #         visualize_2d_potential(p, domain, domain, 0.05)
+                if visualize is not None:
+                    visualize(self.trainable_potentials_ordered, t)
 
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
