@@ -270,7 +270,7 @@ class PMLE:
 
             i = 0
             while i < batch_iter and t < max_iter:
-                gradient_y = self.get_gradient(data_x, data_info, sample_size, alpha)
+                gradient_y = self.get_gradient(data_x, data_info, sample_size)
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
