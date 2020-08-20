@@ -184,13 +184,12 @@ class PMLE:
 
         return b, shift
 
-    def get_gradient(self, data_x, data_info, sample_size=10, alpha=0.5):
+    def get_gradient(self, data_x, data_info, sample_size=10):
         """
         Args:
             data_x: The potential input that are computed by get_unweighted_data function.
             data_info: The data indexing, shift and spacing information.
             sample_size: The number of sampling points (need to be consistent with get_unweighted_data function).
-            alpha: The coefficient for balancing the mle and prior fitting.
 
         Returns:
             A dictionary with potential as key, and gradient as value.
@@ -227,6 +226,8 @@ class PMLE:
                         y_ = np.exp(np.abs(y))
                         regular = np.where(y >= 0., y_, -y_)
 
+                        alpha = f.potential.alpha
+
                         gradient_y[f.potential][idx - 1:idx + sample_size, 0] = -alpha * w + (alpha - 1) * regular
 
         return gradient_y
@@ -237,7 +238,8 @@ class PMLE:
         """
         Args:
             lr: Learning rate.
-            alpha: The coefficient for balancing the mle and prior fitting.
+            alpha: The 0 ~ 1 value for controlling the strongness of prior.
+            (Could be a list of alpha value for each potential)
             regular: Regularization ratio.
             max_iter: The number of total iterations.
             batch_iter: The number of iteration of each mini batch.
@@ -247,6 +249,12 @@ class PMLE:
             save_dir: The directory for the saved potentials.
             visualize: An optional visualization function.
         """
+        if not isinstance(alpha, list):
+            alpha = [alpha] * len(self.trainable_potentials_ordered)
+
+        for p, a in zip(self.trainable_potentials_ordered, alpha):
+            p.alpha = a
+
         adam = AdamOptimizer(lr)
         moments = dict()
         t = 0
