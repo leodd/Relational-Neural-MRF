@@ -90,7 +90,7 @@ class PBP:
             else:
                 f_x.append([nb.value])
 
-        f_x = np.array(list(product(*f_x)))
+        f_x = np.array(list(product(*f_x)), dtype=float)
         m = np.exp(np.array(list(product(*m))).sum(axis=1))
 
         batch_len = len(f_x)
@@ -129,8 +129,12 @@ class PBP:
         # Message initialization
         for rv in self.g.rvs:
             if rv.value is None:
-                for f in rv.nb:
-                    self.message[(f, rv)] = np.zeros(self.n)
+                if rv.domain.continuous:
+                    for f in rv.nb:
+                        self.message[(f, rv)] = np.zeros(self.n)
+                else:
+                    for f in rv.nb:
+                        self.message[(f, rv)] = np.zeros(len(rv.domain.values))
 
         # BP iteration
         for i in range(iteration):

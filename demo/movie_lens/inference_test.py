@@ -76,21 +76,27 @@ query_rvs = dict()
 
 for key, rv in rvs_dict.items():
     if key[0] == 'gender':
-        rv.value = d_gender.value_to_idx([user_data[key[1]]['gender']])
+        rv.value = d_gender.value_to_idx(user_data[key[1]]['gender'])
     elif key[0] == 'genre':
-        rv.value = d_genre.value_to_idx([movie_data[key[1]]['genres'][0]])
+        rv.value = d_genre.value_to_idx(movie_data[key[1]]['genres'][0])
     elif key[0] == 'age':
-        rv.value = d_age.value_to_idx([user_data[key[1]]['age']])
+        rv.value = d_age.value_to_idx(user_data[key[1]]['age'])
     elif key[0] == 'rating':
         if np.random.rand() > 0.5:
-            rv.value = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
+            rv.value = d_rating.value_to_idx(rating_data[(key[1], key[2])]['rating'])
         else:
-            query_rvs[rv] = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
+            query_rvs[rv] = d_rating.value_to_idx(rating_data[(key[1], key[2])]['rating'])
     elif key[0] == 'year':
-        rv.value = d_year.normalize_value([float(movie_data[key[1]]['year'])])
+        rv.value = d_year.normalize_value(float(movie_data[key[1]]['year']))
 
 infer = PBP(g, n=50)
 infer.run(10, log_enable=True)
 
+loss = list()
+
 for rv, target in query_rvs.items():
-    print(infer.map(rv), target)
+    predict = infer.map(rv)
+    loss.append(np.abs(predict - target))
+    print(predict, target, loss[-1])
+
+print(np.mean(loss))

@@ -24,11 +24,17 @@ class Domain:
 
     def value_to_idx(self, x):
         if not self.continuous:
-            return [self.idx_dict[v] for v in x]
+            if isinstance(x, list) or isinstance(x, tuple) or isinstance(x, np.ndarray):
+                return [self.idx_dict[v] for v in x]
+            else:
+                return self.idx_dict[x]
 
     def normalize_value(self, x):
         if self.continuous:
-            temp = (np.array(x) - self.values_[0]) / (self.values_[1] - self.values_[0])
+            if isinstance(x, list) or isinstance(x, tuple) or isinstance(x, np.ndarray):
+                x = np.array(x)
+
+            temp = (x - self.values_[0]) / (self.values_[1] - self.values_[0])
             return temp * (self.values[1] - self.values[0]) + self.values[0]
 
     def domain_indexize(self):
