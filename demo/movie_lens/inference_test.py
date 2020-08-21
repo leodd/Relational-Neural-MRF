@@ -18,6 +18,12 @@ d_gender = Domain(['F', 'M'], continuous=False)
 d_age = Domain([1, 18, 25, 35, 45, 50, 56], continuous=False)
 d_rating = Domain([1, 2, 3, 4, 5], continuous=False)
 
+d_genre.domain_indexize()
+d_year.domain_normalize([0, 10.])
+d_gender.domain_indexize()
+d_age.domain_indexize()
+d_rating.domain_indexize()
+
 lv_Movie = LV(movie_data.keys())
 lv_User = LV(user_data.keys())
 
@@ -66,7 +72,7 @@ rel_g = RelationalGraph(
 
 g, rvs_dict = rel_g.ground_graph()
 
-data = dict()
+query_rvs = dict()
 
 for key, rv in rvs_dict.items():
     if key[0] == 'gender':
@@ -76,9 +82,15 @@ for key, rv in rvs_dict.items():
     elif key[0] == 'age':
         rv.value = d_age.value_to_idx([user_data[key[1]]['age']])
     elif key[0] == 'rating':
-        rv.value = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
+        if np.random.rand() > 0.5:
+            rv.value = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
+        else:
+            query_rvs[rv] = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
     elif key[0] == 'year':
-        rv.value = d_year.normalize_value([float(movie_data[key[1]]['year'])], range=[0., 10.])
+        rv.value = d_year.normalize_value([float(movie_data[key[1]]['year'])])
 
 infer = PBP(g, n=50)
 infer.run(10, log_enable=True)
+
+for rv, target in query_rvs.items():
+    print(infer.map(rv), target)

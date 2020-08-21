@@ -60,17 +60,17 @@ def value_to_idx(x, domains):
 
 def parse_mln(mln):
     if type(mln) is MLNPotential:
-        table = np.zeros(shape=[len(d.values) for d in mln.domains])
+        table = np.zeros(shape=[len(d.values_) for d in mln.domains])
 
-        for x in product(*[d.values for d in mln.domains]):
+        for x in product(*[d.values_ for d in mln.domains]):
             table[tuple(value_to_idx(x, mln.domains))] = mln(*x)
 
         return TableFunction(table / np.sum(table))
     else:
-        w_table = np.zeros(shape=[len(d.values) for d in mln.domains if not d.continuous])
+        w_table = np.zeros(shape=[len(d.values_) for d in mln.domains if not d.continuous])
         dis_table = np.zeros(shape=w_table.shape, dtype=int)
 
-        for x in product(*[d.values for d in mln.domains]):
+        for x in product(*[d.values_ for d in mln.domains]):
             v = mln.formula(x)
             w_table[tuple(value_to_idx(x, mln.domains))] = np.exp(mln.w * v)
             dis_table[tuple(value_to_idx(x, mln.domains))] = int(v)

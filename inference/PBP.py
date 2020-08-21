@@ -208,10 +208,15 @@ class PBP:
 
     def map(self, rv):
         if rv.value is None:
-            return fminbound(
-                lambda x: -np.squeeze(self.log_belief(x.reshape(-1), rv)),
-                rv.domain.values[0], rv.domain.values[1],
-                disp=False
-            )
+            if rv.domain.continuous:
+                return fminbound(
+                    lambda x: -np.squeeze(self.log_belief(x.reshape(-1), rv)),
+                    rv.domain.values[0], rv.domain.values[1],
+                    disp=False
+                )
+            else:
+                x = np.array(rv.domain.values)
+                b = self.log_belief(x, rv)
+                return x[np.argmax(b)]
         else:
             return rv.value

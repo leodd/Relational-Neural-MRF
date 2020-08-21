@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.random import normal, randint
 
 
 class Domain:
@@ -13,26 +12,33 @@ class Domain:
                     for discrete domain, it is a list of categories, e.g. [True, False].
             continuous: A boolean value that indicating if the domain is continuous.
         """
-        self.values = tuple(values)
+        self.values_ = tuple(values)
+        self.values = self.values_
         self.continuous = continuous
-
-        if not continuous:
-            self.idx_dict = {v: idx for idx, v in enumerate(values)}
 
     def sample(self):
         if self.continuous:
-            return normal(0, 1)
+            return np.random.uniform(self.values[0], self.values[1])
         else:
-            return self.values[randint(len(self.values))]
+            return self.values[np.random.randint(len(self.values))]
 
-    def value_to_idx(self, values):
+    def value_to_idx(self, x):
         if not self.continuous:
-            return [self.idx_dict[v] for v in values]
+            return [self.idx_dict[v] for v in x]
 
-    def normalize_value(self, values, range=(0, 1)):
+    def normalize_value(self, x):
         if self.continuous:
-            temp = (np.array(values) - self.values[0]) / (self.values[1] - self.values[0])
-            return temp * (range[1] - range[0]) + range[0]
+            temp = (np.array(x) - self.values_[0]) / (self.values_[1] - self.values_[0])
+            return temp * (self.values[1] - self.values[0]) + self.values[0]
+
+    def domain_indexize(self):
+        if not self.continuous:
+            self.values = np.arange(len(self.values_))
+            self.idx_dict = {v: idx for idx, v in enumerate(self.values_)}
+
+    def domain_normalize(self, range=(0, 1)):
+        if self.continuous:
+            self.values = range
 
 
 class RV:

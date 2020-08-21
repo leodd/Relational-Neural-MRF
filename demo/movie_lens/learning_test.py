@@ -17,6 +17,12 @@ d_gender = Domain(['F', 'M'], continuous=False)
 d_age = Domain([1, 18, 25, 35, 45, 50, 56], continuous=False)
 d_rating = Domain([1, 2, 3, 4, 5], continuous=False)
 
+d_genre.domain_indexize()
+d_year.domain_normalize([0, 10.])
+d_gender.domain_indexize()
+d_age.domain_indexize()
+d_rating.domain_indexize()
+
 lv_Movie = LV(movie_data.keys())
 lv_User = LV(user_data.keys())
 
@@ -69,7 +75,7 @@ for key, rv in rvs_dict.items():
     elif key[0] == 'rating':
         data[rv] = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
     elif key[0] == 'year':
-        data[rv] = d_year.normalize_value([float(movie_data[key[1]]['year'])], range=[0., 10.])
+        data[rv] = d_year.normalize_value([float(movie_data[key[1]]['year'])])
 
 leaner = PMLE(g, [p1, p2, p3], data)
 leaner.train(
