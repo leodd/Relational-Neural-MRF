@@ -103,4 +103,3 @@ for rv, target in query_rvs.items():
 
 print(np.mean(loss))
 print(np.mean(accuracy))
-
