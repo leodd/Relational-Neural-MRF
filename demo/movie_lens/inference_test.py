@@ -1,4 +1,4 @@
-from utils import load, visualize_2d_potential
+from utils import load, visualize_2d_potential, sub_graph
 from Graph import *
 from RelationalGraph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
@@ -17,6 +17,7 @@ d_year = Domain([1900, 2020], continuous=True)
 d_gender = Domain(['F', 'M'], continuous=False)
 d_age = Domain([1, 18, 25, 35, 45, 50, 56], continuous=False)
 d_rating = Domain([1, 2, 3, 4, 5], continuous=False)
+d_avg_rating = Domain([1, 5], continuous=True)
 
 d_genre.domain_indexize()
 d_year.domain_normalize([0, 10.])
@@ -33,41 +34,35 @@ year = Atom(d_year, [lv_Movie], name='year')
 gender = Atom(d_gender, [lv_User], name='gender')
 age = Atom(d_age, [lv_User], name='age')
 rating = Atom(d_rating, [lv_User, lv_Movie], name='rating')
+user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
+movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
-p1 = TableNeuralNetPotential(
-    (3, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None),
-    domains=[d_genre, d_gender, d_rating]
+p1 = CGNeuralNetPotential(
+    (2, 32, ReLU()),
+    (32, 16, ReLU()),
+    (16, 1, None),
+    domains=[d_rating, d_avg_rating]
 )
-p2 = TableNeuralNetPotential(
-    (3, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None),
-    domains=[d_genre, d_age, d_rating]
-)
-p3 = CGNeuralNetPotential(
-    (3, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None),
-    domains=[d_age, d_rating, d_year]
+p2 = CGNeuralNetPotential(
+    (2, 32, ReLU()),
+    (32, 16, ReLU()),
+    (16, 1, None),
+    domains=[d_rating, d_avg_rating]
 )
 
-p1_params, p2_params, p3_params = load(
-    'learned_potentials/model_1/1000'
+p1_params, p2_params = load(
+    'learned_potentials/model_1/10000'
 )
 
 p1.set_parameters(p1_params)
 p2.set_parameters(p2_params)
-p3.set_parameters(p3_params)
 
-f1 = ParamF(p1, nb=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f2 = ParamF(p2, nb=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f3 = ParamF(p3, nb=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f1 = ParamF(p1, nb=['rating(U, M)', 'user_avg_rating(U)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f2 = ParamF(p2, nb=['rating(U, M)', 'movie_avg_rating(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 
 rel_g = RelationalGraph(
-    atoms=[genre, year, gender, age, rating],
-    parametric_factors=[f1, f2, f3]
+    atoms=[rating, user_avg_rating, movie_avg_rating],
+    parametric_factors=[f1, f2]
 )
 
 g, rvs_dict = rel_g.ground_graph()
@@ -82,14 +77,20 @@ for key, rv in rvs_dict.items():
     elif key[0] == 'age':
         rv.value = d_age.value_to_idx(user_data[key[1]]['age'])
     elif key[0] == 'rating':
-        if np.random.rand() > 0.5:
+        if np.random.rand() > 0.0001:
             rv.value = d_rating.value_to_idx(rating_data[(key[1], key[2])]['rating'])
         else:
             query_rvs[rv] = d_rating.value_to_idx(rating_data[(key[1], key[2])]['rating'])
     elif key[0] == 'year':
         rv.value = d_year.normalize_value(float(movie_data[key[1]]['year']))
 
-infer = PBP(g, n=50)
+print(len(query_rvs))
+
+g = sub_graph(query_rvs, depth=2)
+
+print(len(g.rvs))
+
+infer = PBP(g, n=20)
 infer.run(10, log_enable=True)
 
 loss = list()
@@ -103,4 +104,3 @@ for rv, target in query_rvs.items():
 
 print(np.mean(loss))
 print(np.mean(accuracy))
-

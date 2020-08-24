@@ -91,7 +91,7 @@ class PBP:
                 f_x.append([nb.value])
 
         f_x = np.array(list(product(*f_x)), dtype=float)
-        m = np.exp(np.array(list(product(*m))).sum(axis=1))
+        m = np.exp(self.log_message_balance(np.array(list(product(*m))).sum(axis=1))[0])
 
         batch_len = len(f_x)
         f_x = np.tile(f_x, (len(x), 1))
@@ -99,7 +99,7 @@ class PBP:
 
         res = f.potential.batch_call(f_x).reshape(len(x), -1) * m.reshape(1, -1)
         res = np.sum(res, axis=1)
-        res[res == 0] = -700
+        res[res == 0] = np.exp(-700)
 
         return np.log(res)
 
