@@ -50,44 +50,20 @@ p2 = CGNeuralNetPotential(
     (16, 1, None),
     domains=[d_rating, d_avg_rating]
 )
-p3 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
-    domains=[d_genre, d_gender, d_rating]
-)
-p4 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
-    domains=[d_genre, d_age, d_rating]
-)
-p5 = CGNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
-    domains=[d_age, d_rating, d_year]
-)
 
-p1_params, p2_params, p3_params, p4_params, p5_params = load(
+p1_params, p2_params = load(
     'learned_potentials/model_1/10000'
 )
 
 p1.set_parameters(p1_params)
 p2.set_parameters(p2_params)
-p3.set_parameters(p3_params)
-p4.set_parameters(p4_params)
-p5.set_parameters(p5_params)
 
 f1 = ParamF(p1, nb=['rating(U, M)', 'user_avg_rating(U)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 f2 = ParamF(p2, nb=['rating(U, M)', 'movie_avg_rating(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f3 = ParamF(p3, nb=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f4 = ParamF(p4, nb=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f5 = ParamF(p5, nb=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 
 rel_g = RelationalGraph(
-    atoms=[genre, gender, age, year, rating, user_avg_rating, movie_avg_rating],
-    parametric_factors=[f1, f2, f3, f4, f5]
+    atoms=[rating, user_avg_rating, movie_avg_rating],
+    parametric_factors=[f1, f2]
 )
 
 g, rvs_dict = rel_g.ground_graph()
@@ -115,7 +91,7 @@ g = sub_graph(query_rvs, depth=2)
 
 print(len(g.rvs))
 
-infer = PBP(g, n=20)
+infer = PBP(g, n=10)
 infer.run(10, log_enable=True)
 
 loss = list()

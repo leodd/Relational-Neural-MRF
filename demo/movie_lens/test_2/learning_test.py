@@ -28,11 +28,11 @@ d_rating.domain_indexize()
 lv_Movie = LV(movie_data.keys())
 lv_User = LV(user_data.keys())
 
-genre = Atom(d_genre, [lv_Movie], name='genre')
-year = Atom(d_year, [lv_Movie], name='year')
+# genre = Atom(d_genre, [lv_Movie], name='genre')
+# year = Atom(d_year, [lv_Movie], name='year')
 # occupation = Atom(d_occupation, [lv_User], name='occupation')
-gender = Atom(d_gender, [lv_User], name='gender')
-age = Atom(d_age, [lv_User], name='age')
+# gender = Atom(d_gender, [lv_User], name='gender')
+# age = Atom(d_age, [lv_User], name='age')
 rating = Atom(d_rating, [lv_User, lv_Movie], name='rating')
 user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
@@ -61,34 +61,13 @@ p2 = CGNeuralNetPotential(
         [d_rating, d_avg_rating]
     )
 )
-p3 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
-    domains=[d_genre, d_gender, d_rating]
-)
-p4 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
-    domains=[d_genre, d_age, d_rating]
-)
-p5 = CGNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
-    domains=[d_age, d_rating, d_year]
-)
 
 f1 = ParamF(p1, nb=['rating(U, M)', 'user_avg_rating(U)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 f2 = ParamF(p2, nb=['rating(U, M)', 'movie_avg_rating(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f3 = ParamF(p3, nb=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f4 = ParamF(p4, nb=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f5 = ParamF(p5, nb=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 
 rel_g = RelationalGraph(
-    atoms=[genre, gender, age, year, rating, user_avg_rating, movie_avg_rating],
-    parametric_factors=[f1, f2, f3, f4, f5]
+    atoms=[rating, user_avg_rating, movie_avg_rating],
+    parametric_factors=[f1, f2]
 )
 
 g, rvs_dict = rel_g.ground_graph()
@@ -111,7 +90,7 @@ for key, rv in rvs_dict.items():
     elif key[0] == 'movie_avg_rating':
         data[rv] = d_avg_rating.normalize_value([movie_data[key[1]]['avg_rating']])
 
-leaner = PMLE(g, [p1, p2, p3, p4, p5], data)
+leaner = PMLE(g, [p1, p2], data)
 leaner.train(
     lr=0.001,
     alpha=0.99,
