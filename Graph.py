@@ -15,6 +15,7 @@ class Domain:
         self.values_ = tuple(values)
         self.values = self.values_
         self.continuous = continuous
+        self.size = self.values[1] - self.values[0] if self.continuous else len(self.values)
 
     def sample(self):
         if self.continuous:
@@ -45,6 +46,7 @@ class Domain:
     def domain_normalize(self, range=(0, 1)):
         if self.continuous:
             self.values = range
+            self.size = range[1] - range[0]
 
 
 class RV:

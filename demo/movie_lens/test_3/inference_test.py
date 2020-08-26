@@ -2,7 +2,7 @@ from utils import load, visualize_2d_potential, sub_graph
 from Graph import *
 from RelationalGraph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
-from Potentials import CategoricalGaussianFunction, GaussianFunction
+from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from learning.NeuralPMLEHybrid import PMLE
 from inference.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
@@ -21,7 +21,7 @@ d_rating = Domain([1, 2, 3, 4, 5], continuous=False)
 d_avg_rating = Domain([1, 5], continuous=True)
 
 d_genre.domain_indexize()
-d_year.domain_normalize([0, 10.])
+d_year.domain_normalize([0, 1.])
 d_gender.domain_indexize()
 d_age.domain_indexize()
 d_rating.domain_indexize()

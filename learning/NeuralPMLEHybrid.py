@@ -80,7 +80,11 @@ class PMLE:
             for rv in rvs:
                 if (rv, m) in res_dict: continue  # Skip if already computed before
 
-                rv_prior = None
+                if rv.domain.continuous:
+                    rv_prior = None
+                else:
+                    rv_prior = TableFunction(np.ones(len(rv.domain.values)))
+
                 for f in rv.nb:
                     rv_prior = f.potential.prior_slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
