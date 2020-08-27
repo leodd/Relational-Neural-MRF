@@ -1,6 +1,6 @@
 import matplotlib.image as img
 from utils import show_images, load
-from demo.image_denoising.image_data_loader import load_data
+from demo.image_denoising.image_data_loader import load_simple_data
 import numpy as np
 from Graph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
@@ -10,9 +10,9 @@ from inference.EPBPLogVersion import EPBP
 from inference.PBP import PBP
 
 
-USE_MANUAL_POTENTIALS = True
+USE_MANUAL_POTENTIALS = False
 
-gt_data, noisy_data = load_data('testing/gt', 'testing/noisy')
+gt_data, noisy_data = load_simple_data('testing_2/gt', 'testing_2/noisy')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
@@ -38,7 +38,7 @@ else:
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_3/10000'
+        'learned_potentials/model_2/5000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -99,7 +99,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
             predict_image[i, j] = infer.map(rvs[i * col + j])
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1,
-                save_path='testing/neural_mrf_result/' + str(image_idx) + '.png')
+                save_path='testing_2/neural_mrf_result/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))
