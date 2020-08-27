@@ -21,7 +21,7 @@ def load_raw_data(f):
 
 
 if __name__ == '__main__':
-    data = load_raw_data('radish.rm.raw/w.map')
+    data = load_raw_data('radish.rm.raw/a.map')
 
     colors = {
         'W': 'black',
