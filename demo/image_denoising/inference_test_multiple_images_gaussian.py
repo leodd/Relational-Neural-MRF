@@ -10,9 +10,9 @@ from inference.EPBPLogVersion import EPBP
 from inference.PBP import PBP
 
 
-USE_MANUAL_POTENTIALS = False
+USE_MANUAL_POTENTIALS = True
 
-gt_data, noisy_data = load_data('testing_1/gt', 'testing_1/noisy')
+gt_data, noisy_data = load_simple_data('testing_2/gt', 'testing_2/noisy')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
@@ -78,7 +78,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
 
     g = Graph(rvs + evidence, fs)
 
-    infer = PBP(g, n=100)
+    infer = PBP(g, n=200)
     infer.run(50, log_enable=True)
 
     predict_image = np.empty([row, col])
@@ -88,7 +88,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
             predict_image[i, j] = infer.map(rvs[i * col + j])
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1,
-                save_path='testing_1/gaussian_mrf_result/' + str(image_idx) + '.png')
+                save_path='testing_2/expert_mrf_result/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))

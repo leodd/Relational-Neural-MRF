@@ -86,6 +86,8 @@ class PMLE:
                     rv_prior = TableFunction(np.ones(len(rv.domain.values)))
 
                 for f in rv.nb:
+                    if not hasattr(f.potential, 'prior'): continue
+
                     rv_prior = f.potential.prior_slice(
                         *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
                     ) * rv_prior
@@ -202,7 +204,10 @@ class PMLE:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y_nn[potential] = potential.nn_forward(data_matrix, save_cache=True).reshape(-1)
+            if hasattr(potential, 'nn'):
+                data_y_nn[potential] = potential.nn_forward(data_matrix, save_cache=True).reshape(-1)
+            else:
+                data_y_nn[potential] = potential.batch_call(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
