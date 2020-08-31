@@ -33,7 +33,10 @@ class MLNPotential(Function):
         self.w = w
 
     def __call__(self, *parameters):
-        return np.exp(self.formula(parameters) * self.w)
+        if self.w is None:
+            return 0. if self.formula(parameters) < 0.5 else 1.
+        else:
+            return np.exp(self.formula(parameters) * self.w)
 
 
 class HMLNPotential(Function):

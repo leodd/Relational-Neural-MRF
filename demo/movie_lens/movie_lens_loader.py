@@ -5,8 +5,8 @@ import os
 import matplotlib.pyplot as plt
 
 
-def load_data(f):
-    movie_data, user_data, rating_data = load_movie_data(f), load_user_data(f), load_rating_data(f)
+def load_data(f, r=None):
+    movie_data, user_data, rating_data = load_movie_data(f), load_user_data(f), load_rating_data(f, r)
 
     avg_user_rating = Counter()
     num_user_rating = Counter()
@@ -63,11 +63,17 @@ def load_user_data(f):
     return data
 
 
-def load_rating_data(f):
+def load_rating_data(f, r=None):
     with open(os.path.join(f, 'ratings.dat'), 'r') as file:
         data = dict()
+        rating_count = Counter()
         for line in file:
             res = line.split('::')
+            if r is not None:
+                if rating_count[res[0]] < r:
+                    rating_count[res[0]] += 1
+                else:
+                    continue
             data[(int(res[0]), int(res[1]))] = {
                 'rating': int(res[2]),
                 'time': int(res[3])
@@ -77,5 +83,5 @@ def load_rating_data(f):
 
 
 if __name__ == '__main__':
-    data, _, _ = load_data('ml-1m')
+    _, _, data = load_data('ml-1m', 3)
     print(data)
