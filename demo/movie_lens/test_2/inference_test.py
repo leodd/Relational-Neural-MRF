@@ -58,8 +58,8 @@ p1_params, p2_params = load(
 p1.set_parameters(p1_params)
 p2.set_parameters(p2_params)
 
-f1 = ParamF(p1, nb=['rating(U, M)', 'user_avg_rating(U)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f2 = ParamF(p2, nb=['rating(U, M)', 'movie_avg_rating(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f1 = ParamF(p1, atoms=['rating(U, M)', 'user_avg_rating(U)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f2 = ParamF(p2, atoms=['rating(U, M)', 'movie_avg_rating(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 
 rel_g = RelationalGraph(
     atoms=[rating, user_avg_rating, movie_avg_rating],

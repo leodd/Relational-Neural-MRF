@@ -34,9 +34,9 @@ def generate_rel_graph(*args):
     atom_loss = Atom(d, logical_variables=(lv_category, lv_bank), name='loss')
     atom_revenue = Atom(d, logical_variables=(lv_bank,), name='revenue')
 
-    f1 = ParamF(p1, nb=('recession($all)', 'market(c)'))
-    f2 = ParamF(p2, nb=('market(c)', 'loss(c,b)'))
-    f3 = ParamF(p3, nb=('loss(c,b)', 'revenue(b)'))
+    f1 = ParamF(p1, atoms=('recession($all)', 'market(c)'))
+    f2 = ParamF(p2, atoms=('market(c)', 'loss(c,b)'))
+    f3 = ParamF(p3, atoms=('loss(c,b)', 'revenue(b)'))
 
     atoms = (atom_recession, atom_revenue, atom_loss, atom_market)
     param_factors = (f1, f2, f3)

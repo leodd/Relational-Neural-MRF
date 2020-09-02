@@ -60,8 +60,8 @@ p2 = parse_mln(MLNPotential(
     w=None
 ))
 
-f1 = ParamF(p1, nb=['rating(U, M1)', 'rating(U, M2)'], constrain=lambda s: (s['U'], s['M1']) in rating_data and (s['U'], s['M2']) in rating_data and s['M1'] < s['M2'])
-f2 = ParamF(p2, nb=['gender(U1)', 'gender(U2)', 'same_gender(U1, U2)'], constrain=lambda s: s['U1'] < s['U2'])
+f1 = ParamF(p1, atoms=[rating('U', 'M1'), rating('U', 'M2')], constrain=lambda s: (s['U'], s['M1']) in rating_data and (s['U'], s['M2']) in rating_data and s['M1'] < s['M2'])
+f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], constrain=lambda s: s['U1'] < s['U2'])
 
 rel_g = RelationalGraph(
     atoms=[genre, gender, rating, same_gender],

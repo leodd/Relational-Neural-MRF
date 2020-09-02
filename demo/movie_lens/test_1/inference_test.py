@@ -61,9 +61,9 @@ p1.set_parameters(p1_params)
 p2.set_parameters(p2_params)
 p3.set_parameters(p3_params)
 
-f1 = ParamF(p1, nb=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f2 = ParamF(p2, nb=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
-f3 = ParamF(p3, nb=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f1 = ParamF(p1, atoms=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f2 = ParamF(p2, atoms=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f3 = ParamF(p3, atoms=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 
 rel_g = RelationalGraph(
     atoms=[genre, year, gender, age, rating],
