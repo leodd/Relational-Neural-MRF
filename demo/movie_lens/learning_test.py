@@ -60,15 +60,24 @@ p2 = parse_mln(MLNPotential(
     w=None
 ))
 
-f1 = ParamF(p1, atoms=[rating('U', 'M1'), rating('U', 'M2')], constrain=lambda s: (s['U'], s['M1']) in rating_data and (s['U'], s['M2']) in rating_data and s['M1'] < s['M2'])
-f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], constrain=lambda s: s['U1'] < s['U2'])
+rs = np.array(list(rating_data.keys()))
+r_ms = np.unique(rs[:, 1])
+f1_sub = list()
+for m in r_ms:
+    r_us = rs[rs[:, 1] == m, 0]
+    f1_sub.append(np.array(np.meshgrid(r_us, r_us, m)).T.reshape(-1, 3))
+f1_sub = np.concatenate(f1_sub)
+f1_sub = f1_sub[f1_sub[:, 0] < f1_sub[:, 1]]
+f2_sub = np.unique(f1_sub[:, [0, 1]], axis=0)
+
+f1 = ParamF(p1, atoms=[rating('U1', 'M'), rating('U2', 'M'), same_gender('U1', 'U2')], lvs=['U1', 'U2', 'M'], subs=f1_sub)
+f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], lvs=['U1', 'U2'], subs=f2_sub)
 
 rel_g = RelationalGraph(
-    atoms=[genre, gender, rating, same_gender],
     parametric_factors=[f1, f2]
 )
 
-g, rvs_dict = rel_g.ground_graph()
+g, rvs_dict = rel_g.ground()
 
 data = dict()
 

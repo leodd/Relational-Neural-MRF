@@ -37,7 +37,7 @@ class Atom:
             terms = list(self.terms)
             for idx, ins in zip(self.sub_idx, sub):
                 terms[idx] = ins
-            return tuple([self.base.name] + terms)
+            return tuple([self.base] + terms)
 
 
 class ParamF:
