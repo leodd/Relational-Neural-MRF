@@ -9,7 +9,7 @@ from learning.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 
 
-r = 10  # Keep only 0 < r <= 20 ratings for each users
+r = 3  # Keep only 0 < r <= 20 ratings for each users
 
 movie_data, user_data, rating_data = load_data('ml-1m', r)
 
@@ -82,21 +82,21 @@ g, rvs_dict = rel_g.ground()
 data = dict()
 
 for key, rv in rvs_dict.items():
-    if key[0] == 'gender':
+    if key[0] == gender:
         data[rv] = d_gender.value_to_idx([user_data[key[1]]['gender']])
-    elif key[0] == 'same_gender':
+    elif key[0] == same_gender:
         data[rv] = d_same_gender.value_to_idx([user_data[key[1]]['gender'] == user_data[key[2]]['gender']])
-    elif key[0] == 'genre':
+    elif key[0] == genre:
         data[rv] = d_genre.value_to_idx([movie_data[key[1]]['genres'][0]])
-    elif key[0] == 'age':
+    elif key[0] == age:
         data[rv] = d_age.value_to_idx([user_data[key[1]]['age']])
-    elif key[0] == 'rating':
+    elif key[0] == rating:
         data[rv] = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
-    elif key[0] == 'year':
+    elif key[0] == year:
         data[rv] = d_year.normalize_value([float(movie_data[key[1]]['year'])])
-    elif key[0] == 'user_avg_rating':
+    elif key[0] == user_avg_rating:
         data[rv] = d_avg_rating.normalize_value([user_data[key[1]]['avg_rating']])
-    elif key[0] == 'movie_avg_rating':
+    elif key[0] == movie_avg_rating:
         data[rv] = d_avg_rating.normalize_value([movie_data[key[1]]['avg_rating']])
 
 leaner = PMLE(g, [p1], data)

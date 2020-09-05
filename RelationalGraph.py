@@ -62,7 +62,10 @@ class ParamF:
         if constrain is not None:
             subs = self.sub_filter(subs, constrain)
 
-        self.subs = np.array(list(subs))
+        if isinstance(subs, np.ndarray):
+            self.subs = subs
+        else:
+            self.subs = np.array(list(subs))
 
     @staticmethod
     def sub_filter(subs, constrain):

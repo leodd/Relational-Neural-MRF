@@ -12,7 +12,14 @@ class TableFunction(Function):
             table: A n-dimension tensor that maps a set of assignment to a value.
         """
         Function.__init__(self)
+        self.set_parameters(table)
+
+    def set_parameters(self, table):
         self.table = table
+        self.dimension = table.ndim
+
+    def parameters(self):
+        return self.table
 
     def __call__(self, *parameters):
         return self.table[tuple(np.array(parameters, dtype=int))]
@@ -43,6 +50,7 @@ class GaussianFunction(Function):
         self.eps = eps
 
     def set_parameters(self, mu, sig, is_inv=False):
+        self.dimension = len(mu)
         self.mu = np.array(mu, dtype=float)
         sig = np.array(sig, dtype=float)
         self.sig, self.inv_sig = (inv(sig), sig) if is_inv else (sig, inv(sig))
@@ -51,6 +59,9 @@ class GaussianFunction(Function):
         if det_sig <= 0:
             raise NameError("The covariance matrix is invalid")
         self.coeff = ((2 * pi) ** n * det_sig) ** -0.5
+
+    def parameters(self):
+        return self.mu, self.sig
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
@@ -101,9 +112,13 @@ class CategoricalGaussianFunction(Function):
         self.dis_table = distribution_table.astype(int)
         self.dis = distributions
         self.domains = domains
+        self.dimension = len(domains)
 
         self.c_idx = [i for i, d in enumerate(domains) if d.continuous]
         self.d_idx = [i for i, d in enumerate(domains) if not d.continuous]
+
+    def parameters(self):
+        return self.w_table, self.dis_table, self.dis
 
     def __call__(self, *parameters):
         parameters = np.array(parameters, dtype=float)
@@ -133,12 +148,16 @@ class LinearGaussianFunction(Function):
             sig: The variance value.
         """
         Function.__init__(self)
+        self.dimension = 2
         self.set_parameters(w, b, sig)
 
     def set_parameters(self, w, b, sig):
         self.w = w
         self.b = b
         self.sig = sig
+
+    def parameters(self):
+        return self.w, self.b, self.sig
 
     def __call__(self, *parameters):
         z = parameters[1] - parameters[0] * self.w - self.b

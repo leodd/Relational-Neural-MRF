@@ -130,7 +130,7 @@ class PMLE:
         # Initialize data matrix
         data_x = {p: np.empty(
             [
-                potential_count[p] * ((sample_size + 1) if p in self.trainable_potentials else sample_size),
+                potential_count[p] * (sample_size + 1),
                 p.dimension
             ]
         ) for p in potential_count}
@@ -152,12 +152,11 @@ class PMLE:
 
             for c, f in enumerate(rv.nb):
                 rv_idx = f.nb.index(rv)
-                r = 1 if f.potential in self.trainable_potentials else 0
 
                 current_idx = current_idx_counter[f.potential]
 
                 for k in range(K):
-                    next_idx = current_idx + sample_size + r
+                    next_idx = current_idx + sample_size + 1
 
                     if rv.domain.continuous:  # Continuous case
                         mu, sig = rv_prior[k]
@@ -166,9 +165,9 @@ class PMLE:
                         samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
-                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
+                    data_x[f.potential][current_idx + 1:next_idx, rv_idx] = samples
 
-                    data_idx_matrix[k, c] = current_idx + r
+                    data_idx_matrix[k, c] = current_idx
                     current_idx = next_idx
 
                 current_idx_counter[f.potential] = current_idx
@@ -220,7 +219,7 @@ class PMLE:
                 w = np.zeros(sample_size + 1)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y_nn[f.potential][idx - 1:idx + sample_size]
+                    w += data_y_nn[f.potential][idx:idx + sample_size + 1]
 
                 w, _ = self.log_belief_balance(w)
                 w = np.exp(w)
@@ -231,13 +230,13 @@ class PMLE:
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        y = data_y_nn[f.potential][idx - 1:idx + sample_size]
+                        y = data_y_nn[f.potential][idx:idx + sample_size + 1]
                         y_ = np.exp(np.abs(y))
                         regular = np.where(y >= 0., y_, -y_)
 
                         alpha = f.potential.alpha
 
-                        gradient_y[f.potential][idx - 1:idx + sample_size, 0] = -alpha * w + (alpha - 1) * regular
+                        gradient_y[f.potential][idx:idx + sample_size + 1, 0] = -alpha * w + (alpha - 1) * regular
 
         return gradient_y
 
