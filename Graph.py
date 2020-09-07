@@ -56,7 +56,7 @@ class RV:
     def __init__(self, domain, value=None):
         self.domain = domain
         self.value = value
-        self.nb = []  # A list of neighboring factors
+        self.nb = list()  # A list of neighboring factors
         self.N = 0  # The number of neighboring factors
 
 
@@ -72,7 +72,7 @@ class F:
         """
         self.potential = potential
         if nb is None:
-            self.nb = []
+            self.nb = list()
         else:
             self.nb = nb
 
@@ -89,7 +89,7 @@ class Graph:
 
     def init_nb(self):
         for rv in self.rvs:
-            rv.nb = []
+            rv.nb = list()
         for f in self.factors:
             for rv in f.nb:
                 rv.nb.append(f)

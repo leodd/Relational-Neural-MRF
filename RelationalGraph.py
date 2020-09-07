@@ -1,6 +1,7 @@
 from Graph import *
 import numpy as np
 from itertools import product
+from collections import defaultdict
 import re
 
 
@@ -12,18 +13,19 @@ class LV:
 class Atom:
     def __init__(self, domain, logical_variables, name=None):
         self.domain = domain
-        self.pfs = set()
+        self.pfs = list()
         self.lvs = logical_variables
         self.name = name
 
-    def __call__(self, *terms):
+    def __call__(self, *terms, subs=None):
         if len(terms) != len(self.lvs):
             raise Exception('Arity does not match.')
-        return self.Atom_(self, *terms)
+        return self.Atom_(self, subs, *terms)
 
     class Atom_:
-        def __init__(self, base, *terms):
+        def __init__(self, base, subs, *terms):
             self.base = base
+            self.subs = subs
             self.terms = terms
             self.sub_idx = list()
             self.lv_idx = dict()
@@ -73,11 +75,14 @@ class ParamF:
             if constrain(sub):
                 yield sub
 
-    def unified_subs(self, sub, sub_idx):
-        res = True
-        for idx, v in zip(sub_idx, sub):
-            res &= self.subs[:, idx] == v
-        return self.subs[res]
+    def unified_subs(self, subs, sub_idx, return_mask=False):
+        res = False
+        for sub in subs:
+            temp = True
+            for idx, v in zip(sub_idx, sub):
+                temp &= self.subs[:, idx] == v
+            res |= temp
+        return (self.subs[res], res) if return_mask else self.subs[res]
 
     def ground(self, sub):
         return [atom.ground(sub[idx]) for atom, idx in zip(self.atoms, self.atom_sub_idx)]
@@ -86,10 +91,16 @@ class ParamF:
 class RelationalGraph:
     def __init__(self, parametric_factors):
         self.pfs = parametric_factors
+        self.init_atom_pfs(parametric_factors)
+
+    @staticmethod
+    def init_atom_pfs(pfs):
+        for pf in pfs:
+            for idx, atom in enumerate(pf.atoms):
+                atom.base.pfs.append((pf, idx))
 
     @staticmethod
     def add_evidence(rvs_dict, data):
-        # data format: key=(RelationalAtom, LV1_instance, LV2_instance, ... ) value=True or 0.01 etc.
         for key, rv in rvs_dict.items():
             if key in data:
                 rv.value = data[key]
@@ -106,7 +117,7 @@ class RelationalGraph:
                 rvs_dict[key] = res[-1]
         return res
 
-    def ground(self):
+    def ground(self, data=None):
         fs = set()
         rvs_dict = dict()
 
@@ -117,5 +128,56 @@ class RelationalGraph:
                 fs.add(F(potential=pf.potential, nb=nb))
 
         g = Graph(set(rvs_dict.values()), fs)
+
+        if data is not None:
+            self.add_evidence(rvs_dict, data)
+
+        return g, rvs_dict
+
+    def partial_ground(self, queries, data, depth=2):
+        fs = set()
+        rvs_dict = dict()
+
+        atom_subs = defaultdict(set)
+        pf_subs_mask = defaultdict(bool)
+
+        new_atom_subs = defaultdict(set)
+        atom_obs = defaultdict(set)
+        pf_subs = dict()
+
+        for key in queries:
+            new_atom_subs[key[0]].add(key[1:])
+
+        if data is not None:
+            for key in data:
+                atom_obs[key[0]].add(key[1:])
+
+        for _ in range(depth):
+            for atom, subs in new_atom_subs.items():
+                for pf, idx in atom.pfs:
+                    unified_subs, mask = pf.unified_subs(subs, pf.atom_sub_idx[idx], return_mask=True)
+                    pf_subs[pf] = unified_subs
+                    pf_subs_mask[pf] |= mask
+                atom_subs[atom].update(subs)
+
+            new_atom_subs = defaultdict(set)
+
+            for pf, unified_subs in pf_subs:
+                for idx, atom in pf.atoms:
+                    subs = unified_subs[:, pf.atom_sub_idx[idx]]
+                    new_atom_subs[atom.base].update(map(tuple, subs))
+
+            for atom in new_atom_subs:
+                new_atom_subs[atom] -= atom_subs[atom] | atom_obs[atom]
+
+        for pf in pf_subs_mask:
+            for sub in pf.subs[pf_subs_mask[pf]]:
+                nb = self.register_rvs(pf.atoms, pf.ground(sub), rvs_dict)
+                fs.add(F(potential=pf.potential, nb=nb))
+
+        g = Graph(set(rvs_dict.values()), fs)
+
+        if data is not None:
+            self.add_evidence(rvs_dict, data)
 
         return g, rvs_dict

@@ -12,14 +12,14 @@ class PMLE:
 
     max_log_value = 700
 
-    def __init__(self, g, trainable_potentials, data):
+    def __init__(self, rel_g, trainable_potentials, data):
         """
         Args:
-            g: The Graph object.
+            rel_g: The Relational Graph object.
             trainable_potentials: A list of potential functions that need to be trained.
             data: A dictionary that maps each rv to a list of m observed data (list could contain None elements).
         """
-        self.g = g
+        self.rel_g = rel_g
         self.trainable_potentials_ordered = trainable_potentials
         self.trainable_potentials = set(trainable_potentials)
         self.data = data
