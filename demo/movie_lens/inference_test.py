@@ -77,31 +77,30 @@ rel_g = RelationalGraph(
     parametric_factors=[f1, f2]
 )
 
-g, rvs_dict = rel_g.ground()
+data = dict()
+query = dict()
 
-query_rvs = dict()
+for (u, m), content in rating_data:
+    data[(rating, u, m)] = d_rating.value_to_idx([content['rating']])[0]
 
-for key, rv in rvs_dict.items():
-    if key[0] == gender:
-        rv.value = d_gender.value_to_idx([user_data[key[1]]['gender']])[0]
-    elif key[0] == same_gender:
-        rv.value = d_same_gender.value_to_idx([user_data[key[1]]['gender'] == user_data[key[2]]['gender']])[0]
-    elif key[0] == genre:
-        rv.value = d_genre.value_to_idx([movie_data[key[1]]['genres'][0]])[0]
-    elif key[0] == age:
-        rv.value = d_age.value_to_idx([user_data[key[1]]['age']])[0]
-    elif key[0] == rating:
-        rv.value = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])[0]
-    elif key[0] == year:
-        rv.value = d_year.normalize_value([float(movie_data[key[1]]['year'])])[0]
-    elif key[0] == user_avg_rating:
-        rv.value = d_avg_rating.normalize_value([user_data[key[1]]['avg_rating']])[0]
-    elif key[0] == movie_avg_rating:
-        rv.value = d_avg_rating.normalize_value([movie_data[key[1]]['avg_rating']])[0]
+for m, content in movie_data:
+    data[(genre, m)] = d_genre.value_to_idx([content['genres'][0]])[0]
+    data[(year, m)] = d_year.normalize_value([float(content['year'])])[0]
 
-print(len(query_rvs))
+for u, content in user_data:
+    if np.random.rand() > 0.9:
+        query[(gender, u)] = d_gender.value_to_idx([content['gender']])[0]
+    else:
+        data[(gender, u)] = d_gender.value_to_idx([content['gender']])[0]
 
-g = sub_graph(query_rvs, depth=2)
+    data[(age, u)] = d_age.value_to_idx([content['age']])[0]
+
+for u1, u2 in f2_sub:
+    data[(u1, u2)] = d_same_gender.value_to_idx([data[(gender, u1)] == data[(gender, u2)]])[0]
+
+print(len(query))
+
+g, rvs_dict = rel_g.partial_ground(queries=query.keys(), data=data, depth=2)
 
 print(len(g.rvs))
 
@@ -111,7 +110,8 @@ infer.run(10, log_enable=True)
 loss = list()
 accuracy = list()
 
-for rv, target in query_rvs.items():
+for key, target in query.items():
+    rv = rvs_dict[key]
     predict = infer.map(rv)
     loss.append(np.abs(predict - target))
     accuracy.append(1 if predict == target else 0)
