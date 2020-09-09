@@ -76,13 +76,7 @@ class ParamF:
                 yield sub
 
     def unified_subs(self, subs, sub_idx, return_mask=False):
-        res = False
-        for i, sub in enumerate(subs):
-            temp = True
-            for idx, v in zip(sub_idx, sub):
-                temp &= self.subs[:, idx] == v
-            res |= temp
-            if i % 100 == 0: print(i)
+        res = np.apply_along_axis(lambda r: tuple in subs, 1, self.subs[:, sub_idx])
         return res if return_mask else self.subs[res]
 
     def ground(self, sub):
