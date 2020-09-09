@@ -21,9 +21,8 @@ for row in b:
 '''
 
 mycode = '''
-res = set(map(tuple, a[:, [0, 1]])) & b
-# res = np.apply_along_axis(lambda r: tuple(r) in b, 1, a[:, [0, 1]])
-# print(res)
+res = np.apply_along_axis(lambda r: tuple(r) in b, 1, a[:, [0, 1]])
+print(res)
 '''
 
 # timeit statement
