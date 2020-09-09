@@ -60,14 +60,11 @@ class PBP:
                 self.q[rv] = (mu, max(sig, self.var_threshold))
 
     def important_weight(self, x, rv):
-        if rv.value is None:
-            mu, sig = self.q[rv]
-            res = 1 / self.norm_pdf(x, mu, np.sqrt(sig)).clip(1e-200)
-            res[x == rv.domain.values[0]] = 1e-200
-            res[x == rv.domain.values[1]] = 1e-200
-            return res
-        else:
-            return 1
+        mu, sig = self.q[rv]
+        res = 1 / self.norm_pdf(x, mu, np.sqrt(sig)).clip(1e-200)
+        res[x == rv.domain.values[0]] = 1e-200
+        res[x == rv.domain.values[1]] = 1e-200
+        return res
 
     def message_rv_to_f(self, x, rv, f):
         res = np.log(self.important_weight(x, rv))

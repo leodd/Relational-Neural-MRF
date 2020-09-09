@@ -113,14 +113,14 @@ class RelationalGraph:
         return res
 
     def ground(self, data=None):
-        fs = set()
+        fs = list()
         rvs_dict = dict()
 
         # go through all parametric factors
         for pf in self.pfs:
             for sub in pf.subs:
                 nb = self.register_rvs(pf.atoms, pf.ground(sub), rvs_dict)
-                fs.add(F(potential=pf.potential, nb=nb))
+                fs.append(F(potential=pf.potential, nb=nb))
 
         g = Graph(set(rvs_dict.values()), fs)
 
@@ -130,7 +130,7 @@ class RelationalGraph:
         return g, rvs_dict
 
     def partial_ground(self, queries, data, depth=2):
-        fs = set()
+        fs = list()
         rvs_dict = dict()
 
         atom_subs = defaultdict(set)
@@ -170,7 +170,7 @@ class RelationalGraph:
         for pf in pf_subs_mask:
             for sub in pf.subs[pf_subs_mask[pf]]:
                 nb = self.register_rvs(pf.atoms, pf.ground(sub), rvs_dict)
-                fs.add(F(potential=pf.potential, nb=nb))
+                fs.append(F(potential=pf.potential, nb=nb))
 
         g = Graph(set(rvs_dict.values()), fs)
 
