@@ -80,15 +80,15 @@ rel_g = RelationalGraph(
 data = dict()
 query = dict()
 
-for (u, m), content in rating_data:
+for (u, m), content in rating_data.items():
     data[(rating, u, m)] = d_rating.value_to_idx([content['rating']])[0]
 
-for m, content in movie_data:
+for m, content in movie_data.items():
     data[(genre, m)] = d_genre.value_to_idx([content['genres'][0]])[0]
     data[(year, m)] = d_year.normalize_value([float(content['year'])])[0]
 
-for u, content in user_data:
-    if np.random.rand() > 0.9:
+for u, content in user_data.items():
+    if np.random.rand() > 0.99:
         query[(gender, u)] = d_gender.value_to_idx([content['gender']])[0]
     else:
         data[(gender, u)] = d_gender.value_to_idx([content['gender']])[0]
@@ -96,7 +96,8 @@ for u, content in user_data:
     data[(age, u)] = d_age.value_to_idx([content['age']])[0]
 
 for u1, u2 in f2_sub:
-    data[(u1, u2)] = d_same_gender.value_to_idx([data[(gender, u1)] == data[(gender, u2)]])[0]
+    if (gender, u1) in data and (gender, u2) in data:
+        data[(same_gender, u1, u2)] = d_same_gender.value_to_idx([data[(gender, u1)] == data[(gender, u2)]])[0]
 
 print(len(query))
 

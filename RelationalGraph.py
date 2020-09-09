@@ -77,12 +77,13 @@ class ParamF:
 
     def unified_subs(self, subs, sub_idx, return_mask=False):
         res = False
-        for sub in subs:
+        for i, sub in enumerate(subs):
             temp = True
             for idx, v in zip(sub_idx, sub):
                 temp &= self.subs[:, idx] == v
             res |= temp
-        return (self.subs[res], res) if return_mask else self.subs[res]
+            if i % 100 == 0: print(i)
+        return res if return_mask else self.subs[res]
 
     def ground(self, sub):
         return [atom.ground(sub[idx]) for atom, idx in zip(self.atoms, self.atom_sub_idx)]
@@ -143,7 +144,7 @@ class RelationalGraph:
 
         new_atom_subs = defaultdict(set)
         atom_obs = defaultdict(set)
-        pf_subs = dict()
+
 
         for key in queries:
             new_atom_subs[key[0]].add(key[1:])
@@ -153,22 +154,24 @@ class RelationalGraph:
                 atom_obs[key[0]].add(key[1:])
 
         for _ in range(depth):
+            pf_temp_mask = defaultdict(bool)
+
             for atom, subs in new_atom_subs.items():
                 for pf, idx in atom.pfs:
-                    unified_subs, mask = pf.unified_subs(subs, pf.atom_sub_idx[idx], return_mask=True)
-                    pf_subs[pf] = unified_subs
+                    mask = pf.unified_subs(subs, pf.atom_sub_idx[idx], return_mask=True)
+                    pf_temp_mask[pf] |= mask
                     pf_subs_mask[pf] |= mask
-                atom_subs[atom].update(subs)
 
             new_atom_subs = defaultdict(set)
 
-            for pf, unified_subs in pf_subs:
-                for idx, atom in pf.atoms:
-                    subs = unified_subs[:, pf.atom_sub_idx[idx]]
+            for pf, mask in pf_temp_mask.items():
+                for idx, atom in enumerate(pf.atoms):
+                    subs = pf.subs[np.ix_(mask, pf.atom_sub_idx[idx])]
                     new_atom_subs[atom.base].update(map(tuple, subs))
 
             for atom in new_atom_subs:
                 new_atom_subs[atom] -= atom_subs[atom] | atom_obs[atom]
+                atom_subs[atom].update(new_atom_subs[atom])
 
         for pf in pf_subs_mask:
             for sub in pf.subs[pf_subs_mask[pf]]:
