@@ -57,75 +57,22 @@ p1 = TableNeuralNetPotential(
         (d_rating.size * d_rating.size * d_same_gender.size)
     )
 )
-p2 = parse_mln(MLNPotential(
-    lambda x: bic_op(x[0] == x[1], x[2]),
-    domains=[d_gender, d_gender, d_same_gender],
-    w=None
-))
 
 (p1_params,) = load(
-    'learned_potentials/model_1/8000'
+    'learned_potentials/model_1/5000'
 )
 
 p1.set_parameters(p1_params)
 
-rs = np.array(list(rating_data.keys()))
-r_ms = np.unique(rs[:, 1])
-f1_sub = list()
-for m in r_ms:
-    r_us = rs[rs[:, 1] == m, 0]
-    f1_sub.append(np.array(np.meshgrid(r_us, r_us, m)).T.reshape(-1, 3))
-f1_sub = np.concatenate(f1_sub)
-f1_sub = f1_sub[f1_sub[:, 0] < f1_sub[:, 1]]
-f2_sub = np.unique(f1_sub[:, [0, 1]], axis=0)
+x1 = RV(d_rating, value=3)
+x2 = RV(d_rating, value=0)
+x3 = RV(d_same_gender)
 
-f1 = ParamF(p1, atoms=[rating('U1', 'M'), rating('U2', 'M'), same_gender('U1', 'U2')], lvs=['U1', 'U2', 'M'], subs=f1_sub)
-f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], lvs=['U1', 'U2'], subs=f2_sub)
+f1 = F(p1, nb=[x1, x2, x3])
 
-rel_g = RelationalGraph(
-    parametric_factors=[f1, f2]
-)
-
-data = dict()
-query = dict()
-
-for (u, m), content in rating_data.items():
-    data[(rating, u, m)] = d_rating.value_to_idx([content['rating']])[0]
-
-for m, content in movie_data.items():
-    data[(genre, m)] = d_genre.value_to_idx([content['genres'][0]])[0]
-    data[(year, m)] = d_year.normalize_value([float(content['year'])])[0]
-
-for u, content in user_data.items():
-    if np.random.rand() > 0.99:
-        query[(gender, u)] = d_gender.value_to_idx([content['gender']])[0]
-    else:
-        data[(gender, u)] = d_gender.value_to_idx([content['gender']])[0]
-
-    data[(age, u)] = d_age.value_to_idx([content['age']])[0]
-
-for u1, u2 in f2_sub:
-    if (gender, u1) in data and (gender, u2) in data:
-        data[(same_gender, u1, u2)] = d_same_gender.value_to_idx([data[(gender, u1)] == data[(gender, u2)]])[0]
-
-print(len(query))
-
-g, rvs_dict = rel_g.partial_ground(queries=query.keys(), data=data, depth=2)
-
-print(len(g.rvs))
+g = Graph(rvs=[x1, x2, x3], factors=[f1])
 
 infer = PBP(g, n=20)
 infer.run(10, log_enable=True)
 
-loss = list()
-accuracy = list()
-
-for key, target in query.items():
-    rv = rvs_dict[key]
-    predict = infer.map(rv)
-    loss.append(np.abs(predict - target))
-    accuracy.append(1 if predict == target else 0)
-    print(predict, target, loss[-1])
-
-print(np.mean(loss))
-print(np.mean(accuracy))
+print(infer.belief(np.array([0, 1]), x3))

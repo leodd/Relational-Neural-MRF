@@ -53,9 +53,10 @@ class RV:
     """
     The Random Variable.
     """
-    def __init__(self, domain, value=None):
+    def __init__(self, domain, value=None, name=None):
         self.domain = domain
         self.value = value
+        self.name = name
         self.nb = list()  # A list of neighboring factors
         self.N = 0  # The number of neighboring factors
 

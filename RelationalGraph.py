@@ -108,7 +108,7 @@ class RelationalGraph:
             if key in rvs_dict:
                 res.append(rvs_dict[key])
             else:
-                res.append(RV(atom.base.domain))
+                res.append(RV(atom.base.domain, name=key))
                 rvs_dict[key] = res[-1]
         return res
 

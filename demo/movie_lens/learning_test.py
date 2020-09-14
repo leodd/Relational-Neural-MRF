@@ -102,7 +102,7 @@ for key, rv in rvs_dict.items():
 leaner = PMLE(g, [p1], data)
 leaner.train(
     lr=0.001,
-    alpha=0.99,
+    alpha=0.9999,
     regular=0.001,
     max_iter=10000,
     batch_iter=5,
