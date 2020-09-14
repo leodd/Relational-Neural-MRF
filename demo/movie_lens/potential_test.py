@@ -9,13 +9,6 @@ from inference.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
 
 
-r = 3  # Keep only 0 < r <= 20 ratings for each users
-
-movie_data, user_data, rating_data = load_data('ml-1m', r)
-
-print(np.sum([content['gender'] == 'M' for u, content in user_data.items()]))
-print(np.sum([content['gender'] == 'F' for u, content in user_data.items()]))
-
 d_genre = Domain(["Action", "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary",
                   "Drama", "Fantasy", "Film-Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi",
                   "Thriller", "War", "Western"], continuous=False)
@@ -34,19 +27,6 @@ d_same_gender.domain_indexize()
 d_age.domain_indexize()
 d_rating.domain_indexize()
 
-lv_Movie = LV(movie_data.keys())
-lv_User = LV(user_data.keys())
-
-genre = Atom(d_genre, [lv_Movie], name='genre')
-year = Atom(d_year, [lv_Movie], name='year')
-# occupation = Atom(d_occupation, [lv_User], name='occupation')
-gender = Atom(d_gender, [lv_User], name='gender')
-same_gender = Atom(d_same_gender, [lv_User, lv_User], name='same_gender')
-age = Atom(d_age, [lv_User], name='age')
-rating = Atom(d_rating, [lv_User, lv_Movie], name='rating')
-user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
-movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
-
 p1 = TableNeuralNetPotential(
     (3, 32, ReLU()),
     (32, 16, ReLU()),
@@ -59,13 +39,13 @@ p1 = TableNeuralNetPotential(
 )
 
 (p1_params,) = load(
-    'learned_potentials/model_1/5000'
+    'learned_potentials/model_1/1000'
 )
 
 p1.set_parameters(p1_params)
 
-x1 = RV(d_rating, value=3)
-x2 = RV(d_rating, value=0)
+x1 = RV(d_rating, value=4)
+x2 = RV(d_rating, value=4)
 x3 = RV(d_same_gender)
 
 f1 = F(p1, nb=[x1, x2, x3])

@@ -9,9 +9,10 @@ from inference.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
 
 
+u = 3
 r = 3  # Keep only 0 < r <= 20 ratings for each users
 
-movie_data, user_data, rating_data = load_data('ml-1m', r)
+movie_data, user_data, rating_data = load_data('ml-1m', u, r)
 
 print(np.sum([content['gender'] == 'M' for u, content in user_data.items()]))
 print(np.sum([content['gender'] == 'F' for u, content in user_data.items()]))

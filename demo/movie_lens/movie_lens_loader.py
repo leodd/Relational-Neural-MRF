@@ -5,25 +5,39 @@ import os
 import matplotlib.pyplot as plt
 
 
-def load_data(f, r=None):
-    movie_data, user_data, rating_data = load_movie_data(f), load_user_data(f), load_rating_data(f, r)
+def load_data(f, u_num=None, r_num=None):
+    movie_data, user_data, rating_data = load_movie_data(f), load_user_data(f, u_num), load_rating_data(f, r_num)
 
     avg_user_rating = Counter()
     num_user_rating = Counter()
     avg_movie_rating = Counter()
     num_movie_rating = Counter()
 
+    remove_set = set()
+
     for (u, m), content in rating_data.items():
-        avg_user_rating[u] += content['rating']
-        num_user_rating[u] += 1
+        if u in user_data:
+            avg_user_rating[u] += content['rating']
+            num_user_rating[u] += 1
+        else:
+            remove_set.add((u, m))
+
         avg_movie_rating[m] += content['rating']
         num_movie_rating[m] += 1
+
+    for key in remove_set:
+        del rating_data[key]
+
+    remove_set.clear()
 
     for m, content in movie_data.items():
         if num_movie_rating[m] > 0:
             content['avg_rating'] = avg_movie_rating[m] / num_movie_rating[m]
         else:
-            content['avg_rating'] = 3.
+            remove_set.add(m)
+
+    for key in remove_set:
+        del movie_data[key]
 
     for u, content in user_data.items():
         if num_user_rating[u] > 0:
@@ -48,10 +62,12 @@ def load_movie_data(f):
     return data
 
 
-def load_user_data(f):
+def load_user_data(f, u_num):
     with open(os.path.join(f, 'users.dat'), 'r') as file:
         data = dict()
-        for line in file:
+        for idx, line in enumerate(file):
+            if u_num is not None and idx >= u_num:
+                break
             res = line.split('::')
             data[int(res[0])] = {
                 'gender': res[1],
@@ -63,14 +79,14 @@ def load_user_data(f):
     return data
 
 
-def load_rating_data(f, r=None):
+def load_rating_data(f, r_num=None):
     with open(os.path.join(f, 'ratings.dat'), 'r') as file:
         data = dict()
         rating_count = Counter()
         for line in file:
             res = line.split('::')
-            if r is not None:
-                if rating_count[res[0]] < r:
+            if r_num is not None:
+                if rating_count[res[0]] < r_num:
                     rating_count[res[0]] += 1
                 else:
                     continue
@@ -83,5 +99,5 @@ def load_rating_data(f, r=None):
 
 
 if __name__ == '__main__':
-    _, _, data = load_data('ml-1m', 3)
-    print(data)
+    movie_data, user_data, rating_data = load_data('ml-1m', u_num=3, r_num=3)
+    print(user_data)

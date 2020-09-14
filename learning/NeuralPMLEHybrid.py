@@ -232,7 +232,7 @@ class PMLE:
                     if f.potential in self.trainable_potentials:
                         y = data_y_nn[f.potential][idx:idx + sample_size + 1]
                         y_ = np.exp(np.abs(y))
-                        regular = np.where(y >= 0., y_, -y_)
+                        regular = np.where(y >= 0., y_, -y_) / (sample_size + 1)
 
                         alpha = f.potential.alpha
 

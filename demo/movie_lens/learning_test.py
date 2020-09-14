@@ -9,9 +9,10 @@ from learning.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 
 
+u = 3
 r = 3  # Keep only 0 < r <= 20 ratings for each users
 
-movie_data, user_data, rating_data = load_data('ml-1m', r)
+movie_data, user_data, rating_data = load_data('ml-1m', u, r)
 
 d_genre = Domain(["Action", "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary",
                   "Drama", "Fantasy", "Film-Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi",
@@ -101,9 +102,9 @@ for key, rv in rvs_dict.items():
 
 leaner = PMLE(g, [p1], data)
 leaner.train(
-    lr=0.001,
-    alpha=0.9999,
-    regular=0.001,
+    lr=0.01,
+    alpha=1,
+    regular=0.0,
     max_iter=10000,
     batch_iter=5,
     batch_size=1,
