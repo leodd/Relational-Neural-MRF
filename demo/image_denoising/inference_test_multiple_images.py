@@ -3,7 +3,7 @@ from utils import show_images, load
 from demo.image_denoising.image_data_loader import load_simple_data, load_data
 import numpy as np
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
+from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU, LinearLayer
 from Potentials import ImageNodePotential, ImageEdgePotential
 from inference.VarInference import VarInference
 from inference.EPBPLogVersion import EPBP
@@ -24,16 +24,16 @@ if USE_MANUAL_POTENTIALS:
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
     pxo = ContrastiveNeuralNetPotential(
-        (1, 64, ReLU()),
-        (64, 32, ReLU()),
-        (32, 1, None),
+        layers=[LinearLayer(1, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 1)],
         eps=0.
     )
 
     pxy = ContrastiveNeuralNetPotential(
-        (1, 64, ReLU()),
-        (64, 32, ReLU()),
-        (32, 1, None),
+        layers=[LinearLayer(1, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 1)],
         eps=0.
     )
 

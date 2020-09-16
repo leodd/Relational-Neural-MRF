@@ -1,11 +1,11 @@
 import numpy as np
-from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU
+from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU, LinearLayer
 import scipy.integrate as integrate
 
 
 nn = NeuralNetFunction(
-    (3, 4, LeakyReLU()),
-    (4, 1, None)
+    layers=[LinearLayer(3, 4), LeakyReLU(),
+            LinearLayer(4, 1)]
 )
 
 mb = [1, -2, -3]

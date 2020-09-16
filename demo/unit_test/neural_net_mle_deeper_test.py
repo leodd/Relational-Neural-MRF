@@ -1,4 +1,4 @@
-from NeuralNetPotential import NeuralNetPotential, LeakyReLU, ReLU, ELU
+from NeuralNetPotential import NeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
 from optimization_tools import AdamOptimizer
 from utils import visualize_1d_potential
 from Graph import *
@@ -26,10 +26,9 @@ data = np.array(data)
 sns.distplot(data)
 
 p = NeuralNetPotential(
-    (1, 64, ReLU()),
-    (64, 64, ReLU()),
-    (64, 64, ReLU()),
-    (64, 1, None)
+    layers=[LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)],
 )
 
 num_samples = 10

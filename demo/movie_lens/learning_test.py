@@ -2,15 +2,15 @@ from utils import save, visualize_2d_potential
 from Graph import *
 from RelationalGraph import *
 from Function import Function
-from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
+from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU, LinearLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from MLNPotential import *
 from learning.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 
 
-u = 3
-r = 3  # Keep only 0 < r <= 20 ratings for each users
+u = set(range(1000))
+r = 10  # Keep only 0 < r <= 20 ratings for each users
 
 movie_data, user_data, rating_data = load_data('ml-1m', u, r)
 
@@ -46,9 +46,9 @@ user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
 p1 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
+    layers=[LinearLayer(3, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)],
     domains=[d_rating, d_rating, d_same_gender],
     prior=TableFunction(
         np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /
@@ -80,6 +80,8 @@ rel_g = RelationalGraph(
 
 g, rvs_dict = rel_g.ground()
 
+print(len(g.rvs))
+
 data = dict()
 
 for key, rv in rvs_dict.items():
@@ -100,6 +102,15 @@ for key, rv in rvs_dict.items():
     elif key[0] == movie_avg_rating:
         data[rv] = d_avg_rating.normalize_value([movie_data[key[1]]['avg_rating']])
 
+def visualize(ps, t):
+    if t % 50 == 0:
+        for p in ps:
+            if p == p1:
+                x1, x2, x3 = np.meshgrid(d_rating.values, d_rating.values, d_same_gender.values)
+                xs = np.array([x1, x2, x3]).T.reshape(-1, 3)
+                ys = p.batch_call(xs).reshape(-1, 1)
+                print(np.concatenate([xs, ys], axis=1))
+
 leaner = PMLE(g, [p1], data)
 leaner.train(
     lr=0.01,
@@ -109,7 +120,8 @@ leaner.train(
     batch_iter=5,
     batch_size=1,
     rvs_selection_size=1000,
-    sample_size=30,
+    sample_size=5,
     save_dir='learned_potentials/model_1',
-    save_period=1000
+    save_period=1000,
+    visualize=visualize
 )

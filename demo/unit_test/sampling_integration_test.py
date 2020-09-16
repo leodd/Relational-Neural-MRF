@@ -1,5 +1,5 @@
 import numpy as np
-from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU
+from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU, LinearLayer
 import scipy.integrate as integrate
 from optimization_tools import AdamOptimizer
 
@@ -11,9 +11,9 @@ print(x, target)
 lr = 0.01
 
 nn = NeuralNetFunction(
-    (1, 4, LeakyReLU()),
-    (4, 4, LeakyReLU()),
-    (4, 1, None)
+    layers=[LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
 )
 
 adam = AdamOptimizer(lr)

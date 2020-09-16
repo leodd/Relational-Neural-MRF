@@ -1,4 +1,4 @@
-from NeuralNetPotential import NeuralNetPotential, ReLU, ELU, LeakyReLU
+from NeuralNetPotential import NeuralNetPotential, ReLU, ELU, LeakyReLU, LinearLayer
 import numpy as np
 from Graph import *
 from utils import visualize_1d_potential
@@ -18,10 +18,9 @@ print(norm_pdf(0, 0, 9))
 lr = 0.01
 
 nn = NeuralNetPotential(
-    (1, 32, LeakyReLU()),
-    (32, 64, LeakyReLU()),
-    (64, 32, LeakyReLU()),
-    (32, 1, None)
+    layers=[LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)],
 )
 
 adam = AdamOptimizer(lr)

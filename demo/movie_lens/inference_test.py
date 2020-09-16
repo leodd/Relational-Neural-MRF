@@ -1,7 +1,7 @@
 from utils import load, visualize_2d_potential, sub_graph
 from Graph import *
 from RelationalGraph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
+from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU, LinearLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from learning.NeuralPMLEHybrid import PMLE
 from MLNPotential import *
@@ -9,8 +9,8 @@ from inference.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
 
 
-u = 3
-r = 3  # Keep only 0 < r <= 20 ratings for each users
+u = set(range(1000))
+r = 10  # Keep only 0 < r <= 20 ratings for each users
 
 movie_data, user_data, rating_data = load_data('ml-1m', u, r)
 
@@ -49,9 +49,9 @@ user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
 p1 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
+    layers=[LinearLayer(3, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)],
     domains=[d_rating, d_rating, d_same_gender],
     prior=TableFunction(
         np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /

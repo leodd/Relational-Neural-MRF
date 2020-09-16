@@ -1,4 +1,4 @@
-from NeuralNetPotential import GaussianNeuralNetPotential, LeakyReLU, ReLU, ELU
+from NeuralNetPotential import GaussianNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
 from learning.NeuralPMLEPrior import PMLE
 from utils import visualize_1d_potential
 from Graph import *
@@ -20,10 +20,9 @@ data = {
 sns.distplot(data[rv])
 
 p = GaussianNeuralNetPotential(
-    (1, 64, ReLU()),
-    (64, 64, ReLU()),
-    (64, 64, ReLU()),
-    (64, 1, None)
+    layers=[LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
 )
 
 f = F(p, nb=[rv])

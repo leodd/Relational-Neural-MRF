@@ -26,24 +26,10 @@ class NeuralNetFunction(Function):
         where the first dimension represents data point,
         and the second dimension represents features.
     """
-    def __init__(self, *args):
+    def __init__(self, layers):
         Function.__init__(self)
 
-        self.layers = []
-
-        for i_size, o_size, act in args:
-            """
-            i_size: input size
-            o_size: output size
-            act: activation function
-            """
-            self.layers.append(
-                LinearLayer(i_size, o_size)
-            )
-
-            if act is not None:
-                self.layers.append(act)
-
+        self.layers = layers
         self.cache = None  # Cache for storing the forward propagation results
 
     def set_parameters(self, parameters):
@@ -168,9 +154,9 @@ class NeuralNetPotential(Function):
     """
     A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
     """
-    def __init__(self, *args):
-        self.dimension = args[0][0]  # The dimension of the input parameters
-        self.nn = NeuralNetFunction(*args)
+    def __init__(self, layers):
+        self.dimension = layers[0].i_size  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(layers)
 
     def __call__(self, *parameters):
         return np.exp(self.nn(*parameters))
@@ -192,9 +178,9 @@ class NeuralNetPotential(Function):
 
 
 class GaussianNeuralNetPotential(Function):
-    def __init__(self, *args, prior=None, eps=0):
-        self.dimension = args[0][0]  # The dimension of the input parameters
-        self.nn = NeuralNetFunction(*args)
+    def __init__(self, layers, prior=None, eps=0):
+        self.dimension = layers[0].i_size  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(layers)
         self.prior = prior
         self.eps = eps
 
@@ -238,9 +224,9 @@ class GaussianNeuralNetPotential(Function):
 
 
 class TableNeuralNetPotential(Function):
-    def __init__(self, *args, domains, prior=None, eps=0):
-        self.dimension = args[0][0]  # The dimension of the input parameters
-        self.nn = NeuralNetFunction(*args)
+    def __init__(self, layers, domains, prior=None, eps=0):
+        self.dimension = layers[0].i_size  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(layers)
         self.domains = domains
         self.prior = prior
         self.eps = eps
@@ -289,9 +275,9 @@ class TableNeuralNetPotential(Function):
 
 
 class CGNeuralNetPotential(Function):
-    def __init__(self, *args, domains, prior=None, eps=0):
-        self.dimension = args[0][0]  # The dimension of the input parameters
-        self.nn = NeuralNetFunction(*args)
+    def __init__(self, layers, domains, prior=None, eps=0):
+        self.dimension = layers[0].i_size  # The dimension of the input parameters
+        self.nn = NeuralNetFunction(layers)
         self.domains = domains
         self.prior = prior
         self.eps = eps
@@ -358,9 +344,9 @@ class CGNeuralNetPotential(Function):
 
 
 class ContrastiveNeuralNetPotential(Function):
-    def __init__(self, *args, prior=None, eps=0):
+    def __init__(self, layers, prior=None, eps=0):
         self.dimension = 2  # The dimension of the input parameters
-        self.nn = NeuralNetFunction(*args)
+        self.nn = NeuralNetFunction(layers)
         self.prior = prior
         self.eps = eps
 

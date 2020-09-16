@@ -1,7 +1,7 @@
 from utils import load, visualize_2d_potential, sub_graph
 from Graph import *
 from RelationalGraph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
+from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU, LinearLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from learning.NeuralPMLEHybrid import PMLE
 from MLNPotential import *
@@ -28,9 +28,9 @@ d_age.domain_indexize()
 d_rating.domain_indexize()
 
 p1 = TableNeuralNetPotential(
-    (3, 32, ReLU()),
-    (32, 16, ReLU()),
-    (16, 1, None),
+    layers=[LinearLayer(3, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)],
     domains=[d_rating, d_rating, d_same_gender],
     prior=TableFunction(
         np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /
@@ -39,13 +39,13 @@ p1 = TableNeuralNetPotential(
 )
 
 (p1_params,) = load(
-    'learned_potentials/model_1/1000'
+    'learned_potentials/model_1/6000'
 )
 
 p1.set_parameters(p1_params)
 
-x1 = RV(d_rating, value=4)
-x2 = RV(d_rating, value=4)
+x1 = RV(d_rating, value=2)
+x2 = RV(d_rating, value=2)
 x3 = RV(d_same_gender)
 
 f1 = F(p1, nb=[x1, x2, x3])
@@ -53,6 +53,6 @@ f1 = F(p1, nb=[x1, x2, x3])
 g = Graph(rvs=[x1, x2, x3], factors=[f1])
 
 infer = PBP(g, n=20)
-infer.run(10, log_enable=True)
+infer.run(2, log_enable=True)
 
 print(infer.belief(np.array([0, 1]), x3))
