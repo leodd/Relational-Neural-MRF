@@ -2,7 +2,7 @@ from utils import save, visualize_2d_potential
 from Graph import *
 from RelationalGraph import *
 from Function import Function
-from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU, LinearLayer
+from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU, LinearLayer, WSLinearLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from MLNPotential import *
 from learning.NeuralPMLEHybrid import PMLE
@@ -46,7 +46,7 @@ user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
 p1 = TableNeuralNetPotential(
-    layers=[LinearLayer(3, 64), ReLU(),
+    layers=[WSLinearLayer([[0, 1], [2]], 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)],
     domains=[d_rating, d_rating, d_same_gender],

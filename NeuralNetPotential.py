@@ -150,6 +150,32 @@ class LinearLayer:
         return d_x, (d_W, d_b)
 
 
+class WSLinearLayer:
+    def __init__(self, grouped_input_idx, o_size):
+        self.i_size = len([_ for group in grouped_input_idx for _ in group])
+        self.o_size = o_size
+        self.W = np.random.randn(len(grouped_input_idx), o_size) * 0.1
+        self.b = np.random.randn(o_size) * 0.1
+
+        self.forward_mapper = np.zeros(self.i_size, dtype=int)
+        self.backward_mapper = np.zeros([len(grouped_input_idx), self.i_size])
+        for idx, group_idx in enumerate(grouped_input_idx):
+            self.forward_mapper[group_idx] = idx
+            self.backward_mapper[idx, group_idx] = 1
+
+    def forward(self, x):
+        return x @ self.W[self.forward_mapper, :] + self.b
+
+    def backward(self, d_y, x):
+        d_W = x.T @ d_y
+        d_W = self.backward_mapper @ d_W
+
+        d_b = np.sum(d_y, axis=0)
+        d_x = d_y @ self.W[self.forward_mapper, :].T
+
+        return d_x, (d_W, d_b)
+
+
 class NeuralNetPotential(Function):
     """
     A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
