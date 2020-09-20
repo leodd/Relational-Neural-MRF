@@ -242,7 +242,7 @@ class PMLE:
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
-              save_dir=None, save_period=1000, visualize=None):
+              save_dir=None, save_period=1000, rv_sampler=None, visualize=None):
         """
         Args:
             lr: Learning rate.
@@ -255,6 +255,7 @@ class PMLE:
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
             save_dir: The directory for the saved potentials.
+            rv_sampler: A sampling function for getting random variables.
             visualize: An optional visualization function.
         """
         if not isinstance(alpha, list):
@@ -277,10 +278,13 @@ class PMLE:
             )
 
             # And sample a subset of rvs
-            rvs = random.sample(
-                self.trainable_rvs,
-                min(rvs_selection_size, len(self.trainable_rvs))
-            )
+            if rv_sampler:
+                rvs = rv_sampler(self.trainable_rvs, rvs_selection_size)
+            else:
+                rvs = random.sample(
+                    self.trainable_rvs,
+                    min(rvs_selection_size, len(self.trainable_rvs))
+                )
 
             # The computed data set for training the potential function
             # Potential function as key, and data x as value

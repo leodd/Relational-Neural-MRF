@@ -7,6 +7,7 @@ from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunct
 from MLNPotential import *
 from learning.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
+from collections import Counter
 
 
 u = set(range(1000))
@@ -84,11 +85,14 @@ print(len(g.rvs))
 
 data = dict()
 
+counter = Counter()
+
 for key, rv in rvs_dict.items():
     if key[0] == gender:
         data[rv] = d_gender.value_to_idx([user_data[key[1]]['gender']])
     elif key[0] == same_gender:
         data[rv] = d_same_gender.value_to_idx([user_data[key[1]]['gender'] == user_data[key[2]]['gender']])
+        counter[data[rv][0]] += 1
     elif key[0] == genre:
         data[rv] = d_genre.value_to_idx([movie_data[key[1]]['genres'][0]])
     elif key[0] == age:
@@ -102,6 +106,23 @@ for key, rv in rvs_dict.items():
     elif key[0] == movie_avg_rating:
         data[rv] = d_avg_rating.normalize_value([movie_data[key[1]]['avg_rating']])
 
+print(counter)
+
+for val in counter:
+    counter[val] = 0.5 / counter[val]
+
+trainable_rvs = list()
+trainable_rvs_p = list()
+for rv, content in data.items():
+    if rv.name[0] == same_gender:
+        trainable_rvs.append(rv)
+        trainable_rvs_p.append(counter[content[0]])
+
+print(sum(trainable_rvs_p))
+
+def sampler(rvs, size):
+    return list(np.random.choice(trainable_rvs, size=min(size, len(trainable_rvs)), replace=False, p=trainable_rvs_p))
+
 def visualize(ps, t):
     if t % 50 == 0:
         for p in ps:
@@ -114,14 +135,15 @@ def visualize(ps, t):
 leaner = PMLE(g, [p1], data)
 leaner.train(
     lr=0.01,
-    alpha=1,
+    alpha=1.,
     regular=0.0,
     max_iter=10000,
     batch_iter=5,
     batch_size=1,
-    rvs_selection_size=1000,
+    rvs_selection_size=200,
     sample_size=5,
     save_dir='learned_potentials/model_1',
     save_period=1000,
+    rv_sampler=sampler,
     visualize=visualize
 )
