@@ -1,5 +1,5 @@
 from NeuralNetPotential import GaussianNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
-from learning.NeuralPMLEPrior import PMLE
+from learning.NeuralPMLEHybrid import PMLE
 from utils import visualize_1d_potential
 from Graph import *
 import numpy as np
@@ -29,10 +29,11 @@ f = F(p, nb=[rv])
 
 g = Graph({rv}, {f})
 
-visualize_1d_potential(p, domain, 0.3)
-visualize_1d_potential(p, domain, 0.3)
+def visualize(ps, t):
+    if t % 200 == 0:
+        visualize_1d_potential(p, domain, 0.3)
 
-leaner = PMLE(g, {p}, data)
+leaner = PMLE(g, [p], data)
 leaner.train(
     lr=0.0001,
     alpha=0.999,
@@ -41,8 +42,6 @@ leaner.train(
     batch_iter=10,
     batch_size=300,
     rvs_selection_size=1,
-    sample_size=30
+    sample_size=30,
+    visualize=visualize
 )
-
-visualize_1d_potential(p, domain, 0.3)
-visualize_1d_potential(p, domain, 0.3)

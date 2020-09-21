@@ -96,7 +96,7 @@ def show_images(images, cols=1, titles=None, vmin=0, vmax=1, save_path=None):
 
 
 def visualize_1d_potential(p, d, spacing=2):
-    xs = np.arange(d.values[0], d.values[1], spacing)
+    xs = np.arange(d.values[0], d.values[1], spacing) if d.continuous else np.array(d.values)
     xs = xs.reshape(-1, 1)
 
     ys = p.batch_call(xs)
@@ -110,8 +110,8 @@ def visualize_1d_potential(p, d, spacing=2):
 
 
 def visualize_2d_potential(p, d1, d2, spacing=2):
-    d1 = np.arange(d1.values[0], d1.values[1], spacing)
-    d2 = np.arange(d2.values[0], d2.values[1], spacing)
+    d1 = np.arange(d1.values[0], d1.values[1], spacing) if d1.continuous else np.array(d1.values)
+    d2 = np.arange(d2.values[0], d2.values[1], spacing) if d2.continuous else np.array(d2.values)
 
     x1, x2 = np.meshgrid(d1, d2)
     xs = np.array([x1, x2]).T.reshape(-1, 2)
