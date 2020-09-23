@@ -4,11 +4,14 @@ import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import save, load, visualize_2d_potential, visualize_1d_potential
+from Potentials import GaussianFunction, TableFunction
 import os
-import seaborn as sns
 
 
 class PMLE:
+
+    max_log_value = 700
+
     def __init__(self, g, trainable_potentials, data):
         """
         Args:
@@ -29,6 +32,9 @@ class PMLE:
         for _, rvs in self.trainable_potential_rvs_dict.items():
             self.trainable_rvs |= rvs
         self.trainable_rvs -= g.condition_rvs
+
+        self.initialize_factor_prior()
+        self.trainable_rvs_prior = dict()
 
     @staticmethod
     def get_potential_rvs_factors_dict(g, potentials):
@@ -51,6 +57,51 @@ class PMLE:
 
         return rvs_dict, factors_dict
 
+    def initialize_factor_prior(self):
+        for p, fs in self.trainable_potential_factors_dict.items():
+            if p.prior is not None:  # Skip if the prior is given
+                continue
+
+            assignment = np.empty([len(fs) * self.M, p.dimension])
+
+            idx = 0
+            for f in fs:
+                for m in range(self.M):
+                    assignment[idx, :] = [self.data[rv][m] for rv in f.nb]
+                    idx += 1
+
+            p.set_empirical_prior(assignment)
+
+    def get_rvs_prior(self, rvs, batch, res_dict=None):
+        if res_dict is None:
+            res_dict = dict()
+
+        for m in batch:
+            for rv in rvs:
+                if (rv, m) in res_dict: continue  # Skip if already computed before
+
+                if rv.domain.continuous:
+                    rv_prior = None
+                else:
+                    rv_prior = TableFunction(np.ones(len(rv.domain.values)))
+
+                for f in rv.nb:
+                    if not hasattr(f.potential, 'prior'): continue
+
+                    rv_prior = f.potential.prior_slice(
+                        *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
+                    ) * rv_prior
+
+                    if not rv.domain.continuous:
+                        rv_prior.table /= np.sum(rv_prior.table)
+
+                if rv.domain.continuous:  # Continuous case
+                    res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
+                else:  # Discrete case
+                    res_dict[(rv, m)] = rv_prior.table / np.sum(rv_prior.table)
+
+        return res_dict
+
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
         Args:
@@ -60,7 +111,7 @@ class PMLE:
 
         Returns:
             A dictionary with potential as key, and data pairs (x, y) as value.
-            Also the data indexing information.
+            Also the data indexing, shift and spacing information.
         """
         potential_count = Counter()  # A counter of potential occurrence
         f_MB = dict()  # A dictionary with factor as key, and local assignment vector as value
@@ -79,10 +130,13 @@ class PMLE:
         # Initialize data matrix
         data_x = {p: np.empty(
             [
-                potential_count[p] * ((sample_size + 1) if p in self.trainable_potentials else sample_size),
+                potential_count[p] * (sample_size + 1),
                 p.dimension
             ]
         ) for p in potential_count}
+
+        # Compute variable proposal
+        self.get_rvs_prior(rvs, batch, self.trainable_rvs_prior)
 
         data_info = dict()  # rv as key, data indexing, shift, spacing as value
 
@@ -91,21 +145,29 @@ class PMLE:
             # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
             data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
 
+            rv_prior = [
+                self.trainable_rvs_prior[(rv, m)]
+                for m in batch
+            ]
+
             for c, f in enumerate(rv.nb):
                 rv_idx = f.nb.index(rv)
-                r = 1 if f.potential in self.trainable_potentials else 0
 
                 current_idx = current_idx_counter[f.potential]
 
                 for k in range(K):
-                    next_idx = current_idx + sample_size + r
+                    next_idx = current_idx + sample_size + 1
 
-                    samples = np.random.uniform(rv.domain.values[0], rv.domain.values[1], sample_size)
+                    if rv.domain.continuous:  # Continuous case
+                        mu, sig = rv_prior[k]
+                        samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
+                    else:  # Discrete case
+                        samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
-                    data_x[f.potential][current_idx + r:next_idx, rv_idx] = samples
+                    data_x[f.potential][current_idx + 1:next_idx, rv_idx] = samples
 
-                    data_idx_matrix[k, c] = current_idx + r
+                    data_idx_matrix[k, c] = current_idx
                     current_idx = next_idx
 
                 current_idx_counter[f.potential] = current_idx
@@ -114,13 +176,25 @@ class PMLE:
 
         return (data_x, data_info)
 
-    def get_gradient(self, data_x, data_info, sample_size=10, alpha=0.5):
+    def log_belief_balance(self, b):
+        mean_m = np.mean(b)
+        max_m = np.max(b)
+
+        if max_m - mean_m > self.max_log_value:
+            shift = max_m - self.max_log_value
+        else:
+            shift = mean_m
+
+        b -= shift
+
+        return b, shift
+
+    def get_gradient(self, data_x, data_info, sample_size=10):
         """
         Args:
             data_x: The potential input that are computed by get_unweighted_data function.
             data_info: The data indexing, shift and spacing information.
             sample_size: The number of sampling points (need to be consistent with get_unweighted_data function).
-            alpha: The coefficient for balancing the mle and prior fitting.
 
         Returns:
             A dictionary with potential as key, and gradient as value.
@@ -129,41 +203,51 @@ class PMLE:
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            data_y_nn[potential] = potential.nn.forward(data_matrix, save_cache=True).reshape(-1)
+            if hasattr(potential, 'nn'):
+                data_y_nn[potential] = potential.nn_forward(data_matrix, save_cache=True).reshape(-1)
+            else:
+                data_y_nn[potential] = potential.batch_call(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.ones(data_y_nn[potential].shape).reshape(-1, 1) * alpha
+            gradient_y[potential] = np.empty(data_y_nn[potential].shape).reshape(-1, 1)
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
-                w = np.zeros(sample_size)
+                w = np.zeros(sample_size + 1)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y_nn[f.potential][idx:idx + sample_size]
+                    w += data_y_nn[f.potential][idx:idx + sample_size + 1]
 
-                b = np.exp(w)
-                prior_diff = b - 1 / (rv.domain.values[1] - rv.domain.values[0])
+                w, _ = self.log_belief_balance(w)
+                w = np.exp(w)
+                w = w / np.sum(w)
 
-                w /= np.sum(b)
+                w[0] -= 1
 
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        gradient_y[f.potential][idx:idx + sample_size, 0] = \
-                            -alpha * w + (alpha - 1) * prior_diff * b
+                        y = data_y_nn[f.potential][idx:idx + sample_size + 1]
+                        y_ = np.exp(np.abs(y))
+                        regular = np.where(y >= 0., y_, -y_) / (sample_size + 1)
+
+                        alpha = f.potential.alpha
+
+                        gradient_y[f.potential][idx:idx + sample_size + 1, 0] = -alpha * w + (alpha - 1) * regular
 
         return gradient_y
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
-              save_dir=None, save_period=1000):
+              save_dir=None, save_period=1000, rv_sampler=None, visualize=None):
         """
         Args:
             lr: Learning rate.
-            alpha: The coefficient for balancing the mle and prior fitting.
+            alpha: The 0 ~ 1 value for controlling the strongness of prior.
+            (Could be a list of alpha value for each potential)
             regular: Regularization ratio.
             max_iter: The number of total iterations.
             batch_iter: The number of iteration of each mini batch.
@@ -171,7 +255,15 @@ class PMLE:
             rvs_selection_size: The number of rv that we select in each mini batch.
             sample_size: The number of sampling points.
             save_dir: The directory for the saved potentials.
+            rv_sampler: A sampling function for getting random variables.
+            visualize: An optional visualization function.
         """
+        if not isinstance(alpha, list):
+            alpha = [alpha] * len(self.trainable_potentials_ordered)
+
+        for p, a in zip(self.trainable_potentials_ordered, alpha):
+            p.alpha = a
+
         adam = AdamOptimizer(lr)
         moments = dict()
         t = 0
@@ -186,10 +278,13 @@ class PMLE:
             )
 
             # And sample a subset of rvs
-            rvs = random.sample(
-                self.trainable_rvs,
-                min(rvs_selection_size, len(self.trainable_rvs))
-            )
+            if rv_sampler:
+                rvs = rv_sampler(self.trainable_rvs, rvs_selection_size)
+            else:
+                rvs = random.sample(
+                    self.trainable_rvs,
+                    min(rvs_selection_size, len(self.trainable_rvs))
+                )
 
             # The computed data set for training the potential function
             # Potential function as key, and data x as value
@@ -197,11 +292,11 @@ class PMLE:
 
             i = 0
             while i < batch_iter and t < max_iter:
-                gradient_y = self.get_gradient(data_x, data_info, sample_size, alpha)
+                gradient_y = self.get_gradient(data_x, data_info, sample_size)
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    _, d_param = potential.nn.backward(d_y)
+                    _, d_param = potential.nn_backward(d_y)
 
                     c = (sample_size - 1) / d_y.shape[0]
 
@@ -219,10 +314,8 @@ class PMLE:
                 t += 1
 
                 print(t)
-                if t % 100 == 0:
-                    for p in self.trainable_potentials_ordered:
-                        domain = Domain([0, 1], continuous=True)
-                        visualize_2d_potential(p, domain, domain, 0.05)
+                if visualize is not None:
+                    visualize(self.trainable_potentials_ordered, t)
 
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]

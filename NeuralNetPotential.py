@@ -161,7 +161,7 @@ class WSLinearLayer:
         self.backward_mapper = np.zeros([len(grouped_input_idx), self.i_size])
         for idx, group_idx in enumerate(grouped_input_idx):
             self.forward_mapper[group_idx] = idx
-            self.backward_mapper[idx, group_idx] = 1
+            self.backward_mapper[idx, group_idx] = 1 / len(group_idx)
 
     def forward(self, x):
         return x @ self.W[self.forward_mapper, :] + self.b

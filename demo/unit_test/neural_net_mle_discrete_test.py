@@ -1,4 +1,4 @@
-from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
+from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer, WSLinearLayer
 from Potentials import TableFunction
 from learning.NeuralPMLEHybrid import PMLE
 from utils import visualize_1d_potential, visualize_2d_potential
@@ -13,7 +13,7 @@ rv1 = RV(domain)
 rv2 = RV(domain)
 
 choice = np.array([(0, 0), (0, 1), (1, 0), (1, 1)])
-temp = np.random.choice([0, 1, 2, 3], p=[0.1, 0.3, 0.2, 0.4], size=1000)
+temp = np.random.choice([0, 1, 2, 3], p=[0.3, 0.2, 0.2, 0.3], size=1000)
 
 data = {
     rv1: choice[temp, 0],
@@ -21,7 +21,7 @@ data = {
 }
 
 p = TableNeuralNetPotential(
-    layers=[LinearLayer(2, 64), ReLU(),
+    layers=[WSLinearLayer([[0, 1]], 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)],
     domains=[domain, domain],
