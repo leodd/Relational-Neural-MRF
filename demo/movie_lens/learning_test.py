@@ -1,8 +1,11 @@
 from utils import save, visualize_2d_potential
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from Graph import *
 from RelationalGraph import *
 from Function import Function
-from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU, LinearLayer, WSLinearLayer
+from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, \
+    CGNeuralNetPotential, ReLU, LinearLayer, WSLinearLayer, NormalizeLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from MLNPotential import *
 from learning.NeuralPMLEHybrid import PMLE
@@ -47,9 +50,12 @@ user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
 p1 = TableNeuralNetPotential(
-    layers=[WSLinearLayer([[0, 1], [2]], 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
+    layers=[
+        # NormalizeLayer([(-1, 1), (-1, 1), (-1, 1)], domains=[d_rating, d_rating, d_same_gender]),
+        WSLinearLayer([[0, 1], [2]], 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
+    ],
     domains=[d_rating, d_rating, d_same_gender],
     prior=TableFunction(
         np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /
@@ -72,6 +78,7 @@ f1_sub = np.concatenate(f1_sub)
 f1_sub = f1_sub[f1_sub[:, 0] < f1_sub[:, 1]]
 f2_sub = np.unique(f1_sub[:, [0, 1]], axis=0)
 
+# rating(U1, M) = rating(U2, M) ?? same_gender(U1, U2)
 f1 = ParamF(p1, atoms=[rating('U1', 'M'), rating('U2', 'M'), same_gender('U1', 'U2')], lvs=['U1', 'U2', 'M'], subs=f1_sub)
 f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], lvs=['U1', 'U2'], subs=f2_sub)
 
@@ -130,17 +137,28 @@ def visualize(ps, t):
                 x1, x2, x3 = np.meshgrid(d_rating.values, d_rating.values, d_same_gender.values)
                 xs = np.array([x1, x2, x3]).T.reshape(-1, 3)
                 ys = p.batch_call(xs).reshape(-1, 1)
-                print(np.concatenate([xs, ys], axis=1))
+                half = ys.size // 2
+                ys = ys[:half]
+                # ys = [np.sum(ys[:half]), np.sum(ys[half:])]
+                # print(ys)
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+                ax.scatter(xs[:half, 0], xs[:half, 1], ys)
+                ax.set_xlabel('x1')
+                ax.set_ylabel('x2')
+                ax.set_zlabel('value')
+                plt.show()
 
 leaner = PMLE(g, [p1], data)
 leaner.train(
     lr=0.01,
     alpha=1.,
-    regular=0.0,
+    regular=0.,
     max_iter=10000,
     batch_iter=5,
     batch_size=1,
-    rvs_selection_size=200,
+    rvs_selection_size=1000,
     sample_size=5,
     save_dir='learned_potentials/model_1',
     save_period=1000,

@@ -7,10 +7,11 @@ import numpy as np
 import seaborn as sns
 
 
-domain = Domain([0, 1], continuous=False)
+d1 = Domain([0, 1], continuous=False)
+d2 = Domain([0, 1, 2, 3, 4], continuous=False)
 
-rv1 = RV(domain)
-rv2 = RV(domain)
+rv1 = RV(d1)
+rv2 = RV(d2)
 
 choice = np.array([(0, 0), (0, 1), (1, 0), (1, 1)])
 temp = np.random.choice([0, 1, 2, 3], p=[0.3, 0.2, 0.2, 0.3], size=1000)

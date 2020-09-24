@@ -36,17 +36,17 @@ class NeuralNetFunction(Function):
         idx = 0
 
         for layer in self.layers:
-            if type(layer) is LinearLayer:
-                layer.W, layer.b = parameters[idx]
+            if getattr(layer, 'set_parameters', False):
+                layer.set_parameters(parameters[idx])
                 idx += 1
 
     def parameters(self):
         parameters = list()
 
         for layer in self.layers:
-            if type(layer) is LinearLayer:
+            if getattr(layer, 'parameters', False):
                 parameters.append(
-                    (layer.W, layer.b)
+                    layer.parameters()
                 )
 
         return parameters
@@ -149,6 +149,11 @@ class LinearLayer:
 
         return d_x, (d_W, d_b)
 
+    def parameters(self):
+        return self.W, self.b
+
+    def set_parameters(self, parameters):
+        self.W, self.b = parameters
 
 class WSLinearLayer:
     def __init__(self, grouped_input_idx, o_size):
@@ -175,6 +180,28 @@ class WSLinearLayer:
 
         return d_x, (d_W, d_b)
 
+    def parameters(self):
+        return self.W, self.b
+
+    def set_parameters(self, parameters):
+        self.W, self.b = parameters
+
+
+class NormalizeLayer:
+    def __init__(self, ranges, domains):
+        self.i_size = len(ranges)
+        self.z = np.array([
+            (r[-1] - r[0]) / (d.values[-1] - d.values[0]) if r is not None else 1
+            for r, d in zip(ranges, domains)
+        ])
+        self.s = np.array([r[0] if r is not None else 0 for r in ranges])
+        self.s_ = np.array([d.values[0] if r is not None else 0 for r, d in zip(ranges, domains)])
+
+    def forward(self, x):
+        return (x - self.s_) * self.z + self.s
+
+    def backward(self, ):
+        pass
 
 class NeuralNetPotential(Function):
     """
@@ -184,8 +211,8 @@ class NeuralNetPotential(Function):
         self.dimension = layers[0].i_size  # The dimension of the input parameters
         self.nn = NeuralNetFunction(layers)
 
-    def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters))
+    def __call__(self, *x):
+        return np.exp(self.nn(*x))
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1)
@@ -210,8 +237,8 @@ class GaussianNeuralNetPotential(Function):
         self.prior = prior
         self.eps = eps
 
-    def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * self.prior(*parameters) + self.eps
+    def __call__(self, *x):
+        return np.exp(self.nn(*x)) * self.prior(*x) + self.eps
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
@@ -257,8 +284,8 @@ class TableNeuralNetPotential(Function):
         self.prior = prior
         self.eps = eps
 
-    def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * self.prior(*parameters) + self.eps
+    def __call__(self, *x):
+        return np.exp(self.nn(*x)) * self.prior(*x) + self.eps
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
@@ -308,8 +335,8 @@ class CGNeuralNetPotential(Function):
         self.prior = prior
         self.eps = eps
 
-    def __call__(self, *parameters):
-        return np.exp(self.nn(*parameters)) * self.prior(*parameters) + self.eps
+    def __call__(self, *x):
+        return np.exp(self.nn(*x)) * self.prior(*x) + self.eps
 
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
