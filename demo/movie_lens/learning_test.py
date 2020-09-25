@@ -52,9 +52,10 @@ movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 p1 = TableNeuralNetPotential(
     layers=[
         # NormalizeLayer([(-1, 1), (-1, 1), (-1, 1)], domains=[d_rating, d_rating, d_same_gender]),
-        WSLinearLayer([[0, 1], [2]], 64), ReLU(),
-        LinearLayer(64, 32), ReLU(),
-        LinearLayer(32, 1)
+        # WSLinearLayer([[0, 1], [2]], 200), ReLU(),
+        LinearLayer(3, 200), ReLU(),
+        LinearLayer(200, 100), ReLU(),
+        LinearLayer(100, 1)
     ],
     domains=[d_rating, d_rating, d_same_gender],
     prior=TableFunction(
@@ -138,7 +139,8 @@ def visualize(ps, t):
                 xs = np.array([x1, x2, x3]).T.reshape(-1, 3)
                 ys = p.batch_call(xs).reshape(-1, 1)
                 half = ys.size // 2
-                ys = ys[:half]
+                # ys = ys[:half]
+                ys = ys[:half] / (ys[:half] + ys[half:])
                 # ys = [np.sum(ys[:half]), np.sum(ys[half:])]
                 # print(ys)
 
@@ -160,7 +162,7 @@ leaner.train(
     batch_size=1,
     rvs_selection_size=1000,
     sample_size=5,
-    save_dir='learned_potentials/model_1',
+    # save_dir='learned_potentials/model_1',
     save_period=1000,
     rv_sampler=sampler,
     visualize=visualize
