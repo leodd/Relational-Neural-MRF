@@ -58,10 +58,10 @@ p1 = TableNeuralNetPotential(
         LinearLayer(100, 1)
     ],
     domains=[d_rating, d_rating, d_same_gender],
-    prior=TableFunction(
-        np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /
-        (d_rating.size * d_rating.size * d_same_gender.size)
-    )
+    # prior=TableFunction(
+    #     np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /
+    #     (d_rating.size * d_rating.size * d_same_gender.size)
+    # )
 )
 p2 = parse_mln(MLNPotential(
     lambda x: bic_op(x[0] == x[1], x[2]),
@@ -142,7 +142,7 @@ def visualize(ps, t):
                 # ys = ys[:half]
                 ys = ys[:half] / (ys[:half] + ys[half:])
                 # ys = [np.sum(ys[:half]), np.sum(ys[half:])]
-                # print(ys)
+                print(ys)
 
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')

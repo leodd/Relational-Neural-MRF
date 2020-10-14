@@ -18,6 +18,9 @@ rv2 = RV(d2)
 choice = np.array([(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (1, 1), (1, 2), (1, 3), (1, 4)])
 temp = np.random.choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], p=[0.05, 0.1, 0.2, 0.1, 0.05, 0.2, 0.1, 0.05, 0.1, 0.05], size=4000)
 
+# choice = np.array([(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
+# temp = np.random.choice([0, 1, 2, 3, 4, 5], p=[0.1, 0.2, 0.1, 0.3, 0.1, 0.2], size=4000)
+
 data = {
     rv1: choice[temp, 0],
     rv2: choice[temp, 1]
@@ -27,9 +30,9 @@ p = TableNeuralNetPotential(
     layers=[
         NormalizeLayer([(-1, 1)] * 2, domains=[d1, d2]),
         # WSLinearLayer([[0, 1]], 64), ReLU(),
-        LinearLayer(2, 200), ReLU(),
-        LinearLayer(200, 100), ReLU(),
-        LinearLayer(100, 1)
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
     ],
     domains=[d1, d2],
     prior=TableFunction(
@@ -51,7 +54,7 @@ def visualize(ps, t):
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(x1, x2, ys)
+        ax.scatter(xs[:, 0], xs[:, 1], ys)
         ax.set_xlabel('x1')
         ax.set_ylabel('x2')
         ax.set_zlabel('value')
