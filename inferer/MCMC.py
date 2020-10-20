@@ -4,7 +4,7 @@ from Potentials import TableFunction, GaussianFunction
 
 
 class MCMC:
-    # Gibbs Sampling for inference in hybrid MRF with tabular potential and Gaussian potential
+    # Gibbs Sampling for inferer in hybrid MRF with tabular potential and Gaussian potential
 
     def __init__(self, g):
         self.g = g

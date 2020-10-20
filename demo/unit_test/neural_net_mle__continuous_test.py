@@ -1,5 +1,5 @@
 from NeuralNetPotential import GaussianNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
-from learning.NeuralPMLEHybrid import PMLE
+from learner.NeuralPMLEHybrid import PMLE
 from utils import visualize_1d_potential
 from Graph import *
 import numpy as np

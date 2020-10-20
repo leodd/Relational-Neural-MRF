@@ -3,8 +3,8 @@ from Graph import *
 from RelationalGraph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
 from Potentials import CategoricalGaussianFunction, GaussianFunction
-from learning.NeuralPMLEHybrid import PMLE
-from inference.PBP import PBP
+from learner.NeuralPMLEHybrid import PMLE
+from inferer.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
 
 

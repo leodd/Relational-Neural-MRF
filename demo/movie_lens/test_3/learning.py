@@ -2,8 +2,8 @@ from utils import save, visualize_2d_potential
 from Graph import *
 from RelationalGraph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
-from Potentials import CategoricalGaussianFunction, GaussianFunction
-from learning.NeuralPMLEHybrid import PMLE
+from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
+from learner.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 
 
@@ -20,7 +20,7 @@ d_rating = Domain([1, 2, 3, 4, 5], continuous=False)
 d_avg_rating = Domain([1, 5], continuous=True)
 
 d_genre.domain_indexize()
-d_year.domain_normalize([0, 10.])
+d_year.domain_normalize([0., 1.])
 d_gender.domain_indexize()
 d_age.domain_indexize()
 d_rating.domain_indexize()
@@ -28,11 +28,11 @@ d_rating.domain_indexize()
 lv_Movie = LV(movie_data.keys())
 lv_User = LV(user_data.keys())
 
-# genre = Atom(d_genre, [lv_Movie], name='genre')
-# year = Atom(d_year, [lv_Movie], name='year')
+genre = Atom(d_genre, [lv_Movie], name='genre')
+year = Atom(d_year, [lv_Movie], name='year')
 # occupation = Atom(d_occupation, [lv_User], name='occupation')
-# gender = Atom(d_gender, [lv_User], name='gender')
-# age = Atom(d_age, [lv_User], name='age')
+gender = Atom(d_gender, [lv_User], name='gender')
+age = Atom(d_age, [lv_User], name='age')
 rating = Atom(d_rating, [lv_User, lv_Movie], name='rating')
 user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
@@ -61,13 +61,46 @@ p2 = CGNeuralNetPotential(
         [d_rating, d_avg_rating]
     )
 )
+p3 = TableNeuralNetPotential(
+    (3, 32, ReLU()),
+    (32, 16, ReLU()),
+    (16, 1, None),
+    domains=[d_genre, d_gender, d_rating],
+    prior=TableFunction(
+        np.ones([d_genre.size, d_gender.size, d_rating.size]) / (d_genre.size * d_gender.size * d_rating.size)
+    )
+)
+p4 = TableNeuralNetPotential(
+    (3, 32, ReLU()),
+    (32, 16, ReLU()),
+    (16, 1, None),
+    domains=[d_genre, d_age, d_rating],
+    prior=TableFunction(
+        np.ones([d_genre.size, d_age.size, d_rating.size]) / (d_genre.size * d_age.size * d_rating.size)
+    )
+)
+p5 = CGNeuralNetPotential(
+    (3, 32, ReLU()),
+    (32, 16, ReLU()),
+    (16, 1, None),
+    domains=[d_age, d_rating, d_year],
+    prior=CategoricalGaussianFunction(
+        np.ones([d_age.size, d_rating.size]) / (d_age.size * d_rating.size),
+        np.zeros([d_age.size, d_rating.size]),
+        [GaussianFunction([0.5], [[1.]])],
+        [d_age, d_rating, d_year]
+    )
+)
 
 f1 = ParamF(p1, atoms=['rating(U, M)', 'user_avg_rating(U)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 f2 = ParamF(p2, atoms=['rating(U, M)', 'movie_avg_rating(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f3 = ParamF(p3, atoms=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f4 = ParamF(p4, atoms=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
+f5 = ParamF(p5, atoms=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 
 rel_g = RelationalGraph(
-    atoms=[rating, user_avg_rating, movie_avg_rating],
-    parametric_factors=[f1, f2]
+    atoms=[genre, gender, age, year, rating, user_avg_rating, movie_avg_rating],
+    parametric_factors=[f1, f2, f3, f4, f5]
 )
 
 g, rvs_dict = rel_g.ground_graph()
@@ -90,7 +123,7 @@ for key, rv in rvs_dict.items():
     elif key[0] == 'movie_avg_rating':
         data[rv] = d_avg_rating.normalize_value([movie_data[key[1]]['avg_rating']])
 
-leaner = PMLE(g, [p1, p2], data)
+leaner = PMLE(g, [p1, p2, p3, p4, p5], data)
 leaner.train(
     lr=0.001,
     alpha=0.99,

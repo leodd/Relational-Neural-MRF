@@ -105,7 +105,7 @@ class PMLE:
     def get_unweighted_data(self, rvs, batch, sample_size=10):
         """
         Args:
-            rvs: Set of rvs that involve in the Pseudo MLE learning.
+            rvs: Set of rvs that involve in the Pseudo MLE learner.
             batch: Set of indices of data frame.
             sample_size: The number of sampling points.
 

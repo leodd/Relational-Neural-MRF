@@ -1,10 +1,10 @@
 from demo.RGM.rgm_generator import generate_rel_graph
 from utils import log_likelihood
 from Potentials import GaussianFunction
-from inference.LiftedVarInference import VarInference as LVI
-from inference.GaBP import GaBP
-from inference.PBP import PBP
-from inference.EPBPLogVersion import EPBP
+from inferer.LiftedVarInference import VarInference as LVI
+from inferer.GaBP import GaBP
+from inferer.PBP import PBP
+from inferer.EPBPLogVersion import EPBP
 
 
 p1 = GaussianFunction([0., 0.], [[10., -7.], [-7., 10.]])

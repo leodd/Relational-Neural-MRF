@@ -4,11 +4,9 @@ import pandas as pd
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU, LinearLayer
-from Potentials import ImageNodePotential, ImageEdgePotential
-from inference.VarInference import VarInference
-from inference.EPBPLogVersion import EPBP
-from inference.PBP import PBP
+from Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
+from inferer.GaBP import GaBP
+from inferer.PBP import PBP
 
 
 USE_MANUAL_POTENTIALS = False
@@ -31,26 +29,15 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = ContrastiveNeuralNetPotential(
-        layers=[LinearLayer(1, 64), ReLU(),
-                LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
-        eps=0.
-    )
-
-    pxy = ContrastiveNeuralNetPotential(
-        layers=[LinearLayer(1, 64), ReLU(),
-                LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
-        eps=0.
-    )
+    pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
+    pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_2/5000'
+        'learned_potentials/model_1_gaussian/5000'
     )
 
-    pxo.set_parameters(pxo_params)
-    pxy.set_parameters(pxy_params)
+    pxo.set_parameters(*pxo_params)
+    pxy.set_parameters(*pxy_params)
 
 evidence = [None] * (col * row)
 for i in range(row):
@@ -96,8 +83,8 @@ g = Graph(rvs + evidence, fs)
 infer = PBP(g, n=200)
 infer.run(50, log_enable=True)
 
-# infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
-# infer.run(1000, lr=0.01)
+# infer = GaBP(g)
+# infer.run(10, log_enable=True)
 
 predict_image = np.empty([row, col])
 

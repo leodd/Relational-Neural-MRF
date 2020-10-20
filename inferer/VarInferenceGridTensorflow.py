@@ -1,8 +1,8 @@
-# Neuralized Markov Random Field and its training and inference with tensorflow
+# Neuralized Markov Random Field and its training and inferer with tensorflow
 # Author: Hao Xiong
 # Email: haoxiong@outlook.com
 # ============================================================================
-"""Gaussian mixture distribution marginal inference"""
+"""Gaussian mixture distribution marginal inferer"""
 
 import tensorflow as tf
 from tensorflow.python.keras.layers import Layer
@@ -142,12 +142,12 @@ class GMMGrid(Layer):
         """calculate the bethe free energy which contains expectation term and entropy term
         Args:
             potential: a callable function, could be a neural net layer
-            inference: whether used for distribution inference
+            inferer: whether used for distribution inferer
         Returns:
             tensor representing the bethe free energy to be minimized, shape = (C,)
         """
         xn, xe, lpn, lpe, alpha = self(None, full_out=False)
-        # if not inference:
+        # if not inferer:
         #     xn = tf.stop_gradient(xn)
         #     xe = tf.stop_gradient(xe)
         #     lpn = tf.stop_gradient(lpn)
@@ -163,7 +163,7 @@ class GMMGrid(Layer):
         """infer the marginal distribution out by minimizing the energy of mrf, e.g bethe free energy
         Args:
             potential: potential functions of cliques, probably a neural net layer which is callable
-            iterations: an integer that specify how many iterations to perform the inference
+            iterations: an integer that specify how many iterations to perform the inferer
             cf: use close form method to get gradient if true otherwise tf auto-gradient
         Returns:
             stores the final energy of current state, can be used as logZ approximation
@@ -329,7 +329,7 @@ class GMMGrid0(Layer):
         """calculate the bethe free energy which contains expectation term and entropy term
         Args:
             potential: a callable function, could be a neural net layer
-            inference: whether used for distribution inference
+            inferer: whether used for distribution inferer
         Returns:
             tensor representing the bethe free energy to be minimized, shape = (C,)
         """
@@ -344,7 +344,7 @@ class GMMGrid0(Layer):
         """infer the marginal distribution out by minimizing the energy of mrf, e.g bethe free energy
         Args:
             potential: potential functions of cliques, probably a neural net layer which is callable
-            iterations: an integer that specify how many iterations to perform the inference
+            iterations: an integer that specify how many iterations to perform the inferer
             cf: use close form method to get gradient if true otherwise tf auto-gradient
         Returns:
             stores the final energy of current state, can be used as logZ approximation

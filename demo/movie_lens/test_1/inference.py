@@ -1,8 +1,9 @@
-from utils import save, visualize_2d_potential
+from utils import load, visualize_2d_potential
 from Graph import *
 from RelationalGraph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
-from learning.NeuralPMLEHybrid import PMLE
+from learner.NeuralPMLEHybrid import PMLE
+from inferer.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
 
 
@@ -52,6 +53,14 @@ p3 = CGNeuralNetPotential(
     domains=[d_age, d_rating, d_year]
 )
 
+p1_params, p2_params, p3_params = load(
+    'learned_potentials/model_1/1000'
+)
+
+p1.set_parameters(p1_params)
+p2.set_parameters(p2_params)
+p3.set_parameters(p3_params)
+
 f1 = ParamF(p1, atoms=['genre(M)', 'gender(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 f2 = ParamF(p2, atoms=['genre(M)', 'age(U)', 'rating(U, M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
 f3 = ParamF(p3, atoms=['age(U)', 'rating(U, M)', 'year(M)'], constrain=lambda s: (s['U'], s['M']) in rating_data)
@@ -63,30 +72,34 @@ rel_g = RelationalGraph(
 
 g, rvs_dict = rel_g.ground_graph()
 
-data = dict()
+query_rvs = dict()
 
 for key, rv in rvs_dict.items():
     if key[0] == 'gender':
-        data[rv] = d_gender.value_to_idx([user_data[key[1]]['gender']])
+        rv.value = d_gender.value_to_idx(user_data[key[1]]['gender'])
     elif key[0] == 'genre':
-        data[rv] = d_genre.value_to_idx([movie_data[key[1]]['genres'][0]])
+        rv.value = d_genre.value_to_idx(movie_data[key[1]]['genres'][0])
     elif key[0] == 'age':
-        data[rv] = d_age.value_to_idx([user_data[key[1]]['age']])
+        rv.value = d_age.value_to_idx(user_data[key[1]]['age'])
     elif key[0] == 'rating':
-        data[rv] = d_rating.value_to_idx([rating_data[(key[1], key[2])]['rating']])
+        if np.random.rand() > 0.5:
+            rv.value = d_rating.value_to_idx(rating_data[(key[1], key[2])]['rating'])
+        else:
+            query_rvs[rv] = d_rating.value_to_idx(rating_data[(key[1], key[2])]['rating'])
     elif key[0] == 'year':
-        data[rv] = d_year.normalize_value([float(movie_data[key[1]]['year'])])
+        rv.value = d_year.normalize_value(float(movie_data[key[1]]['year']))
 
-leaner = PMLE(g, [p1, p2, p3], data)
-leaner.train(
-    lr=0.001,
-    alpha=0.99,
-    regular=0.001,
-    max_iter=10000,
-    batch_iter=5,
-    batch_size=1,
-    rvs_selection_size=1000,
-    sample_size=30,
-    save_dir='learned_potentials/model_1',
-    save_period=1000
-)
+infer = PBP(g, n=50)
+infer.run(10, log_enable=True)
+
+loss = list()
+accuracy = list()
+
+for rv, target in query_rvs.items():
+    predict = infer.map(rv)
+    loss.append(np.abs(predict - target))
+    accuracy.append(1 if predict == target else 0)
+    print(predict, target, loss[-1])
+
+print(np.mean(loss))
+print(np.mean(accuracy))

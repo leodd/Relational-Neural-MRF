@@ -1,6 +1,6 @@
 from RelationalGraph import *
 from Potentials import GaussianFunction
-from inference.MCMC import MCMC
+from inferer.MCMC import MCMC
 import numpy as np
 import json
 

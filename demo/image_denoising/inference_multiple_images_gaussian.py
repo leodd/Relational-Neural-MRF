@@ -5,9 +5,9 @@ import numpy as np
 from Graph import *
 from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
 from Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
-from inference.VarInference import VarInference
-from inference.EPBPLogVersion import EPBP
-from inference.PBP import PBP
+from inferer.VarInference import VarInference
+from inferer.EPBPLogVersion import EPBP
+from inferer.PBP import PBP
 
 
 USE_MANUAL_POTENTIALS = True

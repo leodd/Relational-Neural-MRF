@@ -8,7 +8,7 @@ from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, Ta
     CGNeuralNetPotential, ReLU, LinearLayer, WSLinearLayer, NormalizeLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from MLNPotential import *
-from learning.NeuralPMLEHybrid import PMLE
+from learner.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 from collections import Counter
 

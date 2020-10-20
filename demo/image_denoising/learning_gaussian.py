@@ -1,9 +1,9 @@
 from utils import save, visualize_2d_potential
 from Graph import *
 from Potentials import GaussianFunction
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU, LinearLayer
-from learning.NeuralPMLEPrior import PMLE
+from learner.GaussianPMLE import PMLE
 from demo.image_denoising.image_data_loader import load_data
+import numpy as np
 
 
 gt_data, noisy_data = load_data('training/gt', 'training/noisy')
@@ -13,31 +13,8 @@ col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-# pxo = GaussianNeuralNetPotential(
-#     (2, 64, ReLU()),
-#     (64, 32, ReLU()),
-#     (32, 1, None)
-# )
-#
-# pxy = GaussianNeuralNetPotential(
-#     (2, 64, ReLU()),
-#     (64, 32, ReLU()),
-#     (32, 1, None)
-# )
-
-pxo = ContrastiveNeuralNetPotential(
-    layers=[LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    prior=GaussianFunction([0], [[0.1]])
-)
-
-pxy = ContrastiveNeuralNetPotential(
-    layers=[LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    prior=GaussianFunction([0], [[0.1]])
-)
+pxo = GaussianFunction([0.5, 0.5], np.eye(2))
+pxy = GaussianFunction([0.5, 0.5], np.eye(2))
 
 data = dict()
 
@@ -93,15 +70,13 @@ def visualize(ps, t):
 
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.0005,
-    alpha=0.99,
-    regular=0.0001,
+    lr=0.001,
     max_iter=10000,
     batch_iter=5,
     batch_size=20,
     rvs_selection_size=1000,
     sample_size=5,
-    # save_dir='learned_potentials/model_2',
+    save_dir='learned_potentials/model_1_gaussian',
     save_period=1000,
     visualize=visualize
 )

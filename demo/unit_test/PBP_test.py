@@ -1,7 +1,7 @@
 import numpy as np
 from Graph import *
 from Potentials import *
-from inference.PBP import PBP
+from inferer.PBP import PBP
 
 
 d = Domain([0, 1])
