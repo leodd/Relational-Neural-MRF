@@ -310,9 +310,6 @@ class PMLE:
                         layer.b += step
                         moments[(layer, 'b')] = moment
 
-                i += 1
-                t += 1
-
                 print(t)
                 if visualize is not None:
                     visualize(self.trainable_potentials_ordered, t)
@@ -320,6 +317,9 @@ class PMLE:
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
                     save(os.path.join(save_dir, str(t)), *model_parameters)
+
+                i += 1
+                t += 1
 
         if save_dir is not None:
             model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]

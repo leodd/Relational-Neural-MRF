@@ -1,6 +1,7 @@
 from NeuralNetPotential import GaussianNeuralNetPotential, CGNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
 from learner.NeuralPMLEHybrid import PMLE
-from utils import visualize_1d_potential
+from inferer.PBP import PBP
+from utils import visualize_1d_potential, load
 from Graph import *
 import numpy as np
 import seaborn as sns
@@ -37,25 +38,33 @@ p = CGNeuralNetPotential(
     domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain]
 )
 
+(p_params,) = load(
+    'learned_potentials/model_1/0'
+)
+
+p.set_parameters(p_params)
+
 f = F(p, nb=[rv_c, rv_sl, rv_sw, rv_pl, rv_pw])
 
 g = Graph({rv_sl, rv_sw, rv_pl, rv_pw, rv_c}, {f})
 
-def visualize(ps, t):
-    if t % 200 == 0:
-        pass
+res = list()
 
-leaner = PMLE(g, [p], data)
-leaner.train(
-    lr=0.0001,
-    alpha=0.999,
-    regular=0.0001,
-    max_iter=5000,
-    batch_iter=3,
-    batch_size=50,
-    rvs_selection_size=5,
-    sample_size=30,
-    # visualize=visualize,
-    save_dir='learned_potentials/model_1',
-    save_period=1000,
-)
+M = len(data[rv_c])
+
+for m in range(M):
+    rv_sl.value = data[rv_sl][m]
+    rv_sw.value = data[rv_sw][m]
+    rv_pl.value = data[rv_pl][m]
+    rv_pw.value = data[rv_pw][m]
+
+    infer = PBP(g, n=20)
+    infer.run(2)
+
+    predict = infer.map(rv_c)
+    target = data[rv_c][m]
+
+    print(predict, target)
+    res.append(predict == target)
+
+print(np.mean(res))
