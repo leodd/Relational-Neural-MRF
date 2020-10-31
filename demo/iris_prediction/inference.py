@@ -39,7 +39,7 @@ p = CGNeuralNetPotential(
 )
 
 (p_params,) = load(
-    'learned_potentials/model_1/0'
+    'learned_potentials/model_1/5000'
 )
 
 p.set_parameters(p_params)
@@ -56,15 +56,15 @@ for m in range(M):
     rv_sl.value = data[rv_sl][m]
     rv_sw.value = data[rv_sw][m]
     rv_pl.value = data[rv_pl][m]
-    rv_pw.value = data[rv_pw][m]
+    # rv_pw.value = data[rv_pw][m]
 
     infer = PBP(g, n=20)
     infer.run(2)
 
-    predict = infer.map(rv_c)
-    target = data[rv_c][m]
+    predict = infer.map(rv_pw)
+    target = data[rv_pw][m]
 
     print(predict, target)
-    res.append(predict == target)
+    res.append(abs(predict - target))
 
 print(np.mean(res))
