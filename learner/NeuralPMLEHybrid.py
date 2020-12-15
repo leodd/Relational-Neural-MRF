@@ -80,10 +80,7 @@ class PMLE:
             for rv in rvs:
                 if (rv, m) in res_dict: continue  # Skip if already computed before
 
-                if rv.domain.continuous:
-                    rv_prior = None
-                else:
-                    rv_prior = TableFunction(np.ones(len(rv.domain.values)))
+                rv_prior = None
 
                 for f in rv.nb:
                     if not hasattr(f.potential, 'prior'): continue
@@ -95,7 +92,9 @@ class PMLE:
                     if not rv.domain.continuous:
                         rv_prior.table /= np.sum(rv_prior.table)
 
-                if rv.domain.continuous:  # Continuous case
+                if rv_prior is None:  # No prior
+                    res_dict[(rv, m)] = None
+                elif rv.domain.continuous:  # Continuous case
                     res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
                 else:  # Discrete case
                     res_dict[(rv, m)] = rv_prior.table / np.sum(rv_prior.table)
@@ -158,11 +157,17 @@ class PMLE:
                 for k in range(K):
                     next_idx = current_idx + sample_size + 1
 
-                    if rv.domain.continuous:  # Continuous case
-                        mu, sig = rv_prior[k]
-                        samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
-                    else:  # Discrete case
-                        samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
+                    if rv_prior[k] is None:  # No prior, sample from uniform distribution
+                        if rv.domain.continuous:  # Continuous case
+                            samples = np.random.uniform(*rv.domain.values, size=sample_size)
+                        else:  # Discrete case
+                            samples = np.random.choice(len(rv.domain.values), size=sample_size)
+                    else:
+                        if rv.domain.continuous:  # Continuous case
+                            mu, sig = rv_prior[k]
+                            samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
+                        else:  # Discrete case
+                            samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + 1:next_idx, rv_idx] = samples
