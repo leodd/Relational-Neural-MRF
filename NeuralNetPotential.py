@@ -176,7 +176,7 @@ class CGNeuralNetPotential(Function):
             sig = np.cov(row_data.T).reshape(len(c_idx), len(c_idx))
 
             dis_table[tuple(row)] = len(dis)
-            dis.append(GaussianFunction(mu, sig))
+            dis.append(GaussianFunction(mu, sig + 2))
 
         if self.prior is None:
             self.prior = CategoricalGaussianFunction(w_table, dis_table, dis, self.domains)
