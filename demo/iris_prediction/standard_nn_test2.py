@@ -8,19 +8,19 @@ train_data, test_data = load_raw_iris_data('iris')
 
 m = len(train_data)
 
-x = train_data[:, [0, 1, 2, 3]]
-y = train_data[:, 4]
+x = train_data[:, [0, 1, 2, 4]]
+y = train_data[:, 3]
 x = torch.from_numpy(x).type(torch.float32)
-y = torch.from_numpy(y).type(torch.long)
+y = torch.from_numpy(y).type(torch.float32)
 
 model = nn.Sequential(
     nn.Linear(4, 64), nn.ReLU(),
     nn.Linear(64, 32), nn.ReLU(),
-    nn.Linear(32, 3), nn.Softmax()
+    nn.Linear(32, 1)
 )
 
 optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=0.0001)
-criterion = nn.CrossEntropyLoss()
+criterion = nn.MSELoss()
 
 for _ in range(1000):
     optimizer.zero_grad()
@@ -28,15 +28,15 @@ for _ in range(1000):
     loss = criterion(out, y)
     loss.backward()
     optimizer.step()
-    # print(loss)
+    print(loss)
 
-x = test_data[:, [0, 1, 2, 3]]
-y = test_data[:, 4]
+x = test_data[:, [0, 1, 2, 4]]
+y = test_data[:, 3]
 x = torch.from_numpy(x).type(torch.float32)
-y = torch.from_numpy(y).type(torch.long)
+y = torch.from_numpy(y).type(torch.float32)
 
 with torch.no_grad():
-    out = model(x)
-    y_predict = out.argmax(dim=1)
+    y_predict = model(x)
+    y_predict = y_predict.view(-1)
 
-print(torch.mean((y_predict == y).type(torch.float)))
+print(torch.mean(torch.abs(y_predict - y)))

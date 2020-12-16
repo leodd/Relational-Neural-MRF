@@ -61,15 +61,15 @@ M = len(data[rv_c])
 for m in range(M):
     rv_sl.value = data[rv_sl][m]
     rv_sw.value = data[rv_sw][m]
-    # rv_pl.value = data[rv_pl][m]
-    rv_pw.value = data[rv_pw][m]
+    rv_pl.value = data[rv_pl][m]
+    # rv_pw.value = data[rv_pw][m]
     rv_c.value = data[rv_c][m]
 
     infer = PBP(g, n=20)
     infer.run(2)
 
-    predict = infer.map(rv_pl)
-    target = data[rv_pl][m]
+    predict = infer.map(rv_pw)
+    target = data[rv_pw][m]
 
     print(predict, target)
     res.append(abs(predict - target))
