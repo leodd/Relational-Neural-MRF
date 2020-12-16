@@ -1,4 +1,4 @@
-from NeuralNetPotential import GaussianNeuralNetPotential, CGNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
+from NeuralNetPotential import NeuralNetPotential, GaussianNeuralNetPotential, CGNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
 from learner.NeuralPMLEHybrid import PMLE
 from utils import visualize_1d_potential
 from Graph import *
@@ -21,7 +21,7 @@ rv_pl = RV(petal_length_domain)
 rv_pw = RV(petal_width_domain)
 rv_c = RV(class_domain)
 
-iris_data = load_iris_data('iris')
+iris_data, _ = load_iris_data('iris')
 data = {
     rv_sl: iris_data['sepal-length'],
     rv_sw: iris_data['sepal-width'],
@@ -30,11 +30,17 @@ data = {
     rv_c: class_domain.value_to_idx(iris_data['class'])
 }
 
-p = CGNeuralNetPotential(
+# p = CGNeuralNetPotential(
+#     layers=[LinearLayer(5, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1)],
+#     domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain]
+# )
+
+p = NeuralNetPotential(
     layers=[LinearLayer(5, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain]
+            LinearLayer(32, 1)]
 )
 
 f = F(p, nb=[rv_c, rv_sl, rv_sw, rv_pl, rv_pw])
@@ -56,6 +62,6 @@ leaner.train(
     rvs_selection_size=5,
     sample_size=30,
     # visualize=visualize,
-    save_dir='learned_potentials/model_1',
+    save_dir='learned_potentials/model_2',
     save_period=1000,
 )

@@ -28,9 +28,9 @@ moments = dict()
 regular = 0.001
 
 for t in range(1, 5000):
-    predict = np.exp(nn.forward(x))
+    predict = np.exp(nn.nn_forward(x))
     d_loss = (predict - target) * predict
-    _, d_network = nn.backward(d_loss)
+    _, d_network = nn.nn_backward(d_loss)
 
     for layer, (d_W, d_b) in d_network.items():
         step, moment = adam(d_W / m, moments.get((layer, 'W'), (0, 0)), t)
@@ -43,4 +43,4 @@ for t in range(1, 5000):
 
     print(np.sum((predict - target) ** 2))
 
-visualize_1d_potential(nn, Domain([-15, 15]), 0.3, is_exp=True)
+visualize_1d_potential(nn, Domain([-15, 15], continuous=True), 0.3)

@@ -130,11 +130,12 @@ class TableNeuralNetPotential(Function):
 
 
 class CGNeuralNetPotential(Function):
-    def __init__(self, layers, domains, prior=None, eps=0):
+    def __init__(self, layers, domains, prior=None, extra_sig=10, eps=0):
         self.dimension = layers[0].i_size  # The dimension of the input parameters
         self.nn = NeuralNetFunction(layers)
         self.domains = domains
         self.prior = prior
+        self.extra_sig=10
         self.eps = eps
 
     def __call__(self, *x):
@@ -176,7 +177,7 @@ class CGNeuralNetPotential(Function):
             sig = np.cov(row_data.T).reshape(len(c_idx), len(c_idx))
 
             dis_table[tuple(row)] = len(dis)
-            dis.append(GaussianFunction(mu, sig + 2))
+            dis.append(GaussianFunction(mu, sig + self.extra_sig))
 
         if self.prior is None:
             self.prior = CategoricalGaussianFunction(w_table, dis_table, dis, self.domains)

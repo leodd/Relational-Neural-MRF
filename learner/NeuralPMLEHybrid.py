@@ -59,7 +59,7 @@ class PMLE:
 
     def initialize_factor_prior(self):
         for p, fs in self.trainable_potential_factors_dict.items():
-            if p.prior is not None:  # Skip if the prior is given
+            if not hasattr(p, 'prior') or p.prior is not None:  # Skip if the prior is given
                 continue
 
             assignment = np.empty([len(fs) * self.M, p.dimension])
