@@ -21,7 +21,7 @@ rv_pl = RV(petal_length_domain)
 rv_pw = RV(petal_width_domain)
 rv_c = RV(class_domain)
 
-iris_data, _ = load_iris_data('iris')
+iris_data, _ = load_iris_data('iris', 10)
 data = {
     rv_sl: iris_data['sepal-length'],
     rv_sw: iris_data['sepal-width'],
