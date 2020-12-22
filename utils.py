@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from math import log, exp
 from scipy.integrate import quad
 import pickle
+import os
+import errno
 from mpl_toolkits.mplot3d import Axes3D
 from Graph import Graph
 
@@ -178,6 +180,13 @@ def visualize_2d_potential_torch(p, d1, d2, spacing=2):
 
 
 def save(f, *objects):
+    if not os.path.exists(os.path.dirname(f)):
+        try:
+            os.makedirs(os.path.dirname(f))
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
     with open(f, 'wb') as file:
         pickle.dump(objects, file)
 

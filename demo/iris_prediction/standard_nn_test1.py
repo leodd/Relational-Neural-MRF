@@ -1,42 +1,48 @@
 import numpy as np
 import torch
 from torch import nn
-from demo.iris_prediction.iris_loader import load_raw_iris_data
+from demo.iris_prediction.iris_loader import load_iris_data_fold
 
 
-train_data, test_data = load_raw_iris_data('iris')
+res = list()
 
-m = len(train_data)
+for fold in range(5):
+    train_data, test_data = load_iris_data_fold('iris', fold, folds=5)
 
-x = train_data[:, [0, 1, 2, 3]]
-y = train_data[:, 4]
-x = torch.from_numpy(x).type(torch.float32)
-y = torch.from_numpy(y).type(torch.long)
+    m = len(train_data)
 
-model = nn.Sequential(
-    nn.Linear(4, 64), nn.ReLU(),
-    nn.Linear(64, 32), nn.ReLU(),
-    nn.Linear(32, 3)
-)
+    x = train_data[:, [0, 1, 2, 3]]
+    y = train_data[:, 4]
+    x = torch.from_numpy(x).type(torch.float32)
+    y = torch.from_numpy(y).type(torch.long)
 
-optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=0.0001)
-criterion = nn.CrossEntropyLoss()
+    model = nn.Sequential(
+        nn.Linear(4, 64), nn.ReLU(),
+        nn.Linear(64, 32), nn.ReLU(),
+        nn.Linear(32, 3)
+    )
 
-for _ in range(1000):
-    optimizer.zero_grad()
-    out = model(x)
-    loss = criterion(out, y)
-    loss.backward()
-    optimizer.step()
-    # print(loss)
+    optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=0.0001)
+    criterion = nn.CrossEntropyLoss()
 
-x = test_data[:, [0, 1, 2, 3]]
-y = test_data[:, 4]
-x = torch.from_numpy(x).type(torch.float32)
-y = torch.from_numpy(y).type(torch.long)
+    for _ in range(1000):
+        optimizer.zero_grad()
+        out = model(x)
+        loss = criterion(out, y)
+        loss.backward()
+        optimizer.step()
+        # print(loss)
 
-with torch.no_grad():
-    out = model(x)
-    y_predict = out.argmax(dim=1)
+    x = test_data[:, [0, 1, 2, 3]]
+    y = test_data[:, 4]
+    x = torch.from_numpy(x).type(torch.float32)
+    y = torch.from_numpy(y).type(torch.long)
 
-print(torch.mean((y_predict == y).type(torch.float)))
+    with torch.no_grad():
+        out = model(x)
+        y_predict = out.argmax(dim=1)
+
+    res.append(torch.mean((y_predict == y).type(torch.float)).item())
+    print(res[-1])
+
+print(res, np.mean(res), np.var(res))
