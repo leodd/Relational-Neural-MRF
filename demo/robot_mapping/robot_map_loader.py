@@ -20,16 +20,32 @@ def load_raw_data(f):
     return data
 
 
+def load_predicate_data(f):
+    with open(f, 'r') as file:
+        data = set()
+
+        for line in file:
+            res = re.search(r'(\w+)\((?:(\w+),?)+\)', line).groups()
+
+            data.add(tuple(res))
+
+    return data
+
+
 if __name__ == '__main__':
     data = load_raw_data('radish.rm.raw/a.map')
+    print(data)
 
-    colors = {
-        'W': 'black',
-        'D': 'red',
-        'O': 'green'
-    }
-    for row in data:
-        plt.plot([row[0], row[2]], [row[1], row[3]], color=colors[row[4]], linestyle='-', linewidth=2)
+    # colors = {
+    #     'W': 'black',
+    #     'D': 'red',
+    #     'O': 'green'
+    # }
+    # for row in data:
+    #     plt.plot([row[0], row[2]], [row[1], row[3]], color=colors[row[4]], linestyle='-', linewidth=2)
+    #
+    # plt.axis('equal')
+    # plt.show()
 
-    plt.axis('equal')
-    plt.show()
+    # data = load_predicate_data('radish.rm/a.db')
+    # print(data)
