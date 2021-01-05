@@ -56,20 +56,23 @@ for fold in range(5):
     M = len(data[rv_c])
 
     for m in range(M):
-        # rv_sl.value = data[rv_sl][m]
+        rv_sl.value = data[rv_sl][m]
         rv_sw.value = data[rv_sw][m]
         rv_pl.value = data[rv_pl][m]
-        rv_pw.value = data[rv_pw][m]
+        # rv_pw.value = data[rv_pw][m]
         rv_c.value = data[rv_c][m]
 
         infer = PBP(g, n=20)
         infer.run(2)
 
-        predict.append(infer.map(rv_sl))
+        predict.append(infer.map(rv_pw))
 
     predict = np.array(predict)
-    target = data[rv_sl]
+    target = data[rv_pw]
+    for row in zip(predict, target):
+        print(row)
     res.append(np.mean((predict - target) ** 2))
+    # res.append(np.mean(predict == target))
     print(res[-1])
 
 print(res, np.mean(res), np.var(res))

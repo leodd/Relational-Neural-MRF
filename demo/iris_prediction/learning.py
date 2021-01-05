@@ -23,18 +23,19 @@ for fold in range(5):
     train, _ = load_iris_data_fold('iris', fold, folds=5)
     data = matrix_to_dict(train, rv_sl, rv_sw, rv_pl, rv_pw, rv_c)
 
-    # p = CGNeuralNetPotential(
-    #     layers=[LinearLayer(5, 64), ReLU(),
-    #             LinearLayer(64, 32), ReLU(),
-    #             LinearLayer(32, 1)],
-    #     domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain]
-    # )
-
-    p = NeuralNetPotential(
+    p = CGNeuralNetPotential(
         layers=[LinearLayer(5, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)]
+                LinearLayer(32, 1)],
+        domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+        extra_sig=10
     )
+
+    # p = NeuralNetPotential(
+    #     layers=[LinearLayer(5, 64), ReLU(),
+    #             LinearLayer(64, 32), ReLU(),
+    #             LinearLayer(32, 1)]
+    # )
 
     f = F(p, nb=[rv_c, rv_sl, rv_sw, rv_pl, rv_pw])
 
@@ -55,6 +56,6 @@ for fold in range(5):
         rvs_selection_size=5,
         sample_size=30,
         # visualize=visualize,
-        save_dir=f'learned_potentials/model_1/{fold}',
+        save_dir=f'learned_potentials/model_2/{fold}',
         save_period=1000,
     )

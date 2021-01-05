@@ -5,7 +5,7 @@ from demo.iris_prediction.iris_loader import load_iris_data_fold
 
 
 features = [1, 2, 3, 4]
-target = 0
+target = [0]
 
 res = list()
 
@@ -45,7 +45,7 @@ for fold in range(5):
         y_predict = model(x)
         y_predict = y_predict.view(-1)
 
-        res.append(torch.mean((y_predict - y)**2).item())
+        res.append(torch.mean((y_predict - y.view(-1))**2).item())
         print(res[-1])
 
 print(res, np.mean(res), np.var(res))

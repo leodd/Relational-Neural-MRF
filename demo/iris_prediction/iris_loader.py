@@ -38,7 +38,7 @@ def load_iris_data_fold(f, fold, folds=5, seed=1):
 
     np.random.seed(seed)
     permutation_indices = np.random.permutation(N)
-    np.roll(permutation_indices, int(N / folds) * fold)
+    permutation_indices = np.roll(permutation_indices, int(N / folds) * fold)
 
     mid_point = int(N / folds) * (folds - 1)
     train_idx = permutation_indices[:mid_point]
@@ -58,5 +58,5 @@ def matrix_to_dict(data, rv_sl, rv_sw, rv_pl, rv_pw, rv_c):
 
 
 if __name__ == '__main__':
-    data = load_iris_data('iris')
+    data = load_iris_data_fold('iris', 0, folds=5, seed=1)
     print(data)
