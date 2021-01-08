@@ -122,7 +122,7 @@ for val in counter:
 trainable_rvs = list()
 trainable_rvs_p = list()
 for rv, content in data.items():
-    if rv.name[0] == same_gender:
+    if rv.s[0] == same_gender:
         trainable_rvs.append(rv)
         trainable_rvs_p.append(counter[content[0]])
 
