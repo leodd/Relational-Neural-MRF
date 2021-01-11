@@ -122,7 +122,7 @@ for val in counter:
 trainable_rvs = list()
 trainable_rvs_p = list()
 for rv, content in data.items():
-    if rv.s[0] == same_gender:
+    if rv.name[0] == same_gender:
         trainable_rvs.append(rv)
         trainable_rvs_p.append(counter[content[0]])
 
@@ -133,24 +133,22 @@ def sampler(rvs, size):
 
 def visualize(ps, t):
     if t % 50 == 0:
-        for p in ps:
-            if p == p1:
-                x1, x2, x3 = np.meshgrid(d_rating.values, d_rating.values, d_same_gender.values)
-                xs = np.array([x1, x2, x3]).T.reshape(-1, 3)
-                ys = p.batch_call(xs).reshape(-1, 1)
-                half = ys.size // 2
-                # ys = ys[:half]
-                ys = ys[:half] / (ys[:half] + ys[half:])
-                # ys = [np.sum(ys[:half]), np.sum(ys[half:])]
-                print(ys)
+        x1, x2, x3 = np.meshgrid(d_rating.values, d_rating.values, d_same_gender.values)
+        xs = np.array([x1, x2, x3]).T.reshape(-1, 3)
+        ys = p1.batch_call(xs).reshape(-1, 1)
+        half = ys.size // 2
+        # ys = ys[:half]
+        ys = ys[:half] / (ys[:half] + ys[half:])
+        # ys = [np.sum(ys[:half]), np.sum(ys[half:])]
+        print(ys)
 
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(xs[:half, 0], xs[:half, 1], ys)
-                ax.set_xlabel('x1')
-                ax.set_ylabel('x2')
-                ax.set_zlabel('value')
-                plt.show()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(xs[:half, 0], xs[:half, 1], ys)
+        ax.set_xlabel('x1')
+        ax.set_ylabel('x2')
+        ax.set_zlabel('value')
+        plt.show()
 
 leaner = PMLE(g, [p1], data)
 leaner.train(

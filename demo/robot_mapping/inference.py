@@ -1,28 +1,25 @@
-from utils import save, visualize_2d_potential
+from utils import save, load, visualize_2d_potential
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from Graph import *
 from RelationalGraph import *
+from inferer.PBP import PBP
 from Function import Function
 from NeuralNetPotential import NeuralNetPotential, GaussianNeuralNetPotential, TableNeuralNetPotential, \
     CGNeuralNetPotential, ReLU, LinearLayer, WSLinearLayer, NormalizeLayer
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from MLNPotential import *
 from learner.NeuralPMLEHybrid import PMLE
-from demo.robot_mapping.robot_map_loader import load_raw_data, load_predicate_data, process_data, merge_processed_data
+from demo.robot_mapping.robot_map_loader import load_raw_data, load_predicate_data, process_data
 from collections import Counter
 
 
-# map_names = ['a', 'l', 'n', 'u', 'w']
-map_names = ['a', 'l', 'n', 'u']
+map_names = ['a', 'l', 'n', 'u', 'w']
+map_name = 'w'
 
-processed_data = merge_processed_data([
-    process_data(
-        load_raw_data(f'radish.rm.raw/{map_name}.map', map_name),
-        load_predicate_data(f'radish.rm/{map_name}.db', map_name)
-    )
-    for map_name in map_names
-])
+raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map')
+predicate_data = load_predicate_data(f'radish.rm/{map_name}.db')
+processed_data = process_data(raw_data, predicate_data)
 
 dt_seg_type = processed_data['seg_type']
 dt_length = processed_data['length']
@@ -45,7 +42,7 @@ d_seg_type.domain_indexize()
 # d_pow.domain_indexize()
 # d_pol.domain_indexize()
 
-lv_s = LV(list(dt_seg_type.keys()))
+lv_s = LV(list(raw_data.keys()))
 
 seg_type = Atom(d_seg_type, [lv_s], name='type')
 length = Atom(d_length, [lv_s], name='length')
@@ -58,6 +55,13 @@ p_lda = NeuralNetPotential(
             LinearLayer(32, 1)]
 )
 
+(p_params,) = load(
+    f'learned_potentials/model_0/2000'
+)
+p_lda.set_parameters(p_params)
+
+# visualize_2d_potential(p_lda, d_length, d_seg_type, spacing=0.01)
+
 f_lda = ParamF(p_lda, atoms=[length('S'), angle('S'), seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
@@ -65,34 +69,26 @@ rel_g = RelationalGraph(
 )
 
 g, rvs_dict = rel_g.ground()
-
 print(len(g.rvs))
 
-data = dict()
+target_rvs = dict()
 
 for key, rv in rvs_dict.items():
     if key[0] == length:
-        data[rv] = [d_length.clip_value(dt_length[key[1]])]
+        rv.value = d_length.clip_value(dt_length[key[1]])
     if key[0] == angle:
-        data[rv] = [dt_angle[key[1]]]
+        rv.value = dt_angle[key[1]]
     if key[0] == seg_type:
-        data[rv] = [d_seg_type.value_to_idx(dt_seg_type[key[1]])]
+        rv.value = None
+        target_rvs[rv] = d_seg_type.value_to_idx(dt_seg_type[key[1]])
 
-def visualize(ps, t):
-    if t % 200 == 0:
-        visualize_2d_potential(p_lda, d_length, d_seg_type, spacing=0.01)
+infer = PBP(g, n=20)
+infer.run(1)
 
-leaner = PMLE(g, [p_lda], data)
-leaner.train(
-    lr=0.01,
-    alpha=0.99,
-    regular=0.0001,
-    max_iter=2000,
-    batch_iter=3,
-    batch_size=1,
-    rvs_selection_size=60,
-    sample_size=30,
-    save_dir='learned_potentials/model_0',
-    save_period=1000,
-    # visualize=visualize
-)
+loss = list()
+for rv in target_rvs:
+    res = infer.map(rv)
+    loss.append(res == target_rvs[rv])
+    print(res, target_rvs[rv])
+
+print(np.mean(loss))

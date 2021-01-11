@@ -38,6 +38,10 @@ class Domain:
             temp = (x - self.values_[0]) / (self.values_[1] - self.values_[0])
             return temp * (self.values[1] - self.values[0]) + self.values[0]
 
+    def clip_value(self, x):
+        if self.continuous:
+            return np.clip(x, self.values[0], self.values[1])
+
     def domain_indexize(self):
         if not self.continuous:
             self.values = np.arange(len(self.values_))

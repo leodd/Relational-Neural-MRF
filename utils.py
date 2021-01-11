@@ -127,7 +127,7 @@ def visualize_2d_potential(p, d1, d2, spacing=2):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x1, x2, ys)
+    ax.scatter(xs[:, 0], xs[:, 1], ys)
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')
     ax.set_zlabel('value')

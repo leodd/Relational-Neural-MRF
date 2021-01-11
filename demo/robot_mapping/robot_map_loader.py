@@ -1,17 +1,17 @@
 import numpy as np
 import re
 import matplotlib.pyplot as plt
-from collections import defaultdict
+from collections import defaultdict, ChainMap
 
 
-def load_raw_data(f):
+def load_raw_data(f, map_name=''):
     with open(f, 'r') as file:
         data = dict()
 
         for line in file:
             res = re.search(r'(.+): {2}\((.*),(.*)\) -- \((.*),(.*)\) (\w)', line).groups()
 
-            data[res[0]] = (
+            data[res[0] + map_name] = (
                 float(res[1]), float(res[2]),
                 float(res[3]), float(res[4]),
                 res[5]
@@ -20,19 +20,27 @@ def load_raw_data(f):
     return data
 
 
-def load_predicate_data(f):
+def load_predicate_data(f, map_name=''):
     with open(f, 'r') as file:
         data = defaultdict(set)
 
         for line in file:
             res = re.findall(r'\w+', line)
 
-            data[res[0]].add(tuple(res[1:]))
+            data[res[0]].add(tuple((s + map_name) for s in res[1:]))
 
     return dict(data)
 
 
-def process_data(raw_data, predicate_data):
+def merge_processed_data(data_list):
+    session_list = {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned'}
+    res = dict()
+    for session in session_list:
+        res[session] = dict(ChainMap(*[data[session] for data in data_list]))
+    return res
+
+
+def process_data(raw_data, predicate_data, map_name=''):
     neighbor = defaultdict(set)
     aligned = defaultdict(set)
 
@@ -156,11 +164,12 @@ def nearest_line(ls, point):
 
 
 if __name__ == '__main__':
-    raw_data = load_raw_data('radish.rm.raw/a.map')
-    predicate_data = load_predicate_data('radish.rm/a.db')
+    map_name = 'a'
+    raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map', map_name)
+    predicate_data = load_predicate_data(f'radish.rm/{map_name}.db', map_name)
     processed_data = process_data(raw_data, predicate_data)
 
-    print(processed_data)
+    print(processed_data['part_of_wall'])
 
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
               '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
