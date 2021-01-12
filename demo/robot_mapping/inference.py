@@ -34,8 +34,8 @@ d_seg_type = Domain(['W', 'D', 'O'], continuous=False)
 # d_pow = Domain([False, True], continuous=False)
 # d_pol = Domain([False, True], continuous=False)
 
-d_length = Domain([0., 0.5], continuous=True)
-d_depth = Domain([-1., 1.], continuous=True)
+d_length = Domain([0., 0.25], continuous=True)
+d_depth = Domain([-0.05, 0.05], continuous=True)
 d_angle = Domain([0., 1.57], continuous=True)
 
 d_seg_type.domain_indexize()
@@ -49,23 +49,32 @@ length = Atom(d_length, [lv_s], name='length')
 depth = Atom(d_depth, [lv_s], name='depth')
 angle = Atom(d_angle, [lv_s], name='angle')
 
-p_lda = NeuralNetPotential(
-    layers=[LinearLayer(3, 64), ReLU(),
+p_l = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)]
 )
 
-(p_params,) = load(
+p_d = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
+)
+
+params = load(
     f'learned_potentials/model_0/2000'
 )
-p_lda.set_parameters(p_params)
+p_l.set_parameters(params[0])
+p_d.set_parameters(params[1])
 
-# visualize_2d_potential(p_lda, d_length, d_seg_type, spacing=0.01)
+visualize_2d_potential(p_l, d_length, d_seg_type, spacing=0.005)
+visualize_2d_potential(p_d, d_depth, d_seg_type, spacing=0.002)
 
-f_lda = ParamF(p_lda, atoms=[length('S'), angle('S'), seg_type('S')], lvs=['S'])
+f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_d = ParamF(p_d, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_lda]
+    parametric_factors=[f_l, f_d]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -78,6 +87,8 @@ for key, rv in rvs_dict.items():
         rv.value = d_length.clip_value(dt_length[key[1]])
     if key[0] == angle:
         rv.value = dt_angle[key[1]]
+    if key[0] == depth:
+        rv.value = d_depth.clip_value(dt_depth[key[1]])
     if key[0] == seg_type:
         rv.value = None
         target_rvs[rv] = d_seg_type.value_to_idx(dt_seg_type[key[1]])
@@ -85,10 +96,20 @@ for key, rv in rvs_dict.items():
 infer = PBP(g, n=20)
 infer.run(1)
 
+predict = dict()
 loss = list()
 for rv in target_rvs:
     res = infer.map(rv)
+    predict[rv.name[1]] = res
     loss.append(res == target_rvs[rv])
     print(res, target_rvs[rv])
 
 print(np.mean(loss))
+
+for s, content in raw_data.items():
+    color = ['black', 'red', 'green'][predict[s]]
+    # color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
+    plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
+
+plt.axis('equal')
+plt.show()

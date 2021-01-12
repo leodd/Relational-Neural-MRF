@@ -96,10 +96,17 @@ def process_data(raw_data, predicate_data, map_name=''):
         length[s] = line_length(l)
 
         temp = corridor_lines[s[:2]]
-        idx_, depth[s] = nearest_line([avg_lines[i] for i in temp], line_midpoint(l))
+        p = line_midpoint(l)
+        idx_, d = nearest_line([avg_lines[i] for i in temp], p)
         part_of_line[s] = idx = temp[idx_]
         l_ = avg_lines[idx]
+        l_other = avg_lines[temp[1 - idx_]]
 
+        y_, y_other = l_[0] * p[0] + l_[1], l_other[0] * p[0] + l_other[1]
+        if not ((y_ < p[1] < y_other) or (y_ > p[1] > y_other)):
+            d = -d
+
+        depth[s] = d
         angle[s] = line_angle(l, l_)
 
     return {
@@ -164,12 +171,12 @@ def nearest_line(ls, point):
 
 
 if __name__ == '__main__':
-    map_name = 'a'
+    map_name = 'w'
     raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map', map_name)
     predicate_data = load_predicate_data(f'radish.rm/{map_name}.db', map_name)
     processed_data = process_data(raw_data, predicate_data)
 
-    print(processed_data['part_of_wall'])
+    print(processed_data['depth'])
 
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
               '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',

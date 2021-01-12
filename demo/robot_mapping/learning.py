@@ -37,8 +37,8 @@ d_seg_type = Domain(['W', 'D', 'O'], continuous=False)
 # d_pow = Domain([False, True], continuous=False)
 # d_pol = Domain([False, True], continuous=False)
 
-d_length = Domain([0., 0.5], continuous=True)
-d_depth = Domain([-1., 1.], continuous=True)
+d_length = Domain([0., 0.25], continuous=True)
+d_depth = Domain([-0.05, 0.05], continuous=True)
 d_angle = Domain([0., 1.57], continuous=True)
 
 d_seg_type.domain_indexize()
@@ -52,16 +52,24 @@ length = Atom(d_length, [lv_s], name='length')
 depth = Atom(d_depth, [lv_s], name='depth')
 angle = Atom(d_angle, [lv_s], name='angle')
 
-p_lda = NeuralNetPotential(
-    layers=[LinearLayer(3, 64), ReLU(),
+p_l = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)]
 )
 
-f_lda = ParamF(p_lda, atoms=[length('S'), angle('S'), seg_type('S')], lvs=['S'])
+p_d = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
+)
+
+
+f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_d = ParamF(p_d, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_lda]
+    parametric_factors=[f_l, f_d]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -75,22 +83,24 @@ for key, rv in rvs_dict.items():
         data[rv] = [d_length.clip_value(dt_length[key[1]])]
     if key[0] == angle:
         data[rv] = [dt_angle[key[1]]]
+    if key[0] == depth:
+        data[rv] = [d_depth.clip_value(dt_depth[key[1]])]
     if key[0] == seg_type:
         data[rv] = [d_seg_type.value_to_idx(dt_seg_type[key[1]])]
 
 def visualize(ps, t):
     if t % 200 == 0:
-        visualize_2d_potential(p_lda, d_length, d_seg_type, spacing=0.01)
+        visualize_2d_potential(p_d, d_depth, d_seg_type, spacing=0.01)
 
-leaner = PMLE(g, [p_lda], data)
+leaner = PMLE(g, [p_l, p_d], data)
 leaner.train(
-    lr=0.01,
+    lr=0.001,
     alpha=0.99,
     regular=0.0001,
-    max_iter=2000,
+    max_iter=3000,
     batch_iter=3,
     batch_size=1,
-    rvs_selection_size=60,
+    rvs_selection_size=100,
     sample_size=30,
     save_dir='learned_potentials/model_0',
     save_period=1000,
