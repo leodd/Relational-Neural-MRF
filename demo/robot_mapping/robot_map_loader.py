@@ -1,7 +1,21 @@
 import numpy as np
 import re
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from collections import defaultdict, ChainMap
+
+
+def load_data_fold(fold):
+    map_names = ['a', 'l', 'n', 'u', 'w']
+    maps = [
+        process_data(
+            load_raw_data(f'radish.rm.raw/{map_name}.map', map_name),
+            load_predicate_data(f'radish.rm/{map_name}.db', map_name)
+        )
+        for map_name in map_names
+    ]
+    train_maps = maps[:fold] + maps[fold + 1:]
+    return merge_processed_data(train_maps), maps[fold]
 
 
 def load_raw_data(f, map_name=''):
@@ -33,7 +47,7 @@ def load_predicate_data(f, map_name=''):
 
 
 def merge_processed_data(data_list):
-    session_list = {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned'}
+    session_list = {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned', 'lines'}
     res = dict()
     for session in session_list:
         res[session] = dict(ChainMap(*[data[session] for data in data_list]))
@@ -79,7 +93,13 @@ def process_data(raw_data, predicate_data, map_name=''):
                 for s_ in group:
                     if raw_data[s_][4] == 'W':
                         part_of_wall[s_] = len(groups)
-                avg_lines.append(average_line([raw_data[s_][:4] for s_ in pruned_group]))
+                # avg_lines.append(average_line([raw_data[s_][:4] for s_ in pruned_group]))
+                avg_lines.append(
+                    regression_line(
+                        [line_midpoint(raw_data[s_][:4]) for s_ in pruned_group],
+                        [line_length(raw_data[s_][:4]) for s_ in pruned_group]
+                    )
+                )
                 groups.append(pruned_group)
     corridor_lines = dict(corridor_lines)
 
@@ -88,26 +108,33 @@ def process_data(raw_data, predicate_data, map_name=''):
     depth = dict()
     angle = dict()
     part_of_line = dict()
+    lines = dict()
 
     for s, content in raw_data.items():
         l, t = content[:4], content[4]
 
+        lines[s] = l
         seg_type[s] = t
         length[s] = line_length(l)
 
         temp = corridor_lines[s[:2]]
         p = line_midpoint(l)
-        idx_, d = nearest_line([avg_lines[i] for i in temp], p)
+        idx_, _ = nearest_line([avg_lines[i] for i in temp], p)
         part_of_line[s] = idx = temp[idx_]
         l_ = avg_lines[idx]
         l_other = avg_lines[temp[1 - idx_]]
 
+        # depth[s] = min(
+        #     perpendicular_distance(l_, raw_data[s][:2]),
+        #     perpendicular_distance(l_, raw_data[s][2:4])
+        # )
+        depth[s] = perpendicular_distance(l_, p)
+        angle[s] = line_angle(l, l_)
+
         y_, y_other = l_[0] * p[0] + l_[1], l_other[0] * p[0] + l_other[1]
         if not ((y_ < p[1] < y_other) or (y_ > p[1] > y_other)):
-            d = -d
-
-        depth[s] = d
-        angle[s] = line_angle(l, l_)
+            depth[s] *= -1
+            angle[s] *= -1
 
     return {
         'seg_type': seg_type,
@@ -117,8 +144,22 @@ def process_data(raw_data, predicate_data, map_name=''):
         'neighbor': neighbor,
         'aligned': aligned,
         'part_of_wall': part_of_wall,
-        'part_of_line': part_of_line
+        'part_of_line': part_of_line,
+        'avg_lines': avg_lines,
+        'lines': lines
     }
+
+
+def get_seg_type_distribution(seg_type_dict):
+    res = np.array([0, 0, 0])
+    for _, t in seg_type_dict.items():
+        if t == 'W':
+            res[0] += 1
+        elif t == 'D':
+            res[1] += 1
+        else:
+            res[2] += 1
+    return res / np.sum(res)
 
 
 def slope_intercept_form(l):
@@ -127,6 +168,25 @@ def slope_intercept_form(l):
         k = (y1 - y2) / (x1 - x2)
         b = y1 - k * x1
         return k, b
+    else:
+        return l
+
+
+def two_points_form(l, window=(-1, 1, -1, 1)):
+    if len(l) == 2:
+        x_min, x_max, y_min, y_max = window
+        k, b = l
+        x1, y1 = x_min, x_min * k + b
+        if y1 > y_max:
+            x1, y1 = (y_max - b) / k, y_max
+        elif y1 < y_min:
+            x1, y1 = (y_min - b) / k, y_min
+        x2, y2 = x_max, x_max * k + b
+        if y2 > y_max:
+            x2, y2 = (y_max - b) / k, y_max
+        elif y2 < y_min:
+            x2, y2 = (y_min - b) / k, y_min
+        return (x1, y1, x2, y2)
     else:
         return l
 
@@ -154,6 +214,17 @@ def average_line(ls):
         sum_k += k
         sum_b += b
     return sum_k / len(ls), sum_b / len(ls)
+
+
+def regression_line(points, ws=None):
+    xs = np.array([x for x, _ in points]).reshape(-1, 1)
+    ys = np.array([y for _, y in points])
+    if ws:
+        ws = np.array(ws)
+        ws /= np.sum(ws)
+    model = LinearRegression()
+    model.fit(xs, ys, ws)
+    return model.coef_[0], model.intercept_
 
 
 def perpendicular_distance(l, point):
@@ -185,9 +256,9 @@ if __name__ == '__main__':
     for s, content in raw_data.items():
         # color = 'black'
 
-        # color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
+        color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
 
-        color = colors[processed_data['part_of_line'].get(s, -1)]
+        # color = colors[processed_data['part_of_line'].get(s, -1)]
 
         # if s[:2] == 'L0':
         #     color = 'red'
@@ -198,6 +269,10 @@ if __name__ == '__main__':
         #     color = 'red'
 
         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
+
+    # for l in processed_data['avg_lines']:
+    #     x1, y1, x2, y2 = two_points_form(l)
+    #     plt.plot([x1, x2], [y1, y2], color='black', linestyle='-', linewidth=2)
 
     plt.axis('equal')
     plt.show()

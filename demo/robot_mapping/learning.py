@@ -9,41 +9,24 @@ from NeuralNetPotential import NeuralNetPotential, GaussianNeuralNetPotential, T
 from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
 from MLNPotential import *
 from learner.NeuralPMLEHybrid import PMLE
-from demo.robot_mapping.robot_map_loader import load_raw_data, load_predicate_data, process_data, merge_processed_data
+from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
 from collections import Counter
 
 
-# map_names = ['a', 'l', 'n', 'u', 'w']
-map_names = ['a', 'l', 'n', 'u']
+train, _ = load_data_fold(2)
 
-processed_data = merge_processed_data([
-    process_data(
-        load_raw_data(f'radish.rm.raw/{map_name}.map', map_name),
-        load_predicate_data(f'radish.rm/{map_name}.db', map_name)
-    )
-    for map_name in map_names
-])
-
-dt_seg_type = processed_data['seg_type']
-dt_length = processed_data['length']
-dt_depth = processed_data['depth']
-dt_angle = processed_data['angle']
-dt_neighbor = processed_data['neighbor']
-dt_aligned = processed_data['aligned']
-# dt_pow = processed_data['part_of_wall']
-# dt_pol = processed_data['part_of_line']
+dt_seg_type = train['seg_type']
+dt_length = train['length']
+dt_depth = train['depth']
+dt_angle = train['angle']
+dt_neighbor = train['neighbor']
+dt_aligned = train['aligned']
 
 d_seg_type = Domain(['W', 'D', 'O'], continuous=False)
-# d_pow = Domain([False, True], continuous=False)
-# d_pol = Domain([False, True], continuous=False)
-
 d_length = Domain([0., 0.25], continuous=True)
 d_depth = Domain([-0.05, 0.05], continuous=True)
-d_angle = Domain([0., 1.57], continuous=True)
-
+d_angle = Domain([-1.57, 1.57], continuous=True)
 d_seg_type.domain_indexize()
-# d_pow.domain_indexize()
-# d_pol.domain_indexize()
 
 lv_s = LV(list(dt_seg_type.keys()))
 
@@ -53,7 +36,7 @@ depth = Atom(d_depth, [lv_s], name='depth')
 angle = Atom(d_angle, [lv_s], name='angle')
 
 p_l = NeuralNetPotential(
-    layers=[LinearLayer(2, 64), ReLU(),
+    layers=[LinearLayer(4, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)]
 )
@@ -64,12 +47,21 @@ p_d = NeuralNetPotential(
             LinearLayer(32, 1)]
 )
 
+p_a = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
+)
 
-f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
+p_prior = TableFunction(get_seg_type_distribution(dt_seg_type))
+
+f_l = ParamF(p_l, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
 f_d = ParamF(p_d, atoms=[depth('S'), seg_type('S')], lvs=['S'])
+f_a = ParamF(p_a, atoms=[angle('S'), seg_type('S')], lvs=['S'])
+f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_l, f_d]
+    parametric_factors=[f_l]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -90,19 +82,19 @@ for key, rv in rvs_dict.items():
 
 def visualize(ps, t):
     if t % 200 == 0:
-        visualize_2d_potential(p_d, d_depth, d_seg_type, spacing=0.01)
+        visualize_2d_potential(p_l, d_length, d_seg_type, spacing=0.01)
 
-leaner = PMLE(g, [p_l, p_d], data)
+leaner = PMLE(g, [p_l], data)
 leaner.train(
     lr=0.001,
     alpha=0.99,
-    regular=0.0001,
+    regular=0.001,
     max_iter=3000,
     batch_iter=3,
     batch_size=1,
     rvs_selection_size=100,
     sample_size=30,
-    save_dir='learned_potentials/model_0',
+    save_dir='learned_potentials/model_1',
     save_period=1000,
     # visualize=visualize
 )
