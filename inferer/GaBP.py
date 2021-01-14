@@ -1,4 +1,4 @@
-from Potentials import GaussianFunction, LinearGaussianFunction
+from functions.Potentials import GaussianFunction
 from numpy import exp, Inf
 from numpy.linalg import inv
 

@@ -1,8 +1,8 @@
-from Function import Function
+from functions.Function import Function
 import numpy as np
 import torch
 import torch.nn as nn
-from Potentials import GaussianFunction
+from functions.Potentials import GaussianFunction
 
 
 class NeuralNetModule(nn.Module):

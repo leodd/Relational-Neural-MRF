@@ -1,4 +1,4 @@
-from NeuralNetPotential import GaussianNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
+from functions.NeuralNetPotential import GaussianNeuralNetPotential, ReLU, LinearLayer
 from learner.NeuralPMLEHybrid import PMLE
 from utils import visualize_1d_potential
 from Graph import *

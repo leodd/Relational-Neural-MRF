@@ -1,10 +1,8 @@
-from Graph import *
 import numpy as np
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
-from utils import save, load, visualize_2d_potential, visualize_1d_potential
-from Potentials import GaussianFunction, TableFunction
+from utils import save
 import os
 
 

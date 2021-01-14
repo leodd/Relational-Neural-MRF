@@ -1,12 +1,7 @@
-import matplotlib.image as img
 from utils import show_images, load
-from demo.image_denoising.image_data_loader import load_simple_data, load_data
-import numpy as np
+from demo.image_denoising.image_data_loader import load_simple_data
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ReLU
-from Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
-from inferer.VarInference import VarInference
-from inferer.EPBPLogVersion import EPBP
+from functions.Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
 from inferer.PBP import PBP
 
 

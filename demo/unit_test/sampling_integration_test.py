@@ -1,5 +1,5 @@
 import numpy as np
-from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU, LinearLayer
+from functions.NeuralNetPotential import NeuralNetFunction, ReLU, LinearLayer
 import scipy.integrate as integrate
 from optimization_tools import AdamOptimizer
 

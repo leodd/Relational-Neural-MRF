@@ -1,6 +1,6 @@
-from utils import save, visualize_2d_potential
+from utils import visualize_2d_potential
 from Graph import *
-from Potentials import GaussianFunction
+from functions.Potentials import GaussianFunction
 from learner.GaussianPMLE import PMLE
 from demo.image_denoising.image_data_loader import load_data
 import numpy as np

@@ -1,5 +1,5 @@
 import numpy as np
-from NeuralNetPotential import NeuralNetFunction, ReLU, ELU, LeakyReLU, LinearLayer
+from functions.NeuralNetPotential import NeuralNetFunction, LeakyReLU, LinearLayer
 import scipy.integrate as integrate
 
 

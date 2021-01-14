@@ -1,5 +1,5 @@
 from RelationalGraph import *
-from Potentials import GaussianFunction
+from functions.Potentials import GaussianFunction
 from inferer.MCMC import MCMC
 import numpy as np
 import json

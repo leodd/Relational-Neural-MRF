@@ -1,6 +1,6 @@
 from numpy.random import uniform, normal
 from collections import Counter
-from Potentials import TableFunction, GaussianFunction
+from functions.Potentials import TableFunction, GaussianFunction
 
 
 class MCMC:

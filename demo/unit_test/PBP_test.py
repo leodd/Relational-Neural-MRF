@@ -1,6 +1,5 @@
-import numpy as np
 from Graph import *
-from Potentials import *
+from functions.Potentials import *
 from inferer.PBP import PBP
 
 

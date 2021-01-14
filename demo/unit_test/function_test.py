@@ -1,4 +1,4 @@
-from Potentials import *
+from functions.Potentials import *
 from Graph import Domain
 from utils import visualize_2d_potential
 

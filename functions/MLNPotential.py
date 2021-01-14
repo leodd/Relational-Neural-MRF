@@ -1,8 +1,7 @@
-from Function import Function
+from functions.Function import Function
 import numpy as np
-from Potentials import TableFunction, GaussianFunction, CategoricalGaussianFunction
+from functions.Potentials import TableFunction, CategoricalGaussianFunction
 from itertools import product
-import re
 
 
 def and_op(x, y):

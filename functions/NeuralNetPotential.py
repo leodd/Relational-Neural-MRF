@@ -1,8 +1,6 @@
-from Function import Function
-from NeuralNet import *
-from Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction, LinearGaussianFunction
+from functions.NeuralNet import *
+from functions.Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction
 import numpy as np
-from numpy.linalg import det, inv
 
 
 class NeuralNetPotential(Function):
@@ -19,10 +17,10 @@ class NeuralNetPotential(Function):
     def batch_call(self, x):
         return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1)
 
-    def nn_forward(self, x, save_cache=True):
+    def forward(self, x, save_cache=True):
         return self.nn.forward(x, save_cache)
 
-    def nn_backward(self, dy):
+    def backward(self, dy):
         return self.nn.backward(dy)
 
     def set_parameters(self, parameters):

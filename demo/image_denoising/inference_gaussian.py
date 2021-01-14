@@ -1,11 +1,7 @@
 import matplotlib.image as img
 from utils import show_images, load
-import pandas as pd
-from demo.image_denoising.image_data_loader import load_data
-import numpy as np
 from Graph import *
-from Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
-from inferer.GaBP import GaBP
+from functions.Potentials import ImageNodePotential, ImageEdgePotential, GaussianFunction
 from inferer.PBP import PBP
 
 

@@ -1,7 +1,5 @@
-from utils import save, visualize_2d_potential
-from Graph import *
 from RelationalGraph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, CGNeuralNetPotential, ReLU
+from functions.NeuralNetPotential import TableNeuralNetPotential, CGNeuralNetPotential, ReLU
 from learner.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 

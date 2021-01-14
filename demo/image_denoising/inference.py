@@ -1,13 +1,8 @@
 import matplotlib.image as img
 from utils import show_images, load
-import pandas as pd
-from demo.image_denoising.image_data_loader import load_data
-import numpy as np
 from Graph import *
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU, LinearLayer
-from Potentials import ImageNodePotential, ImageEdgePotential
-from inferer.VarInference import VarInference
-from inferer.EPBPLogVersion import EPBP
+from functions.NeuralNetPotential import ContrastiveNeuralNetPotential, ReLU, LinearLayer
+from functions.Potentials import ImageNodePotential, ImageEdgePotential
 from inferer.PBP import PBP
 
 

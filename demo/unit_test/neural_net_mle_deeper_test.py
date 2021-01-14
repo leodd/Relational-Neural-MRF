@@ -1,11 +1,9 @@
-from NeuralNetPotential import NeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
+from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
 from optimization_tools import AdamOptimizer
 from utils import visualize_1d_potential
 from Graph import *
 import numpy as np
 import seaborn as sns
-import matplotlib.pyplot as plt
-
 
 domain = Domain([-20, 10], continuous=True)
 

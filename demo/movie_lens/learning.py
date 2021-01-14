@@ -1,13 +1,8 @@
-from utils import save, visualize_2d_potential
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from Graph import *
 from RelationalGraph import *
-from Function import Function
-from NeuralNetPotential import NeuralNetFunction, GaussianNeuralNetPotential, TableNeuralNetPotential, \
-    CGNeuralNetPotential, ReLU, LinearLayer, WSLinearLayer, NormalizeLayer
-from Potentials import CategoricalGaussianFunction, GaussianFunction, TableFunction
-from MLNPotential import *
+from functions.NeuralNetPotential import TableNeuralNetPotential, \
+    ReLU, LinearLayer
+from functions.MLNPotential import *
 from learner.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 from collections import Counter

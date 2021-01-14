@@ -1,4 +1,4 @@
-from NeuralNetPotentialTorchVersion import NeuralNetPotential
+from functions.NeuralNetPotentialTorchVersion import NeuralNetPotential
 from learner.torch.PseudoMLETorchVersion import PseudoMLELearner
 from utils import visualize_1d_potential_torch
 from Graph import *

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from Graph import *
-from NeuralNetPotentialTorchVersion import GaussianNeuralNetPotential
+from functions.NeuralNetPotentialTorchVersion import GaussianNeuralNetPotential
 from learner.torch.PseudoMLEWithPriorTorchVersion import PseudoMLELearner
 from demo.image_denoising.image_data_loader import load_data
 

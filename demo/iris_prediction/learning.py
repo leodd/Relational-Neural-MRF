@@ -1,9 +1,6 @@
-from NeuralNetPotential import NeuralNetPotential, GaussianNeuralNetPotential, CGNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer
+from functions.NeuralNetPotential import CGNeuralNetPotential, ReLU, LinearLayer
 from learner.NeuralPMLEHybrid import PMLE
-from utils import visualize_1d_potential
 from Graph import *
-import numpy as np
-import seaborn as sns
 from demo.iris_prediction.iris_loader import load_iris_data_fold, matrix_to_dict
 
 

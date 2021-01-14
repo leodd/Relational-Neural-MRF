@@ -1,13 +1,9 @@
-from NeuralNetPotential import GaussianNeuralNetPotential, TableNeuralNetPotential, LeakyReLU, ReLU, ELU, LinearLayer, WSLinearLayer, NormalizeLayer
-from Potentials import TableFunction
+from functions.NeuralNetPotential import TableNeuralNetPotential, ReLU, LinearLayer, NormalizeLayer
+from functions.Potentials import TableFunction
 from learner.NeuralPMLEHybrid import PMLE
-from utils import visualize_1d_potential, visualize_2d_potential
 from Graph import *
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
 
 d1 = Domain([0, 1], continuous=False)
 d2 = Domain([0, 1, 2, 3, 4], continuous=False)

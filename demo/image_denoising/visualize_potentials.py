@@ -1,9 +1,6 @@
 from utils import load, visualize_2d_potential
 from Graph import Domain
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU
-from Potentials import GaussianFunction, ImageEdgePotential, ImageNodePotential
-import numpy as np
-
+from functions.NeuralNetPotential import ContrastiveNeuralNetPotential, ReLU
 
 domain = Domain([0, 1], continuous=True)
 

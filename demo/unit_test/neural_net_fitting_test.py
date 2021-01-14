@@ -1,5 +1,4 @@
-from NeuralNetPotential import NeuralNetPotential, ReLU, ELU, LeakyReLU, LinearLayer
-import numpy as np
+from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
 from Graph import *
 from utils import visualize_1d_potential
 from optimization_tools import AdamOptimizer

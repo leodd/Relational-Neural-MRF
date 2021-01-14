@@ -1,11 +1,10 @@
-from Graph import *
 import numpy as np
 import random
 from collections import Counter
 from optimization_tools import AdamOptimizer
-from utils import save, load, visualize_2d_potential, visualize_1d_potential
-from Potentials import GaussianFunction, TableFunction
+from utils import save
 import os
+from functions.PriorPotential import PriorPotential
 
 
 class PMLE:
@@ -59,7 +58,7 @@ class PMLE:
 
     def initialize_factor_prior(self):
         for p, fs in self.trainable_potential_factors_dict.items():
-            if p.prior is not None:  # Skip if the prior is given
+            if type(p) is not PriorPotential or not p.learn_prior:  # Skip if the prior is given
                 continue
 
             assignment = np.empty([len(fs) * self.M, p.dimension])
@@ -70,7 +69,7 @@ class PMLE:
                     assignment[idx, :] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.set_empirical_prior(assignment)
+            p.prior.set_empirical_prior(assignment)
 
     def get_rvs_prior(self, rvs, batch, res_dict=None):
         if res_dict is None:
@@ -80,22 +79,20 @@ class PMLE:
             for rv in rvs:
                 if (rv, m) in res_dict: continue  # Skip if already computed before
 
-                if rv.domain.continuous:
-                    rv_prior = None
-                else:
-                    rv_prior = TableFunction(np.ones(len(rv.domain.values)))
+                rv_prior = None
 
                 for f in rv.nb:
-                    if not hasattr(f.potential, 'prior'): continue
+                    if type(f.potential) is PriorPotential:
+                        rv_prior = f.potential.prior.slice(
+                            *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
+                        ) * rv_prior
 
-                    rv_prior = f.potential.prior_slice(
-                        *[None if rv_ is rv else self.data[rv_][m] for rv_ in f.nb]
-                    ) * rv_prior
+                        if not rv.domain.continuous:
+                            rv_prior.table /= np.sum(rv_prior.table)
 
-                    if not rv.domain.continuous:
-                        rv_prior.table /= np.sum(rv_prior.table)
-
-                if rv.domain.continuous:  # Continuous case
+                if rv_prior is None:  # No prior
+                    res_dict[(rv, m)] = None
+                elif rv.domain.continuous:  # Continuous case
                     res_dict[(rv, m)] = (rv_prior.mu.squeeze(), rv_prior.sig.squeeze())
                 else:  # Discrete case
                     res_dict[(rv, m)] = rv_prior.table / np.sum(rv_prior.table)
@@ -158,11 +155,17 @@ class PMLE:
                 for k in range(K):
                     next_idx = current_idx + sample_size + 1
 
-                    if rv.domain.continuous:  # Continuous case
-                        mu, sig = rv_prior[k]
-                        samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
-                    else:  # Discrete case
-                        samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
+                    if rv_prior[k] is None:  # No prior, sample from uniform distribution
+                        if rv.domain.continuous:  # Continuous case
+                            samples = np.random.uniform(*rv.domain.values, size=sample_size)
+                        else:  # Discrete case
+                            samples = np.random.choice(len(rv.domain.values), size=sample_size)
+                    else:
+                        if rv.domain.continuous:  # Continuous case
+                            mu, sig = rv_prior[k]
+                            samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
+                        else:  # Discrete case
+                            samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
 
                     data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
                     data_x[f.potential][current_idx + 1:next_idx, rv_idx] = samples
@@ -199,27 +202,27 @@ class PMLE:
         Returns:
             A dictionary with potential as key, and gradient as value.
         """
-        data_y_nn = dict()  # A dictionary with a array of output value of the potential nn
+        data_y = dict()  # A dictionary with a array of output value of the potential nn
 
         # Forward pass
         for potential, data_matrix in data_x.items():
-            if hasattr(potential, 'nn'):
-                data_y_nn[potential] = potential.nn_forward(data_matrix, save_cache=True).reshape(-1)
+            if type(potential) is PriorPotential:
+                data_y[potential] = potential.f.log_batch_call(data_matrix)
             else:
-                data_y_nn[potential] = potential.batch_call(data_matrix)
+                data_y[potential] = potential.log_batch_call(data_matrix)
 
         gradient_y = dict()  # Store of the computed derivative
 
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.empty(data_y_nn[potential].shape).reshape(-1, 1)
+            gradient_y[potential] = np.empty(data_y[potential].shape).reshape(-1, 1)
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
                 w = np.zeros(sample_size + 1)
 
                 for f, idx in zip(rv.nb, start_idx):
-                    w += data_y_nn[f.potential][idx:idx + sample_size + 1]
+                    w += data_y[f.potential][idx:idx + sample_size + 1]
 
                 w, _ = self.log_belief_balance(w)
                 w = np.exp(w)
@@ -230,7 +233,7 @@ class PMLE:
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        y = data_y_nn[f.potential][idx:idx + sample_size + 1]
+                        y = data_y[f.potential][idx:idx + sample_size + 1]
                         y_ = np.exp(np.abs(y))
                         regular = np.where(y >= 0., y_, -y_) / (sample_size + 1)
 
@@ -310,9 +313,6 @@ class PMLE:
                         layer.b += step
                         moments[(layer, 'b')] = moment
 
-                i += 1
-                t += 1
-
                 print(t)
                 if visualize is not None:
                     visualize(self.trainable_potentials_ordered, t)
@@ -320,6 +320,9 @@ class PMLE:
                 if save_dir is not None and t % save_period == 0:
                     model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]
                     save(os.path.join(save_dir, str(t)), *model_parameters)
+
+                i += 1
+                t += 1
 
         if save_dir is not None:
             model_parameters = [p.parameters() for p in self.trainable_potentials_ordered]

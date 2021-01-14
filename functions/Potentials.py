@@ -1,8 +1,7 @@
-from Function import Function
+from functions.Function import Function
 import numpy as np
 from numpy.linalg import det, inv
-from math import pow, pi, e, sqrt, exp
-from itertools import product
+from math import pow, pi, e, exp
 
 
 class TableFunction(Function):

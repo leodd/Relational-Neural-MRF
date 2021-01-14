@@ -1,8 +1,8 @@
-from utils import save, visualize_2d_potential
+from utils import visualize_2d_potential
 from Graph import *
-from Potentials import GaussianFunction
-from NeuralNetPotential import GaussianNeuralNetPotential, ContrastiveNeuralNetPotential, ReLU, LinearLayer
-from learner.NeuralPMLEPrior import PMLE
+from functions.Potentials import GaussianFunction
+from functions.NeuralNetPotential import ContrastiveNeuralNetPotential, ReLU, LinearLayer
+from learner.NeuralPMLEHybrid import PMLE
 from demo.image_denoising.image_data_loader import load_data
 
 

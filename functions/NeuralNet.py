@@ -1,4 +1,4 @@
-from Function import Function
+from functions.Function import Function
 import numpy as np
 
 
