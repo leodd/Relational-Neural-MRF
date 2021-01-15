@@ -1,5 +1,6 @@
 from functions.NeuralNet import *
 from functions.Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction
+from functions.PriorPotential import PriorPotential
 import numpy as np
 
 
@@ -15,12 +16,12 @@ class NeuralNetPotential(Function):
         return np.exp(self.nn(*x))
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1)
+        return np.exp(self.nn.forward(x)).reshape(-1)
 
-    def forward(self, x, save_cache=True):
-        return self.nn.forward(x, save_cache)
+    def log_batch_call(self, x):
+        return self.nn.forward(x).reshape(-1)
 
-    def backward(self, dy):
+    def log_backward(self, dy):
         return self.nn.backward(dy)
 
     def set_parameters(self, parameters):
@@ -41,10 +42,10 @@ class GaussianNeuralNetPotential(Function):
         return np.exp(self.nn(*x)) * self.prior(*x) + self.eps
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
+        return np.exp(self.nn.forward(x)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
-    def nn_forward(self, x, save_cache=True):
-        return self.nn.forward(x, save_cache)
+    def nn_forward(self, x):
+        return self.nn.forward(x)
 
     def nn_backward(self, dy):
         return self.nn.backward(dy)
@@ -70,10 +71,7 @@ class GaussianNeuralNetPotential(Function):
             self.prior.set_parameters(*parameters[1])
 
     def parameters(self):
-        return (
-            self.nn.parameters(),
-            (self.prior.mu, self.prior.sig)
-        )
+        return (self.nn.parameters(), self.prior.parameters())
 
 
 class TableNeuralNetPotential(Function):
@@ -88,10 +86,10 @@ class TableNeuralNetPotential(Function):
         return np.exp(self.nn(*x)) * self.prior(*x) + self.eps
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
+        return np.exp(self.nn.forward(x)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
-    def nn_forward(self, x, save_cache=True):
-        return self.nn.forward(x, save_cache)
+    def nn_forward(self, x):
+        return self.nn.forward(x)
 
     def nn_backward(self, dy):
         return self.nn.backward(dy)
@@ -121,10 +119,7 @@ class TableNeuralNetPotential(Function):
             self.prior.table = parameters[1]
 
     def parameters(self):
-        return (
-            self.nn.parameters(),
-            self.prior.table
-        )
+        return (self.nn.parameters(), self.prior.parameters())
 
 
 class CGNeuralNetPotential(Function):
@@ -140,10 +135,10 @@ class CGNeuralNetPotential(Function):
         return np.exp(self.nn(*x)) * self.prior(*x) + self.eps
 
     def batch_call(self, x):
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
+        return np.exp(self.nn.forward(x)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
-    def nn_forward(self, x, save_cache=True):
-        return self.nn.forward(x, save_cache)
+    def nn_forward(self, x):
+        return self.nn.forward(x)
 
     def nn_backward(self, dy):
         return self.nn.backward(dy)
@@ -180,7 +175,7 @@ class CGNeuralNetPotential(Function):
         if self.prior is None:
             self.prior = CategoricalGaussianFunction(w_table, dis_table, dis, self.domains)
         else:
-            self.prior.set_parameters(w_table, dis_table, dis, self.domains)
+            self.prior.set_parameters(w_table, dis_table, dis)
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters[0])
@@ -191,10 +186,7 @@ class CGNeuralNetPotential(Function):
             self.prior.set_parameters(*parameters[1], self.domains)
 
     def parameters(self):
-        return (
-            self.nn.parameters(),
-            (self.prior.w_table, self.prior.dis_table, self.prior.dis)
-        )
+        return (self.nn.parameters(), self.prior.parameters())
 
 
 class ContrastiveNeuralNetPotential(Function):
@@ -210,11 +202,11 @@ class ContrastiveNeuralNetPotential(Function):
 
     def batch_call(self, x):
         x = np.abs(x[:, [0]] - x[:, [1]])
-        return np.exp(self.nn.forward(x, save_cache=False)).reshape(-1) * self.prior.batch_call(x) + self.eps
+        return np.exp(self.nn.forward(x)).reshape(-1) * self.prior.batch_call(x) + self.eps
 
-    def nn_forward(self, x, save_cache=True):
+    def nn_forward(self, x):
         x = np.abs(x[:, [0]] - x[:, [1]])
-        return self.nn.forward(x, save_cache)
+        return self.nn.forward(x)
 
     def nn_backward(self, dy):
         return self.nn.backward(dy)

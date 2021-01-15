@@ -1,5 +1,5 @@
 from RelationalGraph import *
-from functions.NeuralNetPotential import CGNeuralNetPotential, ReLU
+from functions.ExpPotentials import CGNeuralNetPotential, ReLU
 from functions.Potentials import CategoricalGaussianFunction, GaussianFunction
 from learner.NeuralPMLEHybrid import PMLE
 from demo.movie_lens.movie_lens_loader import load_data

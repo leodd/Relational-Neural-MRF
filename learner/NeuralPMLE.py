@@ -69,7 +69,7 @@ class PMLE:
                     assignment[idx, :] = [self.data[rv][m] for rv in f.nb]
                     idx += 1
 
-            p.prior.set_empirical_prior(assignment)
+            p.prior.fit(assignment)
 
     def get_rvs_prior(self, rvs, batch, res_dict=None):
         if res_dict is None:
@@ -88,7 +88,7 @@ class PMLE:
                         ) * rv_prior
 
                         if not rv.domain.continuous:
-                            rv_prior.table /= np.sum(rv_prior.table)
+                            rv_prior.table = rv_prior.table / np.sum(rv_prior.table)
 
                 if rv_prior is None:  # No prior
                     res_dict[(rv, m)] = None
@@ -299,7 +299,10 @@ class PMLE:
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    _, d_param = potential.nn_backward(d_y)
+                    if type(potential) is PriorPotential:
+                        _, d_param = potential.f.log_backward(d_y)
+                    else:
+                        _, d_param = potential.log_backward(d_y)
 
                     c = (sample_size - 1) / d_y.shape[0]
 

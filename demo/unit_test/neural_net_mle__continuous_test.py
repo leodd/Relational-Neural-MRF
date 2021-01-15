@@ -1,5 +1,7 @@
-from functions.NeuralNetPotential import GaussianNeuralNetPotential, ReLU, LinearLayer
-from learner.NeuralPMLEHybrid import PMLE
+from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer, train_mod
+from functions.PriorPotential import PriorPotential
+from functions.Potentials import GaussianFunction
+from learner.NeuralPMLE import PMLE
 from utils import visualize_1d_potential
 from Graph import *
 import numpy as np
@@ -19,10 +21,13 @@ data = {
 
 sns.distplot(data[rv])
 
-p = GaussianNeuralNetPotential(
-    layers=[LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)]
+p = PriorPotential(
+    NeuralNetPotential(
+        layers=[LinearLayer(1, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 1)]
+    ),
+    GaussianFunction(np.ones(1), np.ones([1, 1]))
 )
 
 f = F(p, nb=[rv])
@@ -33,6 +38,7 @@ def visualize(ps, t):
     if t % 200 == 0:
         visualize_1d_potential(p, domain, 0.3)
 
+train_mod(True)
 leaner = PMLE(g, [p], data)
 leaner.train(
     lr=0.0001,

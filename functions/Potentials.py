@@ -35,6 +35,16 @@ class TableFunction(Function):
             return self
         return TableFunction(self.table * other.table)
 
+    def fit(self, data):
+        data = data.astype(int)
+        table = np.zeros(shape=self.table.shape)
+
+        idx, count = np.unique(data, return_counts=True, axis=0)
+        table[tuple(idx.T)] = count
+        table /= np.sum(table)
+
+        self.set_parameters(table)
+
 
 class GaussianFunction(Function):
     def __init__(self, mu, sig, is_inv=False, eps=0):
@@ -94,9 +104,14 @@ class GaussianFunction(Function):
 
         return GaussianFunction(mu_new, sig_new)
 
+    def fit(self, data):
+        mu = np.mean(data, axis=0).reshape(-1)
+        sig = np.cov(data.T).reshape(self.dimension, self.dimension)
+        self.set_parameters(mu, sig)
+
 
 class CategoricalGaussianFunction(Function):
-    def __init__(self, weight_table, distribution_table, distributions, domains):
+    def __init__(self, weight_table, distribution_table, distributions, domains, extra_sig=10):
         """
         Args:
             weight_table: Table of the weights for the discrete conditions.
@@ -104,17 +119,18 @@ class CategoricalGaussianFunction(Function):
             distributions: List of Gaussian distributions.
             domains: List of variables' domain
         """
-        self.set_parameters(weight_table, distribution_table, distributions, domains)
+        self.domains = domains
+        self.extra_sig = extra_sig
+        self.set_parameters(weight_table, distribution_table, distributions)
 
-    def set_parameters(self, weight_table, distribution_table, distributions, domains):
+    def set_parameters(self, weight_table, distribution_table, distributions):
         self.w_table = weight_table
         self.dis_table = distribution_table.astype(int)
         self.dis = distributions
-        self.domains = domains
-        self.dimension = len(domains)
+        self.dimension = len(self.domains)
 
-        self.c_idx = [i for i, d in enumerate(domains) if d.continuous]
-        self.d_idx = [i for i, d in enumerate(domains) if not d.continuous]
+        self.c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
+        self.d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
     def parameters(self):
         return self.w_table, self.dis_table, self.dis
@@ -138,6 +154,34 @@ class CategoricalGaussianFunction(Function):
             c_x = np.array([parameters[i] for i in self.c_idx], dtype=float)
             table = self.w_table[idx] * np.array([self.dis[i](*c_x) for i in self.dis_table[idx]])
             return TableFunction(table)
+
+    def fit(self, data):
+        c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
+        d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
+
+        w_table = np.zeros(shape=[len(self.domains[i].values) for i in d_idx])
+        dis_table = np.zeros(shape=w_table.shape, dtype=int)
+
+        idx, count = np.unique(data[:, d_idx].astype(int), return_counts=True, axis=0)
+        w_table[tuple(idx.T)] = count
+        w_table /= np.sum(w_table)
+
+        dis = [GaussianFunction(np.zeros(len(d_idx)), np.eye(len(d_idx)))]
+
+        for row in idx:
+            row_idx = np.where(np.all(data[:, d_idx] == row, axis=1))
+            row_data = data[row_idx][:, c_idx]
+
+            if len(row_data) <= 1:
+                continue
+
+            mu = np.mean(row_data, axis=0).reshape(-1)
+            sig = np.cov(row_data.T).reshape(len(c_idx), len(c_idx))
+
+            dis_table[tuple(row)] = len(dis)
+            dis.append(GaussianFunction(mu, sig + self.extra_sig))
+
+        self.set_parameters(w_table, dis_table, dis)
 
 
 class LinearGaussianFunction(Function):
@@ -173,6 +217,9 @@ class LinearGaussianFunction(Function):
             mu = (parameters[1] - self.b) / self.w
 
         return GaussianFunction([mu], [[self.sig]])
+
+    def fit(self, data):
+        pass
 
 
 class ImageNodePotential(Function):

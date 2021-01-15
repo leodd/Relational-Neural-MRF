@@ -1,7 +1,7 @@
 from utils import show_images, load
 from demo.image_denoising.image_data_loader import load_data
 from Graph import *
-from functions.NeuralNetPotential import ContrastiveNeuralNetPotential, ReLU, LinearLayer
+from functions.ExpPotentials import ContrastiveNeuralNetPotential, ReLU, LinearLayer
 from functions.Potentials import ImageNodePotential, ImageEdgePotential
 from inferer.PBP import PBP
 

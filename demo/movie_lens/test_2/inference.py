@@ -1,6 +1,6 @@
 from utils import load, sub_graph
 from RelationalGraph import *
-from functions.NeuralNetPotential import CGNeuralNetPotential, ReLU
+from functions.ExpPotentials import CGNeuralNetPotential, ReLU
 from inferer.PBP import PBP
 from demo.movie_lens.movie_lens_loader import load_data
 

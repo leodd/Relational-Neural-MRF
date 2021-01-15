@@ -1,11 +1,12 @@
 from utils import visualize_2d_potential
 from RelationalGraph import *
-from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
+from functions.NeuralNet import train_mod
+from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer
 from functions.MLNPotential import *
-from learner.NeuralPMLEHybrid import PMLE
+from learner.NeuralPMLE import PMLE
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
 
-train, _ = load_data_fold(2)
+train, _ = load_data_fold(1)
 
 dt_seg_type = train['seg_type']
 dt_length = train['length']
@@ -28,7 +29,7 @@ depth = Atom(d_depth, [lv_s], name='depth')
 angle = Atom(d_angle, [lv_s], name='angle')
 
 p_l = NeuralNetPotential(
-    layers=[LinearLayer(4, 64), ReLU(),
+    layers=[LinearLayer(2, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)]
 )
@@ -47,7 +48,7 @@ p_a = NeuralNetPotential(
 
 p_prior = TableFunction(get_seg_type_distribution(dt_seg_type))
 
-f_l = ParamF(p_l, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
+f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
 f_d = ParamF(p_d, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 f_a = ParamF(p_a, atoms=[angle('S'), seg_type('S')], lvs=['S'])
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
@@ -76,6 +77,7 @@ def visualize(ps, t):
     if t % 200 == 0:
         visualize_2d_potential(p_l, d_length, d_seg_type, spacing=0.01)
 
+train_mod(True)
 leaner = PMLE(g, [p_l], data)
 leaner.train(
     lr=0.001,
@@ -88,5 +90,5 @@ leaner.train(
     sample_size=30,
     save_dir='learned_potentials/model_1',
     save_period=1000,
-    # visualize=visualize
+    visualize=visualize
 )

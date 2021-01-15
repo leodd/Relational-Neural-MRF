@@ -1,4 +1,4 @@
-from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
+from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer
 from optimization_tools import AdamOptimizer
 from utils import visualize_1d_potential
 from Graph import *

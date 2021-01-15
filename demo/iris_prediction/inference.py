@@ -1,4 +1,4 @@
-from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
+from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer
 from inferer.PBP import PBP
 from utils import load
 from Graph import *

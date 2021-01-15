@@ -2,6 +2,15 @@ from functions.Function import Function
 import numpy as np
 
 
+save_cache = False
+def train_mod(is_train):
+    global save_cache
+    if is_train:
+        save_cache = True
+    else:
+        save_cache = False
+
+
 class NeuralNetFunction(Function):
     """
     Usage:
@@ -28,7 +37,6 @@ class NeuralNetFunction(Function):
         Function.__init__(self)
 
         self.layers = layers
-        self.cache = None  # Cache for storing the forward propagation results
 
     def set_parameters(self, parameters):
         idx = 0
@@ -58,7 +66,10 @@ class NeuralNetFunction(Function):
 
         return x
 
-    def forward(self, x, save_cache=True):  # x must be numpy array
+    def batch_call(self, x):
+        return self.forward(x)
+
+    def forward(self, x):  # x must be numpy array
         if save_cache:
             self.cache = [x]
 

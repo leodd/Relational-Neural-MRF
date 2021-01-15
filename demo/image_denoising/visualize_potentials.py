@@ -1,6 +1,6 @@
 from utils import load, visualize_2d_potential
 from Graph import Domain
-from functions.NeuralNetPotential import ContrastiveNeuralNetPotential, ReLU
+from functions.ExpPotentials import ContrastiveNeuralNetPotential, ReLU
 
 domain = Domain([0, 1], continuous=True)
 

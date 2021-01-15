@@ -1,5 +1,5 @@
 from demo.RGM.rgm_generator import *
-from functions.NeuralNetPotential import GaussianNeuralNetPotential, ReLU
+from functions.ExpPotentials import GaussianNeuralNetPotential, ReLU
 from learner.NeuralPMLEPrior import PMLE
 from utils import visualize_2d_potential
 

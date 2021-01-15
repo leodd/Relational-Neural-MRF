@@ -1,4 +1,4 @@
-from functions.NeuralNetPotential import CGNeuralNetPotential, ReLU, LinearLayer
+from functions.ExpPotentials import CGNeuralNetPotential, ReLU, LinearLayer
 from learner.NeuralPMLEHybrid import PMLE
 from Graph import *
 from demo.iris_prediction.iris_loader import load_iris_data_fold, matrix_to_dict

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from RelationalGraph import *
-from functions.NeuralNetPotential import TableNeuralNetPotential, \
+from functions.ExpPotentials import TableNeuralNetPotential, \
     ReLU, LinearLayer
 from functions.MLNPotential import *
 from learner.NeuralPMLEHybrid import PMLE

@@ -1,4 +1,4 @@
-from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
+from functions.NeuralNet import train_mod, NeuralNetFunction, ReLU, LinearLayer
 from Graph import *
 from utils import visualize_1d_potential
 from optimization_tools import AdamOptimizer
@@ -16,7 +16,7 @@ target = norm_pdf(x, 0, 9)
 print(norm_pdf(0, 0, 9))
 lr = 0.01
 
-nn = NeuralNetPotential(
+nn = NeuralNetFunction(
     layers=[LinearLayer(1, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)],
@@ -24,12 +24,13 @@ nn = NeuralNetPotential(
 
 adam = AdamOptimizer(lr)
 moments = dict()
-regular = 0.001
+regular = 0.0001
 
+train_mod(True)
 for t in range(1, 5000):
-    predict = np.exp(nn.nn_forward(x))
-    d_loss = (predict - target) * predict
-    _, d_network = nn.nn_backward(d_loss)
+    predict = nn.forward(x)
+    d_loss = (predict - target)
+    _, d_network = nn.backward(d_loss)
 
     for layer, (d_W, d_b) in d_network.items():
         step, moment = adam(d_W / m, moments.get((layer, 'W'), (0, 0)), t)

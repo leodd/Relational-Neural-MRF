@@ -2,7 +2,7 @@ from utils import load
 import matplotlib.pyplot as plt
 from RelationalGraph import *
 from inferer.PBP import PBP
-from functions.NeuralNetPotential import NeuralNetPotential, ReLU, LinearLayer
+from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer
 from functions.MLNPotential import *
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
 
