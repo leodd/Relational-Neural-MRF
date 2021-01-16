@@ -1,10 +1,13 @@
 import matplotlib.image as img
 from utils import show_images, load
 from Graph import *
-from functions.ExpPotentials import ContrastiveNeuralNetPotential, ReLU, LinearLayer
+from functions.Potentials import GaussianFunction, LinearGaussianFunction
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, LinearLayer, train_mod
 from functions.Potentials import ImageNodePotential, ImageEdgePotential
 from inferer.PBP import PBP
 
+
+train_mod(False)
 
 USE_MANUAL_POTENTIALS = False
 
@@ -26,18 +29,32 @@ if USE_MANUAL_POTENTIALS:
     pxo = ImageNodePotential(0, 0.05)
     pxy = ImageEdgePotential(0, 0.035, 0.25)
 else:
-    pxo = ContrastiveNeuralNetPotential(
-        layers=[LinearLayer(1, 64), ReLU(),
+    pxo = PriorPotential(
+        NeuralNetPotential(
+            [
+                LinearLayer(1, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
-        eps=0.
+                LinearLayer(32, 1)
+            ],
+            dimension=2,
+            formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+        ),
+        LinearGaussianFunction(1., 0., 0.1),
+        learn_prior=False
     )
 
-    pxy = ContrastiveNeuralNetPotential(
-        layers=[LinearLayer(1, 64), ReLU(),
+    pxy = PriorPotential(
+        NeuralNetPotential(
+            [
+                LinearLayer(1, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
-        eps=0.
+                LinearLayer(32, 1)
+            ],
+            dimension=2,
+            formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+        ),
+        LinearGaussianFunction(1., 0., 0.1),
+        learn_prior=False
     )
 
     pxo_params, pxy_params = load(

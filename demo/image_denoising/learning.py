@@ -1,7 +1,7 @@
 from utils import visualize_2d_potential
 from Graph import *
-from functions.Potentials import GaussianFunction
-from functions.ExpPotentials import ContrastiveNeuralNetPotential, ReLU, LinearLayer
+from functions.Potentials import GaussianFunction, LinearGaussianFunction
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, LinearLayer, train_mod
 from learner.NeuralPMLE import PMLE
 from demo.image_denoising.image_data_loader import load_data
 
@@ -13,30 +13,32 @@ col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-# pxo = GaussianNeuralNetPotential(
-#     (2, 64, ReLU()),
-#     (64, 32, ReLU()),
-#     (32, 1, None)
-# )
-#
-# pxy = GaussianNeuralNetPotential(
-#     (2, 64, ReLU()),
-#     (64, 32, ReLU()),
-#     (32, 1, None)
-# )
-
-pxo = ContrastiveNeuralNetPotential(
-    layers=[LinearLayer(1, 64), ReLU(),
+pxo = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    prior=GaussianFunction([0], [[0.1]])
+            LinearLayer(32, 1)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
 )
 
-pxy = ContrastiveNeuralNetPotential(
-    layers=[LinearLayer(1, 64), ReLU(),
+pxy = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    prior=GaussianFunction([0], [[0.1]])
+            LinearLayer(32, 1)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
 )
 
 data = dict()
@@ -91,17 +93,18 @@ def visualize(ps, t):
         for p in ps:
             visualize_2d_potential(p, domain, domain, spacing=0.05)
 
+train_mod(True)
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.0005,
+    lr=0.001,
     alpha=0.99,
     regular=0.0001,
-    max_iter=10000,
+    max_iter=5000,
     batch_iter=5,
     batch_size=20,
-    rvs_selection_size=1000,
-    sample_size=5,
-    # save_dir='learned_potentials/model_2',
+    rvs_selection_size=100,
+    sample_size=20,
+    save_dir='learned_potentials/model_contrastive_nn',
     save_period=1000,
     visualize=visualize
 )

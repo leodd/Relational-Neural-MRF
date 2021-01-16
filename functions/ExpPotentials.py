@@ -8,8 +8,8 @@ class NeuralNetPotential(Function):
     """
     A wrapper for NeuralNetFunction class, such that the function call will return the value of exp(nn(x)).
     """
-    def __init__(self, layers, formula=None):
-        self.dimension = layers[0].i_size  # The dimension of the input parameters
+    def __init__(self, layers, dimension=None, formula=None):
+        self.dimension = dimension if dimension else layers[0].i_size  # The dimension of the input parameters
         self.nn = NeuralNetFunction(layers)
         self.formula = formula
 
