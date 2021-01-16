@@ -1,5 +1,6 @@
-from functions.ExpPotentials import CGNeuralNetPotential, ReLU, LinearLayer
-from learner.NeuralPMLEHybrid import PMLE
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, \
+    CategoricalGaussianFunction, ReLU, LinearLayer, train_mod
+from learner.NeuralPMLE import PMLE
 from Graph import *
 from demo.iris_prediction.iris_loader import load_iris_data_fold, matrix_to_dict
 
@@ -20,12 +21,17 @@ for fold in range(5):
     train, _ = load_iris_data_fold('iris', fold, folds=5)
     data = matrix_to_dict(train, rv_sl, rv_sw, rv_pl, rv_pw, rv_c)
 
-    p = CGNeuralNetPotential(
-        layers=[LinearLayer(5, 64), ReLU(),
-                LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
-        domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
-        extra_sig=10
+    p = PriorPotential(
+        NeuralNetPotential(
+            [LinearLayer(5, 64), ReLU(),
+             LinearLayer(64, 32), ReLU(),
+             LinearLayer(32, 1)]
+        ),
+        CategoricalGaussianFunction(
+            weight_table=0, distribution_table=0, distributions=None,
+            domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+            extra_sig=10
+        )
     )
 
     # p = NeuralNetPotential(
@@ -42,6 +48,7 @@ for fold in range(5):
         if t % 200 == 0:
             pass
 
+    train_mod(True)
     leaner = PMLE(g, [p], data)
     leaner.train(
         lr=0.0001,

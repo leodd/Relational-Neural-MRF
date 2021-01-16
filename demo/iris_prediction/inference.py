@@ -1,10 +1,13 @@
-from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, \
+    CategoricalGaussianFunction, ReLU, LinearLayer, train_mod
 from inferer.PBP import PBP
 from utils import load
 from Graph import *
 import numpy as np
 from demo.iris_prediction.iris_loader import load_iris_data_fold, matrix_to_dict
 
+
+train_mod(False)
 
 sepal_length_domain = Domain([4.0, 8.0], continuous=True)
 sepal_width_domain = Domain([2.0, 4.5], continuous=True)
@@ -26,24 +29,30 @@ for fold in range(5):
     test, _ = load_iris_data_fold('iris', fold, folds=5)
     data = matrix_to_dict(test, rv_sl, rv_sw, rv_pl, rv_pw, rv_c)
 
-    # p = CGNeuralNetPotential(
+    p = PriorPotential(
+        NeuralNetPotential(
+            [LinearLayer(5, 64), ReLU(),
+             LinearLayer(64, 32), ReLU(),
+             LinearLayer(32, 1)]
+        ),
+        CategoricalGaussianFunction(
+            weight_table=0, distribution_table=0, distributions=None,
+            domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+            extra_sig=10
+        )
+    )
+
+    # p = NeuralNetPotential(
     #     layers=[LinearLayer(5, 64), ReLU(),
     #             LinearLayer(64, 32), ReLU(),
-    #             LinearLayer(32, 1)],
-    #     domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain]
+    #             LinearLayer(32, 1)]
     # )
 
-    p = NeuralNetPotential(
-        layers=[LinearLayer(5, 64), ReLU(),
-                LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)]
+    params = load(
+        f'learned_potentials/model_2/{fold}/3000'
     )
 
-    (p_params,) = load(
-        f'learned_potentials/model_1/{fold}/3000'
-    )
-
-    p.set_parameters(p_params)
+    p.set_parameters(params[0])
 
     f = F(p, nb=[rv_c, rv_sl, rv_sw, rv_pl, rv_pw])
 

@@ -22,5 +22,5 @@ class PriorPotential(Function):
         return (self.f.parameters(), self.prior.parameters())
 
     def set_parameters(self, parameters):
-        self.f.set_parameters(parameters[0])
-        self.prior.set_parameters(parameters[1])
+        self.f.set_parameters(*parameters[0])
+        self.prior.set_parameters(*parameters[1])

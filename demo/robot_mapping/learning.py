@@ -6,7 +6,7 @@ from functions.MLNPotential import *
 from learner.NeuralPMLE import PMLE
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
 
-train, _ = load_data_fold(1)
+train, _ = load_data_fold(2)
 
 dt_seg_type = train['seg_type']
 dt_length = train['length']
@@ -29,7 +29,7 @@ depth = Atom(d_depth, [lv_s], name='depth')
 angle = Atom(d_angle, [lv_s], name='angle')
 
 p_l = NeuralNetPotential(
-    layers=[LinearLayer(2, 64), ReLU(),
+    layers=[LinearLayer(4, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)]
 )
@@ -48,7 +48,7 @@ p_a = NeuralNetPotential(
 
 p_prior = TableFunction(get_seg_type_distribution(dt_seg_type))
 
-f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_l = ParamF(p_l, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
 f_d = ParamF(p_d, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 f_a = ParamF(p_a, atoms=[angle('S'), seg_type('S')], lvs=['S'])
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
@@ -90,5 +90,5 @@ leaner.train(
     sample_size=30,
     save_dir='learned_potentials/model_1',
     save_period=1000,
-    visualize=visualize
+    # visualize=visualize
 )

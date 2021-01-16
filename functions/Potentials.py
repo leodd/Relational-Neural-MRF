@@ -2,6 +2,7 @@ from functions.Function import Function
 import numpy as np
 from numpy.linalg import det, inv
 from math import pow, pi, e, exp
+from sklearn.linear_model import LinearRegression
 
 
 class TableFunction(Function):
@@ -18,7 +19,7 @@ class TableFunction(Function):
         self.dimension = table.ndim
 
     def parameters(self):
-        return self.table
+        return (self.table,)
 
     def __call__(self, *parameters):
         return self.table[tuple(np.array(parameters, dtype=int))]
@@ -70,7 +71,7 @@ class GaussianFunction(Function):
         self.coeff = ((2 * pi) ** n * det_sig) ** -0.5
 
     def parameters(self):
-        return self.mu, self.sig
+        return (self.mu, self.sig)
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
@@ -125,7 +126,7 @@ class CategoricalGaussianFunction(Function):
 
     def set_parameters(self, weight_table, distribution_table, distributions):
         self.w_table = weight_table
-        self.dis_table = distribution_table.astype(int)
+        self.dis_table = np.array(distribution_table, dtype=int)
         self.dis = distributions
         self.dimension = len(self.domains)
 
@@ -133,7 +134,7 @@ class CategoricalGaussianFunction(Function):
         self.d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
     def parameters(self):
-        return self.w_table, self.dis_table, self.dis
+        return (self.w_table, self.dis_table, self.dis)
 
     def __call__(self, *parameters):
         parameters = np.array(parameters, dtype=float)
@@ -200,7 +201,7 @@ class LinearGaussianFunction(Function):
         self.sig = sig
 
     def parameters(self):
-        return self.w, self.b, self.sig
+        return (self.w, self.b, self.sig)
 
     def __call__(self, *parameters):
         z = parameters[1] - parameters[0] * self.w - self.b
@@ -219,7 +220,12 @@ class LinearGaussianFunction(Function):
         return GaussianFunction([mu], [[self.sig]])
 
     def fit(self, data):
-        pass
+        model = LinearRegression()
+        model.fit(data[:, 0], data[:, 1])
+        w = model.coef_[0]
+        b = model.intercept_
+        d = ((w * data[:, 0] - data[:, 1] + b) ** 2) / (w ** 2 + 1)
+        self.set_parameters(w, b, np.mean(d))
 
 
 class ImageNodePotential(Function):

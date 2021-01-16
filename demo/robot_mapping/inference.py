@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 from RelationalGraph import *
 from inferer.PBP import PBP
 from functions.ExpPotentials import NeuralNetPotential, ReLU, LinearLayer
+from functions.NeuralNet import train_mod
 from functions.MLNPotential import *
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
+
+
+train_mod(False)
 
 train, test = load_data_fold(2)
 

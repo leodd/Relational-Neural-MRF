@@ -1,25 +1,34 @@
 from demo.RGM.rgm_generator import *
-from functions.ExpPotentials import GaussianNeuralNetPotential, ReLU
-from learner.NeuralPMLEPrior import PMLE
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, LinearLayer, GaussianFunction
+from learner.NeuralPMLE import PMLE
 from utils import visualize_2d_potential
 
 
-p1 = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None)
+p1 = PriorPotential(
+    NeuralNetPotential([
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
+    ]),
+    GaussianFunction(np.ones(1), np.ones([1, 1]))
 )
 
-p2 = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None)
+p2 = PriorPotential(
+    NeuralNetPotential([
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
+    ]),
+    GaussianFunction(np.ones(1), np.ones([1, 1]))
 )
 
-p3 = GaussianNeuralNetPotential(
-    (2, 64, ReLU()),
-    (64, 32, ReLU()),
-    (32, 1, None)
+p3 = PriorPotential(
+    NeuralNetPotential([
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
+    ]),
+    GaussianFunction(np.ones(1), np.ones([1, 1]))
 )
 
 rel_g = generate_rel_graph(p1, p2, p3)

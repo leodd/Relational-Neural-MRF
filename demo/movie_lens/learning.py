@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 from RelationalGraph import *
-from functions.ExpPotentials import TableNeuralNetPotential, \
-    ReLU, LinearLayer
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, \
+    ReLU, LinearLayer, train_mod
 from functions.MLNPotential import *
-from learner.NeuralPMLEHybrid import PMLE
+from learner.NeuralPMLE import PMLE
 from demo.movie_lens.movie_lens_loader import load_data
 from collections import Counter
 
@@ -44,19 +44,17 @@ rating = Atom(d_rating, [lv_User, lv_Movie], name='rating')
 user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
-p1 = TableNeuralNetPotential(
-    layers=[
+p1 = PriorPotential(
+    NeuralNetPotential([
         # NormalizeLayer([(-1, 1), (-1, 1), (-1, 1)], domains=[d_rating, d_rating, d_same_gender]),
         # WSLinearLayer([[0, 1], [2]], 200), ReLU(),
         LinearLayer(3, 200), ReLU(),
         LinearLayer(200, 100), ReLU(),
         LinearLayer(100, 1)
-    ],
-    domains=[d_rating, d_rating, d_same_gender],
-    # prior=TableFunction(
-    #     np.ones([d_rating.size, d_rating.size, d_same_gender.size]) /
-    #     (d_rating.size * d_rating.size * d_same_gender.size)
-    # )
+    ]),
+    TableFunction(
+        np.ones([d_rating.size, d_rating.size, d_same_gender.size])
+    )
 )
 p2 = parse_mln(MLNPotential(
     lambda x: bic_op(x[0] == x[1], x[2]),
@@ -145,6 +143,7 @@ def visualize(ps, t):
         ax.set_zlabel('value')
         plt.show()
 
+train_mod(True)
 leaner = PMLE(g, [p1], data)
 leaner.train(
     lr=0.01,
