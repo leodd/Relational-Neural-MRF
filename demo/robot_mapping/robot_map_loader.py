@@ -242,9 +242,9 @@ def nearest_line(ls, point):
 
 
 if __name__ == '__main__':
-    map_name = 'w'
-    raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map', map_name)
-    predicate_data = load_predicate_data(f'radish.rm/{map_name}.db', map_name)
+    map_name = 'n'
+    raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map')
+    predicate_data = load_predicate_data(f'radish.rm/{map_name}.db')
     processed_data = process_data(raw_data, predicate_data)
 
     print(processed_data['depth'])
@@ -254,8 +254,6 @@ if __name__ == '__main__':
               'black']
 
     for s, content in raw_data.items():
-        # color = 'black'
-
         color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
 
         # color = colors[processed_data['part_of_line'].get(s, -1)]
@@ -265,8 +263,10 @@ if __name__ == '__main__':
         # else:
         #     color = 'black'
 
-        # if s in {'L0_15'}:
+        # if s in {'L0_2'}:
         #     color = 'red'
+        # else:
+        #     color = 'black'
 
         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
 
@@ -276,3 +276,17 @@ if __name__ == '__main__':
 
     plt.axis('equal')
     plt.show()
+
+    # for s, ss in processed_data['neighbor'].items():
+    #     print(s, ss)
+    #     for s_, content in raw_data.items():
+    #         if s_ == s:
+    #             color = 'red'
+    #         elif s_ in ss:
+    #             color = 'blue'
+    #         else:
+    #             color = 'black'
+    #         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
+    #
+    #     plt.axis('equal')
+    #     plt.show()
