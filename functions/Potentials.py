@@ -19,7 +19,7 @@ class TableFunction(Function):
         self.dimension = table.ndim
 
     def parameters(self):
-        return (self.table,)
+        return self.table
 
     def __call__(self, *parameters):
         return self.table[tuple(np.array(parameters, dtype=int))]
@@ -56,10 +56,11 @@ class GaussianFunction(Function):
             is_inv: A boolean value indicating if sig is inverse of sig
         """
         Function.__init__(self)
-        self.set_parameters(mu, sig, is_inv)
+        self.set_parameters((mu, sig), is_inv)
         self.eps = eps
 
-    def set_parameters(self, mu, sig, is_inv=False):
+    def set_parameters(self, parameters, is_inv=False):
+        mu, sig = parameters
         self.dimension = len(mu)
         self.mu = np.array(mu, dtype=float)
         sig = np.array(sig, dtype=float)
@@ -71,7 +72,7 @@ class GaussianFunction(Function):
         self.coeff = ((2 * pi) ** n * det_sig) ** -0.5
 
     def parameters(self):
-        return (self.mu, self.sig)
+        return self.mu, self.sig
 
     def __call__(self, *parameters):
         x_mu = np.array(parameters, dtype=float) - self.mu
@@ -108,7 +109,7 @@ class GaussianFunction(Function):
     def fit(self, data):
         mu = np.mean(data, axis=0).reshape(-1)
         sig = np.cov(data.T).reshape(self.dimension, self.dimension)
-        self.set_parameters(mu, sig)
+        self.set_parameters((mu, sig))
 
 
 class CategoricalGaussianFunction(Function):
@@ -122,9 +123,10 @@ class CategoricalGaussianFunction(Function):
         """
         self.domains = domains
         self.extra_sig = extra_sig
-        self.set_parameters(weight_table, distribution_table, distributions)
+        self.set_parameters((weight_table, distribution_table, distributions))
 
-    def set_parameters(self, weight_table, distribution_table, distributions):
+    def set_parameters(self, parameters):
+        weight_table, distribution_table, distributions = parameters
         self.w_table = weight_table
         self.dis_table = np.array(distribution_table, dtype=int)
         self.dis = distributions
@@ -134,7 +136,7 @@ class CategoricalGaussianFunction(Function):
         self.d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
     def parameters(self):
-        return (self.w_table, self.dis_table, self.dis)
+        return self.w_table, self.dis_table, self.dis
 
     def __call__(self, *parameters):
         parameters = np.array(parameters, dtype=float)
@@ -182,7 +184,7 @@ class CategoricalGaussianFunction(Function):
             dis_table[tuple(row)] = len(dis)
             dis.append(GaussianFunction(mu, sig + self.extra_sig))
 
-        self.set_parameters(w_table, dis_table, dis)
+        self.set_parameters((w_table, dis_table, dis))
 
 
 class LinearGaussianFunction(Function):
@@ -193,12 +195,10 @@ class LinearGaussianFunction(Function):
         """
         Function.__init__(self)
         self.dimension = 2
-        self.set_parameters(w, b, sig)
+        self.set_parameters((w, b, sig))
 
-    def set_parameters(self, w, b, sig):
-        self.w = w
-        self.b = b
-        self.sig = sig
+    def set_parameters(self, parameters):
+        self.w, self.b, self.sig = parameters
 
     def parameters(self):
         return (self.w, self.b, self.sig)
@@ -225,7 +225,7 @@ class LinearGaussianFunction(Function):
         w = model.coef_[0]
         b = model.intercept_
         d = ((w * data[:, 0] - data[:, 1] + b) ** 2) / (w ** 2 + 1)
-        self.set_parameters(w, b, np.mean(d))
+        self.set_parameters((w, b, np.mean(d)))
 
 
 class ImageNodePotential(Function):
