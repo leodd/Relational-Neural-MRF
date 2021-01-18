@@ -1,14 +1,7 @@
 from functions.Function import Function
+from functions.setting import train_mod
+import functions.setting as setting
 import numpy as np
-
-
-save_cache = False
-def train_mod(is_train):
-    global save_cache
-    if is_train:
-        save_cache = True
-    else:
-        save_cache = False
 
 
 class NeuralNetFunction(Function):
@@ -70,12 +63,12 @@ class NeuralNetFunction(Function):
         return self.forward(x)
 
     def forward(self, x):  # x must be numpy array
-        if save_cache:
+        if setting.save_cache:
             self.cache = [x]
 
         for layer in self.layers:
             x = layer.forward(x)
-            if save_cache:
+            if setting.save_cache:
                 self.cache.append(x)
 
         return x
