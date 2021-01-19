@@ -67,7 +67,7 @@ class PBP:
         return res
 
     def message_rv_to_f(self, x, rv, f):
-        res = np.log(self.important_weight(x, rv))
+        res = np.log(self.important_weight(x, rv)) if rv.domain.continuous else np.zeros(x.shape)
         for nb in rv.nb:
             if nb != f:
                 res += self.message[(nb, rv)]
@@ -144,7 +144,7 @@ class PBP:
                 if rv.value is None:
                     for f in rv.nb:
                         m = self.message_rv_to_f(self.x[rv], rv, f)
-                        print(f'{rv.name} to {f.name}', m)
+                        # print(f'{rv.name} to {f.name}', m)
                         self.message[(rv, f)], _ = self.log_message_balance(m)
 
             if log_enable:
@@ -164,6 +164,7 @@ class PBP:
                     for rv in f.nb:
                         if rv.value is None:
                             self.message[(f, rv)] = self.message_f_to_rv(x_new[rv], f, rv)
+                            # print(f'{f.name} to {rv.name}', self.message[(f, rv)])
 
                 self.x = x_new
 

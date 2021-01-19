@@ -66,7 +66,7 @@ f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], su
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_lda]
+    parametric_factors=[f_lw, f_dd, f_lda]
 )
 
 g, rvs_dict = rel_g.ground()
