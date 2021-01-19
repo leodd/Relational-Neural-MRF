@@ -27,9 +27,10 @@ def bic_op(x, y):
 
 
 class MLNPotential(Function):
-    def __init__(self, formula, w=1):
+    def __init__(self, formula, dimension, w=1):
         Function.__init__(self)
         self.formula = formula
+        self.dimension = dimension
         self.w = w
 
     def __call__(self, *x):

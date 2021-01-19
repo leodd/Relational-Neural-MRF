@@ -2,10 +2,10 @@ from utils import load
 import matplotlib.pyplot as plt
 from RelationalGraph import *
 from inferer.PBP import PBP
-from functions.ExpPotentials import NeuralNetPotential, ExpWrapper, ReLU, LinearLayer
+from functions.ExpPotentials import NeuralNetPotential, ExpWrapper, TableFunction, ReLU, LinearLayer
 from functions.NeuralNet import train_mod
-from functions.MLNPotential import *
-from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
+from functions.MLNPotential import MLNPotential
+from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
 
 
 train_mod(False)
@@ -39,16 +39,16 @@ p_lda = NeuralNetPotential(
             LinearLayer(32, 1)]
 )
 
-p_d = NeuralNetPotential(
-    layers=[LinearLayer(2, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)]
+p_lw = MLNPotential(
+    formula=lambda x: (x[:, 0] <= 0.15) | (x[:, 1] == 0),
+    dimension=2,
+    w=2
 )
 
-p_a = NeuralNetPotential(
-    layers=[LinearLayer(2, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)]
+p_dd = MLNPotential(
+    formula=lambda x: (x[:, 0] != 1) | (x[:, 1] != 1),
+    dimension=2,
+    w=2
 )
 
 p_prior = ExpWrapper(
@@ -56,18 +56,13 @@ p_prior = ExpWrapper(
 )
 
 params = load(
-    f'learned_potentials/model_1/3000'
+    f'learned_potentials/model_1/2000'
 )
 p_lda.set_parameters(params[0])
-# p_d.set_parameters(params[1])
-
-# visualize_2d_potential(p_l, d_length, d_seg_type, spacing=0.005)
-# visualize_2d_potential(p_d, d_depth, d_seg_type, spacing=0.002)
-# visualize_2d_potential(p_a, d_angle, d_seg_type, spacing=0.05)
 
 f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-f_d = ParamF(p_d, atoms=[depth('S'), seg_type('S')], lvs=['S'])
-f_a = ParamF(p_a, atoms=[angle('S'), seg_type('S')], lvs=['S'])
+f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
@@ -75,7 +70,7 @@ rel_g = RelationalGraph(
 )
 
 g, rvs_dict = rel_g.ground()
-print(len(g.rvs))
+print(len(g.rvs), len(g.factors))
 
 target_rvs = dict()
 
@@ -91,7 +86,7 @@ for key, rv in rvs_dict.items():
         target_rvs[rv] = d_seg_type.value_to_idx(dt_seg_type[key[1]])
 
 infer = PBP(g, n=20)
-infer.run(1)
+infer.run(4)
 
 predict = dict()
 loss = list()
@@ -99,7 +94,8 @@ for rv in target_rvs:
     res = infer.map(rv)
     predict[rv.name[1]] = res
     loss.append(res == target_rvs[rv])
-    print(res, target_rvs[rv])
+    if res != target_rvs[rv]:
+        print(res, target_rvs[rv])
 
 print(np.mean(loss))
 

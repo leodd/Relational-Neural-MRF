@@ -162,6 +162,14 @@ def get_seg_type_distribution(seg_type_dict):
     return res / np.sum(res)
 
 
+def get_subs_matrix(relation_dict):
+    res = set()
+    for s, ss in relation_dict.items():
+        for s_ in ss:
+            res.add((s, s_))
+    return np.array(list(res))
+
+
 def slope_intercept_form(l):
     if len(l) == 4:
         x1, y1, x2, y2 = l
@@ -242,7 +250,7 @@ def nearest_line(ls, point):
 
 
 if __name__ == '__main__':
-    map_name = 'n'
+    map_name = 'l'
     raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map')
     predicate_data = load_predicate_data(f'radish.rm/{map_name}.db')
     processed_data = process_data(raw_data, predicate_data)
@@ -277,16 +285,16 @@ if __name__ == '__main__':
     plt.axis('equal')
     plt.show()
 
-    # for s, ss in processed_data['neighbor'].items():
-    #     print(s, ss)
-    #     for s_, content in raw_data.items():
-    #         if s_ == s:
-    #             color = 'red'
-    #         elif s_ in ss:
-    #             color = 'blue'
-    #         else:
-    #             color = 'black'
-    #         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
-    #
-    #     plt.axis('equal')
-    #     plt.show()
+    for s, ss in processed_data['neighbor'].items():
+        print(s, ss)
+        for s_, content in raw_data.items():
+            if s_ == s:
+                color = 'red'
+            elif s_ in ss:
+                color = 'blue'
+            else:
+                color = 'black'
+            plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
+
+        plt.axis('equal')
+        plt.show()

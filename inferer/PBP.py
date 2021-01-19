@@ -144,6 +144,7 @@ class PBP:
                 if rv.value is None:
                     for f in rv.nb:
                         m = self.message_rv_to_f(self.x[rv], rv, f)
+                        print(f'{rv.name} to {f.name}', m)
                         self.message[(rv, f)], _ = self.log_message_balance(m)
 
             if log_enable:
@@ -184,27 +185,28 @@ class PBP:
 
     def belief(self, x, rv):
         if rv.value is None:
-            # z = quad(
-            #     lambda val: np.exp(self.belief_rv(val, rv, self.sample)),
-            #     rv.domain.values[0], rv.domain.values[1]
-            # )[0]
+            if rv.domain.continuous:
+                # z = quad(
+                #     lambda val: np.exp(self.belief_rv(val, rv, self.sample)),
+                #     rv.domain.values[0], rv.domain.values[1]
+                # )[0]
 
-            z, _, shift = self.belief_integration(rv, rv.domain.values[0], rv.domain.values[1], 20)
+                z, _, shift = self.belief_integration(rv, rv.domain.values[0], rv.domain.values[1], 20)
 
-            return np.exp(self.log_belief(x.reshape(-1), rv) - shift).squeeze() / z
+                return np.exp(self.log_belief(x.reshape(-1), rv) - shift).squeeze() / z
+            else:
+                b = np.exp(self.log_belief(x.reshape(-1), rv)).squeeze()
+                return b / np.sum(b)
         else:
-            return 1 if x == rv.value else 0
+            return np.array(x == rv.value, dtype=float)
 
     def probability(self, a, b, rv):
         # Only for continuous hidden variable
         if rv.value is None:
             if rv.domain.continuous:
                 z, _, shift = self.belief_integration(rv, rv.domain.values[0], rv.domain.values[1], 20)
-
                 b, _, _ = self.belief_integration(rv, a, b, 5, shift)
-
                 return b / z
-
         return None
 
     def map(self, rv):

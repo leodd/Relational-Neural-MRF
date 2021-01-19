@@ -1,11 +1,10 @@
 from utils import visualize_2d_potential
 from RelationalGraph import *
 from functions.NeuralNet import train_mod
-from functions.ExpPotentials import NeuralNetPotential, ExpWrapper, ReLU, LinearLayer
+from functions.ExpPotentials import NeuralNetPotential, ExpWrapper, TableFunction, ReLU, LinearLayer
 from functions.MLNPotential import MLNPotential
-from functions.MLNPotential import *
 from learner.NeuralPMLE import PMLE
-from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution
+from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
 
 train, _ = load_data_fold(2)
 
@@ -37,7 +36,14 @@ p_lda = NeuralNetPotential(
 
 p_lw = MLNPotential(
     formula=lambda x: (x[:, 0] <= 0.1) | (x[:, 1] == 0),
-    w=1
+    dimension=2,
+    w=2
+)
+
+p_dd = MLNPotential(
+    formula=lambda x: (x[:, 0] != 0) | (x[:, 1] != 0),
+    dimension=2,
+    w=2
 )
 
 p_prior = ExpWrapper(
@@ -45,10 +51,12 @@ p_prior = ExpWrapper(
 )
 
 f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
+f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_lda]
+    parametric_factors=[f_lw, f_dd, f_lda]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -69,7 +77,7 @@ for key, rv in rvs_dict.items():
 
 def visualize(ps, t):
     if t % 200 == 0:
-        visualize_2d_potential(p_lw, d_length, d_seg_type, spacing=0.02)
+        visualize_2d_potential(p_dd, d_seg_type, d_seg_type, spacing=0.02)
 
 train_mod(True)
 leaner = PMLE(g, [p_lda], data)
@@ -82,7 +90,7 @@ leaner.train(
     batch_size=1,
     rvs_selection_size=100,
     sample_size=30,
-    # save_dir='learned_potentials/model_1',
+    save_dir='learned_potentials/model_1',
     save_period=1000,
-    visualize=visualize
+    # visualize=visualize
 )
