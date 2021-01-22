@@ -41,22 +41,20 @@ p_lda = NeuralNetPotential(
             LinearLayer(32, 1)]
 )
 
-p_d = NeuralNetPotential(
+p_l = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
+)
+
+p_da = NeuralNetPotential(
     layers=[LinearLayer(3, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    dimension=4,
-    formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, [2, 3]]), axis=1)
+            LinearLayer(32, 1)]
 )
 
 p_dw = MLNPotential(
-    formula=lambda x: (np.abs(x[:, 0]) < 0.5) | (x[:, 1] != 0),
-    dimension=2,
-    w=2
-)
-
-p_aw = MLNPotential(
-    formula=lambda x: (np.abs(x[:, 0]) < 0.5) | (x[:, 1] != 0),
+    formula=lambda x: (np.abs(x[:, 0]) > 0.01) | (x[:, 1] == 0),
     dimension=2,
     w=2
 )
@@ -81,17 +79,18 @@ params = load(
     f'learned_potentials/model_1/3000'
 )
 p_lda.set_parameters(params[0])
-p_d.set_parameters(params[1])
+# p_da.set_parameters(params[1])
 
 f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
-f_aw = ParamF(p_aw, atoms=[angle('S'), seg_type('S')], lvs=['S'])
+f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_da = ParamF(p_da, atoms=[depth('S'), angle('S'), seg_type('S')], lvs=['S'])
+f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 f_ao = ParamF(p_ao, atoms=[angle('S'), seg_type('S')], lvs=['S'])
 f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_aw, f_ao, f_dd, f_lda, f_d]
+    parametric_factors=[f_dw, f_ao, f_dd, f_lda]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -111,7 +110,7 @@ for key, rv in rvs_dict.items():
         target_rvs[rv] = d_seg_type.value_to_idx(dt_seg_type[key[1]])
 
 infer = PBP(g, n=20)
-infer.run(10)
+infer.run(4)
 
 predict = dict()
 y_true, y_pred = list(), list()

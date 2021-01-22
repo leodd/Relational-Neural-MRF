@@ -35,12 +35,22 @@ p_lda = NeuralNetPotential(
             LinearLayer(32, 1)]
 )
 
-p_d = NeuralNetPotential(
+p_l = NeuralNetPotential(
+    layers=[LinearLayer(2, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)]
+)
+
+p_da = NeuralNetPotential(
     layers=[LinearLayer(3, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)],
-    dimension=4,
-    formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, [2, 3]]), axis=1)
+            LinearLayer(32, 1)]
+)
+
+p_dw = MLNPotential(
+    formula=lambda x: (x[:, 0] > 0.003) | (x[:, 1] == 0),
+    dimension=2,
+    w=2
 )
 
 p_ao = MLNPotential(
@@ -60,13 +70,15 @@ p_prior = ExpWrapper(
 )
 
 f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
+f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
+f_da = ParamF(p_da, atoms=[depth('S'), angle('S'), seg_type('S')], lvs=['S'])
+f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 f_ao = ParamF(p_ao, atoms=[angle('S'), seg_type('S')], lvs=['S'])
 f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
 f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_ao, f_dd, f_lda, f_d]
+    parametric_factors=[f_dw, f_ao, f_dd, f_lda]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -90,7 +102,7 @@ def visualize(ps, t):
         visualize_2d_potential(p_dd, d_seg_type, d_seg_type, spacing=0.02)
 
 train_mod(True)
-leaner = PMLE(g, [p_lda, p_d], data)
+leaner = PMLE(g, [p_lda], data)
 leaner.train(
     lr=0.001,
     alpha=0.99,

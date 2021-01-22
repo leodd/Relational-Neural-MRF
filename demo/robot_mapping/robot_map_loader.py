@@ -278,9 +278,9 @@ if __name__ == '__main__':
 
         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
 
-    # for l in processed_data['avg_lines']:
-    #     x1, y1, x2, y2 = two_points_form(l)
-    #     plt.plot([x1, x2], [y1, y2], color='black', linestyle='-', linewidth=2)
+    for l in processed_data['avg_lines']:
+        x1, y1, x2, y2 = two_points_form(l, (-6, 6, -2, 5))
+        plt.plot([x1, x2], [y1, y2], color='orange', linestyle='-', linewidth=2)
 
     plt.axis('equal')
     plt.show()
