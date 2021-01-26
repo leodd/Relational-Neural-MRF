@@ -47,14 +47,14 @@ def load_predicate_data(f, map_name=''):
 
 
 def merge_processed_data(data_list):
-    session_list = {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned', 'lines'}
+    session_list = {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned', 'k_aligned', 'lines'}
     res = dict()
     for session in session_list:
         res[session] = dict(ChainMap(*[data[session] for data in data_list]))
     return res
 
 
-def process_data(raw_data, predicate_data, map_name=''):
+def process_data(raw_data, predicate_data):
     neighbor = defaultdict(set)
     aligned = defaultdict(set)
 
@@ -136,6 +136,21 @@ def process_data(raw_data, predicate_data, map_name=''):
             depth[s] *= -1
             angle[s] *= -1
 
+    k_aligned = defaultdict(set)
+    for group in groups:
+        ss = list(group)
+        ps = [line_midpoint(raw_data[s][:4]) for s in ss]
+        for idx, s in enumerate(ss):
+            sorted_idx = nearest_k_points(ps[idx], ps, min(7, len(ps) - 1))[1:]
+            temp = set()
+            # l = raw_data[s][:4]
+            mp = line_midpoint(raw_data[s][:4])
+            for i in sorted_idx:
+                # if len(temp) < 5 and nearest_end_point_distance(raw_data[ss[i]][:4], l) < 0.1:
+                if len(temp) < 5 and perpendicular_distance(raw_data[ss[i]][:4], mp) < 0.01:
+                    temp.add(ss[i])
+            k_aligned[s] = temp
+
     return {
         'seg_type': seg_type,
         'length': length,
@@ -143,6 +158,7 @@ def process_data(raw_data, predicate_data, map_name=''):
         'angle': angle,
         'neighbor': neighbor,
         'aligned': aligned,
+        'k_aligned': k_aligned,
         'part_of_wall': part_of_wall,
         'part_of_line': part_of_line,
         'avg_lines': avg_lines,
@@ -162,11 +178,14 @@ def get_seg_type_distribution(seg_type_dict):
     return res / np.sum(res)
 
 
-def get_subs_matrix(relation_dict):
+def get_subs_matrix(relation_dict, one_way=False):
     res = set()
     for s, ss in relation_dict.items():
         for s_ in ss:
-            res.add((s, s_))
+            if one_way and s < s_:
+                res.add((s_, s))
+            else:
+                res.add((s, s_))
     return np.array(list(res))
 
 
@@ -197,6 +216,29 @@ def two_points_form(l, window=(-1, 1, -1, 1)):
         return (x1, y1, x2, y2)
     else:
         return l
+
+
+def point_distance(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+
+def nearest_k_points(p, ps, k):
+    x1, y1 = p
+    ds = [np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) for x2, y2 in ps]
+    return np.argpartition(ds, k)
+
+
+def nearest_end_point_distance(l1, l2):
+    p11, p12 = (l1[0], l1[1]), (l1[2], l1[3])
+    p21, p22 = (l2[0], l2[1]), (l2[2], l2[3])
+    return min(
+        point_distance(p11, p21),
+        point_distance(p11, p22),
+        point_distance(p12, p21),
+        point_distance(p12, p22)
+    )
 
 
 def line_midpoint(l):
@@ -250,7 +292,7 @@ def nearest_line(ls, point):
 
 
 if __name__ == '__main__':
-    map_name = 'l'
+    map_name = 'w'
     raw_data = load_raw_data(f'radish.rm.raw/{map_name}.map')
     predicate_data = load_predicate_data(f'radish.rm/{map_name}.db')
     processed_data = process_data(raw_data, predicate_data)
@@ -264,7 +306,7 @@ if __name__ == '__main__':
     for s, content in raw_data.items():
         color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
 
-        # color = colors[processed_data['part_of_line'].get(s, -1)]
+        color = colors[processed_data['part_of_line'].get(s, -1)]
 
         # if s[:2] == 'L0':
         #     color = 'red'
@@ -278,14 +320,14 @@ if __name__ == '__main__':
 
         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
 
-    for l in processed_data['avg_lines']:
-        x1, y1, x2, y2 = two_points_form(l, (-6, 6, -2, 5))
-        plt.plot([x1, x2], [y1, y2], color='orange', linestyle='-', linewidth=2)
+    # for l in processed_data['avg_lines']:
+    #     x1, y1, x2, y2 = two_points_form(l, (-6, 6, -2, 5))
+    #     plt.plot([x1, x2], [y1, y2], color='orange', linestyle='-', linewidth=2)
 
     plt.axis('equal')
     plt.show()
 
-    for s, ss in processed_data['neighbor'].items():
+    for s, ss in processed_data['k_aligned'].items():
         print(s, ss)
         for s_, content in raw_data.items():
             if s_ == s:

@@ -38,24 +38,33 @@ class MLNPotential(Function):
 
     def batch_call(self, x):
         if self.w is None:
-            return 0. if self.formula(x) < 0.5 else 1.
+            return np.where(self.formula(x) > 0.5, 1., 0.)
         else:
             return np.exp(self.formula(x) * self.w)
 
     def log_batch_call(self, x):
         if self.w is None:
-            raise Exception('does not support hard rule')
+            return np.where(self.formula(x) > 0.5, 0., -np.inf)
         else:
-            return self.formula(x) * self.w
+            res = self.formula(x)
+            if setting.save_cache:
+                self.cache = res
+            return res * self.w
 
     def log_backward(self, dy):
-        pass
+        return None, np.sum(self.cache * dy.reshape(-1))
 
     def set_parameters(self, w):
         self.w = w
 
     def parameters(self):
         return self.w
+
+    def params_gradients(self, dy):
+        return [self.w], [np.sum(self.cache * dy.reshape(-1))]
+
+    def update(self, steps):
+        self.w += steps[0]
 
 
 class HMLNPotential(Function):

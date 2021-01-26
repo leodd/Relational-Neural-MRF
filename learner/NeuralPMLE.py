@@ -203,19 +203,20 @@ class PMLE:
             A dictionary with potential as key, and gradient as value.
         """
         data_y = dict()  # A dictionary with a array of output value of the potential nn
+        gradient_y = dict()  # Store of the computed derivative
 
-        # Forward pass
         for potential, data_matrix in data_x.items():
+            # Forward pass
             if type(potential) is PriorPotential:
                 data_y[potential] = potential.f.log_batch_call(data_matrix)
             else:
                 data_y[potential] = potential.log_batch_call(data_matrix)
 
-        gradient_y = dict()  # Store of the computed derivative
-
         # Initialize gradient
         for potential in self.trainable_potentials:
-            gradient_y[potential] = np.empty(data_y[potential].shape).reshape(-1, 1)
+            if potential in data_y:
+                gradient_y[potential] = np.empty(data_y[potential].shape).reshape(-1, 1)
+
 
         for rv, data_idx in data_info.items():
             for start_idx in data_idx:
@@ -300,21 +301,40 @@ class PMLE:
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
                     if type(potential) is PriorPotential:
-                        _, d_param = potential.f.log_backward(d_y)
+                        params, gradients = potential.f.params_gradients(d_y)
                     else:
-                        _, d_param = potential.log_backward(d_y)
+                        params, gradients = potential.params_gradients(d_y)
 
                     c = (sample_size - 1) / d_y.shape[0]
 
                     # Gradient ascent
-                    for layer, (d_W, d_b) in d_param.items():
-                        step, moment = adam(d_W * c - layer.W * regular, moments.get((layer, 'W'), (0, 0)), t + 1)
-                        layer.W += step
-                        moments[(layer, 'W')] = moment
+                    steps = list()
+                    for idx, (x, g) in enumerate(zip(params, gradients)):
+                        step, moment = adam(g * c - x * regular, moments.get((potential, idx), (0, 0)), t + 1)
+                        steps.append(step)
+                        moments[(potential, idx)] = moment
 
-                        step, moment = adam(d_b * c - layer.b * regular, moments.get((layer, 'b'), (0, 0)), t + 1)
-                        layer.b += step
-                        moments[(layer, 'b')] = moment
+                    if type(potential) is PriorPotential:
+                        potential.f.update(steps)
+                    else:
+                        potential.update(steps)
+
+                    # if type(potential) is PriorPotential:
+                    #     _, d_param = potential.f.log_backward(d_y)
+                    # else:
+                    #     _, d_param = potential.log_backward(d_y)
+                    #
+                    # c = (sample_size - 1) / d_y.shape[0]
+                    #
+                    # # Gradient ascent
+                    # for layer, (d_W, d_b) in d_param.items():
+                    #     step, moment = adam(d_W * c - layer.W * regular, moments.get((layer, 'W'), (0, 0)), t + 1)
+                    #     layer.W += step
+                    #     moments[(layer, 'W')] = moment
+                    #
+                    #     step, moment = adam(d_b * c - layer.b * regular, moments.get((layer, 'b'), (0, 0)), t + 1)
+                    #     layer.b += step
+                    #     moments[(layer, 'b')] = moment
 
                 print(t)
                 if visualize is not None:

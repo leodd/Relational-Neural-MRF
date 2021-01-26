@@ -32,6 +32,12 @@ class NeuralNetPotential(Function):
     def parameters(self):
         return self.nn.parameters()
 
+    def params_gradients(self, dy):
+        return self.nn.params_gradients(dy)
+
+    def update(self, steps):
+        self.nn.update(steps)
+
 
 class ExpWrapper(Function):
     """
@@ -58,3 +64,9 @@ class ExpWrapper(Function):
 
     def parameters(self):
         return self.f.parameters()
+
+    def params_gradients(self, dy):
+        return self.f.params_gradients(dy)
+
+    def update(self, steps):
+        self.f.update(steps)
