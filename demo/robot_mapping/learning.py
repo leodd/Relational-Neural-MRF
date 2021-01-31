@@ -40,8 +40,8 @@ p_d = NeuralNetPotential(
     layers=[LinearLayer(4, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)],
-    dimension=5,
-    formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 2:]), axis=1)
+    dimension=4,
+    formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
 )
 
 p_dk = NeuralNetPotential(
@@ -85,13 +85,13 @@ p_prior = ExpWrapper(
 )
 
 f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), length('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
+f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
 f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_k_aligned))
 # f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
 f_aw = ParamF(p_aw, atoms=[angle('S'), seg_type('S')], lvs=['S'])
 # f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
 f_ao = ParamF(p_ao, atoms=[angle('S'), seg_type('S')], lvs=['S'])
-f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
+f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
 # f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
