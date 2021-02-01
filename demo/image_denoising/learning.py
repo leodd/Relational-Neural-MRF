@@ -2,6 +2,7 @@ from utils import visualize_2d_potential
 from Graph import *
 from functions.Potentials import GaussianFunction, LinearGaussianFunction
 from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, LinearLayer, train_mod
+from functions.Potentials import ImageNodePotential, ImageEdgePotential
 from learner.NeuralPMLE import PMLE
 from demo.image_denoising.image_data_loader import load_data
 
@@ -13,33 +14,36 @@ col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = PriorPotential(
-    NeuralNetPotential(
-        [
-            LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)
-        ],
-        dimension=2,
-        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=False
-)
+pxo = ImageNodePotential(1)
+pxy = ImageEdgePotential(0.5, 0.5)
 
-pxy = PriorPotential(
-    NeuralNetPotential(
-        [
-            LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)
-        ],
-        dimension=2,
-        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=False
-)
+# pxo = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1),
+#     learn_prior=False
+# )
+#
+# pxy = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1),
+#     learn_prior=False
+# )
 
 data = dict()
 
@@ -96,7 +100,7 @@ def visualize(ps, t):
 train_mod(True)
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.001,
+    lr=0.1,
     alpha=0.99,
     regular=0.0001,
     max_iter=5000,
@@ -104,7 +108,7 @@ leaner.train(
     batch_size=20,
     rvs_selection_size=100,
     sample_size=20,
-    save_dir='learned_potentials/model_contrastive_nn',
+    save_dir='learned_potentials/model_1_expert',
     save_period=1000,
     visualize=visualize
 )

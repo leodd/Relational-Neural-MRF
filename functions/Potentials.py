@@ -3,6 +3,7 @@ import numpy as np
 from numpy.linalg import det, inv
 from math import pow, pi, e, exp
 from sklearn.linear_model import LinearRegression
+import functions.setting as setting
 
 
 class TableFunction(Function):
@@ -229,39 +230,117 @@ class LinearGaussianFunction(Function):
 
 
 class ImageNodePotential(Function):
-    def __init__(self, mu, sig):
+    def __init__(self, alpha):
         Function.__init__(self)
-        self.mu = mu
-        self.sig = sig
+        self.dimension = 2
+        self.alpha = alpha
 
     def __call__(self, *parameters):
-        u = (parameters[0] - parameters[1] - self.mu) / self.sig
-        return exp(-u * u * 0.5) / (2.506628274631 * self.sig)
+        u = (parameters[0] - parameters[1])
+        return exp(-u * u * self.alpha)
 
     def batch_call(self, x):
-        u = (x[:, 0] - x[:, 1] - self.mu) / self.sig
-        return np.exp(-u * u * 0.5) / (2.506628274631 * self.sig)
+        u = (x[:, 0] - x[:, 1])
+        u = -u * u
+        if setting.save_cache:
+            self.cache = u
+        return np.exp(-u * u * self.alpha)
+
+    def log_batch_call(self, x):
+        u = (x[:, 0] - x[:, 1])
+        u = -u * u
+        if setting.save_cache:
+            self.cache = u
+        return u * self.alpha
+
+    def log_backward(self, dy):
+        return None, np.sum(self.cache * dy)
+
+    def set_parameters(self, alpha):
+        self.alpha = alpha
+
+    def parameters(self):
+        return self.alpha
+
+    def params_gradients(self, dy):
+        return [self.alpha], [np.sum(self.cache * dy)]
+
+    def update(self, steps):
+        self.alpha += steps[0]
+        self.alpha = min(self.alpha, 1000)
 
 
 class ImageEdgePotential(Function):
-    def __init__(self, distant_cof, scaling_cof, max_threshold):
+    def __init__(self, scaling_cof, max_threshold):
         Function.__init__(self)
-        self.distant_cof = distant_cof
-        self.scaling_cof = scaling_cof
-        self.max_threshold = max_threshold
-        self.v = pow(e, -self.max_threshold / self.scaling_cof)
+        self.dimension = 2
+        self.set_parameters((scaling_cof, max_threshold))
 
     def __call__(self, *parameters):
         d = abs(parameters[0] - parameters[1])
         if d > self.max_threshold:
-            return d * self.distant_cof + self.v
+            return np.exp(-self.max_threshold * self.scaling_cof)
         else:
-            return d * self.distant_cof + pow(e, -d / self.scaling_cof)
+            return np.exp(-d * self.scaling_cof)
 
     def batch_call(self, x):
         d = np.abs(x[:, 0] - x[:, 1])
+        if setting.save_cache:
+            self.cache = d
         return np.where(
             d > self.max_threshold,
-            d * self.distant_cof + self.v,
-            d * self.distant_cof + np.exp(-d / self.scaling_cof)
+            np.exp(-self.max_threshold * self.scaling_cof),
+            np.exp(-d * self.scaling_cof)
         )
+
+    def log_batch_call(self, x):
+        d = np.abs(x[:, 0] - x[:, 1])
+        if setting.save_cache:
+            self.cache = d
+        return np.where(
+            d > self.max_threshold,
+            -self.max_threshold * self.scaling_cof,
+            -d * self.scaling_cof
+        )
+
+    def log_backward(self, dy):
+        d = self.cache
+        gt = np.where(
+            d > self.max_threshold,
+            -self.scaling_cof,
+            0
+        )
+        gs = np.where(
+            d > self.max_threshold,
+            -self.max_threshold,
+            -d
+        )
+        return None, [np.sum(gt * dy), np.sum(gs * dy)]
+
+    def set_parameters(self, parameters):
+        scaling_cof, max_threshold = parameters
+        self.scaling_cof = scaling_cof
+        self.max_threshold = max_threshold
+
+    def parameters(self):
+        return self.scaling_cof, self.max_threshold
+
+    def params_gradients(self, dy):
+        d = self.cache
+        gt = np.where(
+            d > self.max_threshold,
+            -self.scaling_cof,
+            0
+        )
+        gs = np.where(
+            d > self.max_threshold,
+            -self.max_threshold,
+            -d
+        )
+        return [self.max_threshold, self.scaling_cof], [np.sum(gt * dy), np.sum(gs * dy)]
+
+    def update(self, steps):
+        self.max_threshold += steps[0]
+        self.scaling_cof += steps[1]
+        self.max_threshold = max(self.max_threshold, 0.001)
+        self.scaling_cof = max(self.scaling_cof, 0.001)

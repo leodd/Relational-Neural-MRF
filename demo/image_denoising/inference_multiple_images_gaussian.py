@@ -5,7 +5,7 @@ from functions.Potentials import ImageNodePotential, ImageEdgePotential, Gaussia
 from inferer.PBP import PBP
 
 
-USE_MANUAL_POTENTIALS = True
+USE_MANUAL_POTENTIALS = False
 
 gt_data, noisy_data = load_simple_data('testing_2/gt', 'testing_2/noisy')
 
@@ -15,8 +15,8 @@ col = gt_data.shape[2]
 domain = Domain([0, 1], continuous=True)
 
 if USE_MANUAL_POTENTIALS:
-    pxo = ImageNodePotential(0, 0.05)
-    pxy = ImageEdgePotential(0, 0.035, 0.25)
+    pxo = ImageNodePotential(0.05)
+    pxy = ImageEdgePotential(0.035, 0.25)
 else:
     pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
     pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)

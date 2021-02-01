@@ -9,7 +9,7 @@ from inferer.PBP import PBP
 
 train_mod(False)
 
-USE_MANUAL_POTENTIALS = False
+USE_MANUAL_POTENTIALS = True
 
 gt_image = img.imread('testing-simple/ground-true-image.png')
 gt_image = gt_image[:, :, 0]
@@ -26,8 +26,8 @@ col = noisy_image.shape[1]
 domain = Domain([0, 1], continuous=True)
 
 if USE_MANUAL_POTENTIALS:
-    pxo = ImageNodePotential(0, 0.05)
-    pxy = ImageEdgePotential(0, 0.035, 0.25)
+    pxo = ImageNodePotential(0.05)
+    pxy = ImageEdgePotential(0.035, 0.25)
 else:
     pxo = PriorPotential(
         NeuralNetPotential(

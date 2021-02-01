@@ -24,7 +24,7 @@ class NeuralNetPotential(Function):
         return self.nn.forward(x).reshape(-1)
 
     def log_backward(self, dy):
-        return self.nn.backward(dy)
+        return self.nn.backward(dy.reshape(-1, 1))
 
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters)
@@ -33,7 +33,7 @@ class NeuralNetPotential(Function):
         return self.nn.parameters()
 
     def params_gradients(self, dy):
-        return self.nn.params_gradients(dy)
+        return self.nn.params_gradients(dy.reshape(-1, 1))
 
     def update(self, steps):
         self.nn.update(steps)

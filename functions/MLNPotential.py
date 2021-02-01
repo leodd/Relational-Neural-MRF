@@ -52,7 +52,7 @@ class MLNPotential(Function):
             return res * self.w
 
     def log_backward(self, dy):
-        return None, np.sum(self.cache * dy.reshape(-1))
+        return None, np.sum(self.cache * dy)
 
     def set_parameters(self, w):
         self.w = w
@@ -61,7 +61,7 @@ class MLNPotential(Function):
         return self.w
 
     def params_gradients(self, dy):
-        return [self.w], [np.sum(self.cache * dy.reshape(-1))]
+        return [self.w], [np.sum(self.cache * dy)]
 
     def update(self, steps):
         self.w += steps[0]

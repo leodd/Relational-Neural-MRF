@@ -215,7 +215,7 @@ class PMLE:
         # Initialize gradient
         for potential in self.trainable_potentials:
             if potential in data_y:
-                gradient_y[potential] = np.empty(data_y[potential].shape).reshape(-1, 1)
+                gradient_y[potential] = np.empty(data_y[potential].shape)
 
 
         for rv, data_idx in data_info.items():
@@ -240,7 +240,7 @@ class PMLE:
 
                         alpha = f.potential.alpha
 
-                        gradient_y[f.potential][idx:idx + sample_size + 1, 0] = -alpha * w + (alpha - 1) * regular
+                        gradient_y[f.potential][idx:idx + sample_size + 1] = -alpha * w + (alpha - 1) * regular
 
         return gradient_y
 
