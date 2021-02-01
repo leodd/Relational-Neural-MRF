@@ -1,0 +1,111 @@
+/////////////////////////type declarations start/////////////////////////////
+
+type = { Wall, Door, Other }
+
+//////////////////////////type declarations end///////////////////////////////
+
+
+////////////////////////////predicate declarations start///////////////////////
+
+////////////////////////////discrete predicates start//////////////////////////
+
+// The segment is of the type (query predicate);
+"!" means types are mutually exclusive and exhaustive
+SegType(seg,type!)
+
+// The angle between two segments is below some threshold,
+// and so is the perpendicular distance between them (evidence)
+Aligned(seg,seg)
+
+// The distance between the nearest end points of
+// two segments is below some threshold (evidence)
+Neighbors(seg,seg)
+
+// There is no other segment's initial point between
+// the initial points of the two segments (evidence)
+Consecutive(seg,seg)
+
+// The distance between the segment and its neighbor is below some threshold,
+// and it is almost perpendicular to the average line (evidence)
+SharpTurn(seg)
+
+////////////////////////////discrete predicates end///////////////////////////
+
+
+////////////////////////////numeric properties start//////////////////////////
+
+// The length of the segment (evidence)
+Length(seg)
+
+// The depth of the segment, i.e., the signed
+// perpendicular distance of the segment's midpoint to the nearest line (evidence)
+Depth(seg)
+
+// The angle between the segment and the nearest line
+Angle(seg)
+
+////////////////////////////numeric properties end////////////////////////////
+
+/////////////////////////predicate declarations end///////////////////////////
+
+
+//////////////////////////////formulas start//////////////////////////////////
+
+//////////////////////////discrete formulas start/////////////////////////////
+
+// All unit clauses are added to the MLN by default
+
+// Unit clause for the prior probability of each type;
+// The "+t" notation directs Alchemy to learn a separate weight
+// for each grounding of t
+SegType(s, +t)
+
+// A segment's type is predictive of the next segment's type
+SegType(s,+t) ^ Consecutive(s,s') => SegType(s',+t')
+
+// Segments that are in sequence and aligned tend to be of the same type
+SegType(s,t) ^ Consecutive(s,s') ^ Aligned(s,s') => SegType(s',t)
+
+// A door segment's neighboring segment tends not to be a door segment
+SegType(s,Door) ^ Neighbors(s,s') => !SegType(s',Door)
+
+// If the segment is in a sharp turn, it is of type "Other"
+SharpTurn(s) => SegType(s,Other)
+
+// Single aligned segments are likely to be wall segments
+SingleAligned(s) => SegType(s,Wall)
+
+/////////////////////////////discrete formulas end///////////////////////////
+
+
+/////////////////////////////hybrid formulas start///////////////////////////
+
+// Typical lengths and depths of door and wall segments
+SegType(s, Door) * (Length(s) = 0.127)
+SegType(s, Door) * (Depth(s) = 0.0233)
+SegType(s, Wall) * (Length(s) = 0.345)
+SegType(s, Wall) * (Depth(s) = 0.00114)
+
+// If a segment is shorter than the typical minimum length of wall segments,
+// then it's not a wall segment; this rule is hard
+(Length(s) < 0.132) => !SegType(s,Wall).
+
+// If a segment is too long or too short for a door segment,
+// then it is not a door segment; these rules are hard
+(Length(s) < 0.00218) => !SegType(s,Door).
+(Length(s) > 0.317) => !SegType(s,Door).
+
+// If a segment is too deep, it is of type "Other"
+SegType(s,Other) * (Depth(s) > 0.0589)
+
+// If a segment is too far away from a wall line at the negative side,
+// then it is of type "Other"
+SegType(s,Other) * (Depth(s) < 0.000439)
+
+// If the angle of the segment is larger than some threshold, it is of type
+// "Other"; this is a hard rule
+(Angle(s) > MaxAngle) => SegType(s,Other).
+
+/////////////////////////////////hybrid formulas end/////////////////////////
+
+/////////////////////////////formulas end////////////////////////////////////
