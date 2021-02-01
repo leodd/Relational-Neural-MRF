@@ -109,7 +109,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
 
     g = Graph(rvs + evidence, fs)
 
-    infer = PBP(g, n=100)
+    infer = PBP(g, n=50)
     infer.run(50, log_enable=True)
 
     predict_image = np.empty([row, col])

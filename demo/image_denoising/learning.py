@@ -14,36 +14,36 @@ col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = ImageNodePotential(1)
-pxy = ImageEdgePotential(0.5, 0.5)
+# pxo = ImageNodePotential(1)
+# pxy = ImageEdgePotential(0.5, 0.5)
 
-# pxo = PriorPotential(
-#     NeuralNetPotential(
-#         [
-#             LinearLayer(1, 64), ReLU(),
-#             LinearLayer(64, 32), ReLU(),
-#             LinearLayer(32, 1)
-#         ],
-#         dimension=2,
-#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-#     ),
-#     LinearGaussianFunction(1., 0., 0.1),
-#     learn_prior=False
-# )
-#
-# pxy = PriorPotential(
-#     NeuralNetPotential(
-#         [
-#             LinearLayer(1, 64), ReLU(),
-#             LinearLayer(64, 32), ReLU(),
-#             LinearLayer(32, 1)
-#         ],
-#         dimension=2,
-#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-#     ),
-#     LinearGaussianFunction(1., 0., 0.1),
-#     learn_prior=False
-# )
+pxo = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
+)
+
+pxy = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
+)
 
 data = dict()
 
@@ -101,7 +101,7 @@ def visualize(ps, t):
 train_mod(True)
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.1,
+    lr=0.001,
     alpha=0.99,
     regular=0.0001,
     max_iter=5000,
