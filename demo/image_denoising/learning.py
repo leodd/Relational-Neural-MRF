@@ -93,9 +93,10 @@ for i in range(row - 1):
 g = Graph(set(rvs + evidence), set(fs), set(evidence))
 
 def visualize(ps, t):
-    if t % 50 == 0:
+    if t % 100 == 0:
         for p in ps:
             visualize_2d_potential(p, domain, domain, spacing=0.05)
+            print(p.parameters())
 
 train_mod(True)
 leaner = PMLE(g, [pxo, pxy], data)
