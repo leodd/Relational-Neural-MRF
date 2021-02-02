@@ -196,5 +196,18 @@ def load(f):
         return pickle.load(file)
 
 
+def save_str_list(f, str_list):
+    if not os.path.exists(os.path.dirname(f)):
+        try:
+            os.makedirs(os.path.dirname(f))
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
+    with open(f, 'w') as file:
+        for s in str_list:
+            file.write('%s\n' % s)
+
+
 if __name__ == '__main__':
     pass
