@@ -44,5 +44,5 @@ def to_alchemy_format(raw_maps, predicate_maps, processed_maps):
 if __name__ == '__main__':
     for i in range(5):
         train, test = load_data_fold(1)
-        save_str_list(f'alchemy/{i}/train', train)
-        save_str_list(f'alchemy/{i}/test', test)
+        save_str_list(f'alchemy/{i}/train.db', train)
+        save_str_list(f'alchemy/{i}/test.db', test)
