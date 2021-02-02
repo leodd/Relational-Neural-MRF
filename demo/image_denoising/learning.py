@@ -109,7 +109,7 @@ leaner.train(
     batch_size=20,
     rvs_selection_size=100,
     sample_size=20,
-    save_dir='learned_potentials/model_1_expert',
+    save_dir='learned_potentials/model_1_contrast_nn',
     save_period=1000,
     visualize=visualize
 )
