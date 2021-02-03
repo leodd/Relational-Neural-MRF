@@ -10,7 +10,7 @@ type = { Wall, Door, Other }
 ////////////////////////////discrete predicates start//////////////////////////
 
 // The segment is of the type (query predicate);
-"!" means types are mutually exclusive and exhaustive
+// "!" means types are mutually exclusive and exhaustive
 SegType(seg,type!)
 
 // The angle between two segments is below some threshold,
@@ -73,7 +73,7 @@ SegType(s,Door) ^ Neighbors(s,s') => !SegType(s',Door)
 SharpTurn(s) => SegType(s,Other)
 
 // Single aligned segments are likely to be wall segments
-SingleAligned(s) => SegType(s,Wall)
+// SingleAligned(s) => SegType(s,Wall)
 
 /////////////////////////////discrete formulas end///////////////////////////
 

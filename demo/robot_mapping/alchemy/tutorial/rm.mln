@@ -1,0 +1,34 @@
+line = {LA1,LA2}
+seg = {A0_0,A0_1,A0_2,A0_3,A0_4,A0_5,A0_6,A0_7,A0_8,A0_9,A0_10,A0_11,A0_12,A0_13,A0_14,A0_15,A0_0,A0_16,A0_17,A0_18,A0_19,A0_20,A0_21,A0_22,A0_23,A0_24,A0_1,A0_25}
+
+// The segment is of the type (query)
+SegType(seg,type)
+// The segment is part of the line (query)
+PartOf(seg, line)
+
+// The angle between two segments is below some threshold,
+// and so is the perpendicular distance between them (evidence)
+Aligned(seg,seg)
+
+// The length of the segment (evidence)
+Length(seg)
+
+// The depth of the segment, i.e., the signed perpendicular distance of the
+// segment's midpoint to the nearest line (evidence)
+Depth(seg)
+
+// Segment can only be of one type
+SegType(s, Wall) v SegType(s, Door) v SegType(s, Other).
+SegType(s, t) ^ t != t' => !SegType(s, t').
+
+SegType(s, +t)
+
+// Aligned wall segments tend to be part of the same wall line
+SegType(s,Wall) ^ SegType(s',Wall) ^ Aligned(s,s') ^ PartOf(s,l) => PartOf(s',l)
+
+// Typical lengths and depths of door and wall segments
+SegType(s, Door) * -(Length(s) - 0.1)^2
+SegType(s, Door) * (Depth(s) = 0.02)
+SegType(s, Wall) * (Length(s) = 0.341)
+SegType(s, Wall) * (Depth(s) = 0.001)
+
