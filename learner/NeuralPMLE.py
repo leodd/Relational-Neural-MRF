@@ -336,7 +336,9 @@ class PMLE:
                     #     layer.b += step
                     #     moments[(layer, 'b')] = moment
 
-                print(t)
+                if t % 100 == 0:
+                    print(t)
+
                 if visualize is not None:
                     visualize(self.trainable_potentials_ordered, t)
 

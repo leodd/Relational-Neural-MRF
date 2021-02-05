@@ -3,14 +3,15 @@ import re
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from collections import defaultdict, ChainMap
+import os
 
 
-def load_data_fold(fold):
+def load_data_fold(fold, path=''):
     map_names = ['a', 'l', 'n', 'u', 'w']
     maps = [
         process_data(
-            load_raw_data(f'radish.rm.raw/{map_name}.map', map_name),
-            load_predicate_data(f'radish.rm/{map_name}.db', map_name)
+            load_raw_data(os.path.join(path, f'radish.rm.raw/{map_name}.map'), map_name),
+            load_predicate_data(os.path.join(path, f'radish.rm/{map_name}.db'), map_name)
         )
         for map_name in map_names
     ]
@@ -47,22 +48,38 @@ def load_predicate_data(f, map_name=''):
 
 
 def merge_processed_data(data_list):
-    session_list = {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned', 'k_aligned', 'lines'}
     res = dict()
-    for session in session_list:
+
+    for session in {'seg_type', 'length', 'depth', 'angle', 'neighbor', 'aligned', 'k_aligned', 'lines', 'consecutive'}:
         res[session] = dict(ChainMap(*[data[session] for data in data_list]))
+
+    for session in {'sharp_turn', 'single_aligned'}:
+        res[session] = set.union(*[data[session] for data in data_list])
+
     return res
 
 
 def process_data(raw_data, predicate_data):
     neighbor = defaultdict(set)
     aligned = defaultdict(set)
+    consecutive = defaultdict(set)
+    sharp_turn = set()
+    single_aligned = set()
 
     for s1, s2 in predicate_data['Neighbors']:
         neighbor[s1].add(s2)
 
     for s1, s2 in predicate_data['Aligned']:
         aligned[s1].add(s2)
+
+    for s1, s2 in predicate_data['Sequence']:
+        consecutive[s1].add(s2)
+
+    for (s,) in predicate_data['SmoothSharpTurn']:
+        sharp_turn.add(s)
+
+    for (s,) in predicate_data['SingleAligned']:
+        single_aligned.add(s)
 
     part_of_wall = dict()
     avg_lines = list()
@@ -162,7 +179,10 @@ def process_data(raw_data, predicate_data):
         'part_of_wall': part_of_wall,
         'part_of_line': part_of_line,
         'avg_lines': avg_lines,
-        'lines': lines
+        'lines': lines,
+        'sharp_turn': sharp_turn,
+        'consecutive': consecutive,
+        'single_aligned': single_aligned
     }
 
 

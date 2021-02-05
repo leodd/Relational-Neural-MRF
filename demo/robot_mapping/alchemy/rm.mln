@@ -73,7 +73,7 @@ SegType(s,Door) ^ Neighbors(s,s') => !SegType(s',Door)
 SharpTurn(s) => SegType(s,Other)
 
 // Single aligned segments are likely to be wall segments
-// SingleAligned(s) => SegType(s,Wall)
+SingleAligned(s) => SegType(s,Wall)
 
 /////////////////////////////discrete formulas end///////////////////////////
 

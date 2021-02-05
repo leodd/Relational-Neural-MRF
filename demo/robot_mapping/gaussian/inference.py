@@ -12,16 +12,16 @@ from sklearn.metrics import f1_score
 
 train_mod(False)
 
-train, test = load_data_fold(1)
+train, test = load_data_fold(4)
 
 dt_seg_type = test['seg_type']
 dt_length = test['length']
 dt_depth = test['depth']
 dt_angle = test['angle']
 dt_neighbor = test['neighbor']
+dt_k_aligned = test['k_aligned']
 dt_aligned = test['aligned']
 dt_lines = test['lines']
-
 d_seg_type = Domain(['W', 'D', 'O'], continuous=False)
 d_length = Domain([0., 0.25], continuous=True)
 d_depth = Domain([-0.05, 0.05], continuous=True)
@@ -41,20 +41,28 @@ p_lda = NeuralNetPotential(
             LinearLayer(32, 1)]
 )
 
-p_l = NeuralNetPotential(
-    layers=[LinearLayer(2, 64), ReLU(),
+p_d = NeuralNetPotential(
+    layers=[LinearLayer(4, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)]
+            LinearLayer(32, 1)],
+    dimension=4,
+    formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
 )
 
-p_da = NeuralNetPotential(
-    layers=[LinearLayer(3, 64), ReLU(),
+p_dk = NeuralNetPotential(
+    layers=[LinearLayer(4, 64), ReLU(),
             LinearLayer(64, 32), ReLU(),
             LinearLayer(32, 1)]
 )
 
 p_dw = MLNPotential(
-    formula=lambda x: (np.abs(x[:, 0]) > 0.01) | (x[:, 1] == 0),
+    formula=lambda x: (np.abs(x[:, 0]) < 0.01) | (x[:, 1] != 0),
+    dimension=2,
+    w=2
+)
+
+p_aw = MLNPotential(
+    formula=lambda x: (np.abs(x[:, 0]) < 0.5) | (x[:, 1] != 0),
     dimension=2,
     w=2
 )
@@ -71,26 +79,37 @@ p_dd = MLNPotential(
     w=2
 )
 
+p_lw = MLNPotential(
+    formula=lambda x: (x[:, 0] > 0.05) | (x[:, 1] != 1),
+    dimension=2,
+    w=2
+)
+
 p_prior = ExpWrapper(
     TableFunction(np.log(get_seg_type_distribution(train['seg_type'])))
 )
 
 params = load(
-    f'learned_potentials/model_1/3000'
+    f'learned_potentials/model_2/3000'
 )
 p_lda.set_parameters(params[0])
-# p_da.set_parameters(params[1])
+p_d.set_parameters(params[1])
+p_aw.set_parameters(params[2])
+p_ao.set_parameters(params[3])
+p_dd.set_parameters(params[4])
 
 f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-f_l = ParamF(p_l, atoms=[length('S'), seg_type('S')], lvs=['S'])
-f_da = ParamF(p_da, atoms=[depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
+f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
+f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_k_aligned))
+# f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
+f_aw = ParamF(p_aw, atoms=[angle('S'), seg_type('S')], lvs=['S'])
+# f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
 f_ao = ParamF(p_ao, atoms=[angle('S'), seg_type('S')], lvs=['S'])
-f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor))
-f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
+f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
+# f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
 rel_g = RelationalGraph(
-    parametric_factors=[f_dw, f_ao, f_dd, f_lda]
+    parametric_factors=[f_lda, f_d, f_aw, f_ao, f_dd]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -110,7 +129,7 @@ for key, rv in rvs_dict.items():
         target_rvs[rv] = d_seg_type.value_to_idx(dt_seg_type[key[1]])
 
 infer = PBP(g, n=20)
-infer.run(4)
+infer.run(10)
 
 predict = dict()
 y_true, y_pred = list(), list()

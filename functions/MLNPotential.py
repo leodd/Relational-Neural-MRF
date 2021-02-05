@@ -44,7 +44,7 @@ class MLNPotential(Function):
 
     def log_batch_call(self, x):
         if self.w is None:
-            return np.where(self.formula(x) > 0.5, 0., -np.inf)
+            return np.where(self.formula(x) > 0.5, 0., -700)
         else:
             res = self.formula(x)
             if setting.save_cache:

@@ -185,6 +185,7 @@ class PBP:
         return np.sum(b[:-1] + b[1:]) * (x[1] - x[0]) * 0.5, b, shift
 
     def belief(self, x, rv):
+        x = np.array(x)
         if rv.value is None:
             if rv.domain.continuous:
                 # z = quad(
@@ -196,8 +197,11 @@ class PBP:
 
                 return np.exp(self.log_belief(x.reshape(-1), rv) - shift).squeeze() / z
             else:
-                b = np.exp(self.log_belief(x.reshape(-1), rv)).squeeze()
-                return b / np.sum(b)
+                xs = np.array(rv.domain.values)
+                ys = self.log_belief(xs.reshape(-1), rv)
+                ys, shift = self.log_message_balance(ys)
+                ys = np.exp(ys)
+                return np.exp(self.log_belief(x.reshape(-1), rv) - shift).squeeze() / np.sum(ys)
         else:
             return np.array(x == rv.value, dtype=float)
 
