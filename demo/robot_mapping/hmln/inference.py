@@ -13,6 +13,7 @@ from collections import defaultdict
 
 train_mod(False)
 
+model = 0
 _, test = load_data_fold(0, '..')
 
 dt_seg_type = test['seg_type']
@@ -101,49 +102,49 @@ f6 = ParamF(p6, atoms=[seg_type('S', 'wall')], lvs=['S'], subs=np.array(list(dt_
 fs.append(f6)
 ps.append(p6)
 
-p7 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.127) ** 2 * x[:, 0], dimension=2, w=1)
+p7 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.0916) ** 2 * x[:, 0], dimension=2, w=1)
 f7 = ParamF(p7, atoms=[seg_type('S', 'door'), length('S')], lvs=['S'])
 fs.append(f7)
 ps.append(p7)
 
-p8 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.0233) ** 2 * x[:, 0], dimension=2, w=1)
+p8 = MLNPotential(formula=lambda x: -(x[:, 1] - -0.0164) ** 2 * x[:, 0], dimension=2, w=1)
 f8 = ParamF(p8, atoms=[seg_type('S', 'door'), depth('S')], lvs=['S'])
 fs.append(f8)
 ps.append(p8)
 
-p9 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.345) ** 2 * x[:, 0], dimension=2, w=1)
+p9 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.2674) ** 2 * x[:, 0], dimension=2, w=1)
 f9 = ParamF(p9, atoms=[seg_type('S', 'wall'), length('S')], lvs=['S'])
 fs.append(f9)
 ps.append(p9)
 
-p10 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.00114) ** 2 * x[:, 0], dimension=2, w=1)
+p10 = MLNPotential(formula=lambda x: -(x[:, 1] - 0.0019) ** 2 * x[:, 0], dimension=2, w=1)
 f10 = ParamF(p10, atoms=[seg_type('S', 'wall'), depth('S')], lvs=['S'])
 fs.append(f10)
 ps.append(p10)
 
-p11 = MLNPotential(formula=lambda x: (x[:, 0] >= 0.132) | ~x[:, 1].astype(bool), dimension=2, w=None)
+p11 = MLNPotential(formula=lambda x: (x[:, 0] >= 0.0202) | ~x[:, 1].astype(bool), dimension=2, w=None)
 f11 = ParamF(p11, atoms=[length('S'), seg_type('S', 'wall')], lvs=['S'])
 fs.append(f11)
 
-p12 = MLNPotential(formula=lambda x: (x[:, 0] >= 0.00218) | ~x[:, 1].astype(bool), dimension=2, w=None)
+p12 = MLNPotential(formula=lambda x: (x[:, 0] >= 0.0605) | ~x[:, 1].astype(bool), dimension=2, w=None)
 f12 = ParamF(p12, atoms=[length('S'), seg_type('S', 'door')], lvs=['S'])
 fs.append(f12)
 
-p13 = MLNPotential(formula=lambda x: (x[:, 0] <= 0.317) | ~x[:, 1].astype(bool), dimension=2, w=None)
+p13 = MLNPotential(formula=lambda x: (x[:, 0] <= 0.1227) | ~x[:, 1].astype(bool), dimension=2, w=None)
 f13 = ParamF(p13, atoms=[length('S'), seg_type('S', 'door')], lvs=['S'])
 fs.append(f13)
 
-p14 = MLNPotential(formula=lambda x: -np.log(1 + np.exp(0.0589 - x[:, 1])) * x[:, 0], dimension=2, w=1)
+p14 = MLNPotential(formula=lambda x: -np.log(1 + np.exp(0.0107 - x[:, 1])) * x[:, 0], dimension=2, w=1)
 f14 = ParamF(p14, atoms=[seg_type('S', 'other'), depth('S')], lvs=['S'])
 fs.append(f14)
 ps.append(p14)
 
-p15 = MLNPotential(formula=lambda x: -np.log(1 + np.exp(x[:, 1] - 0.000439)) * x[:, 0], dimension=2, w=1)
+p15 = MLNPotential(formula=lambda x: -np.log(1 + np.exp(x[:, 1] + 0.0067)) * x[:, 0], dimension=2, w=1)
 f15 = ParamF(p15, atoms=[seg_type('S', 'other'), depth('S')], lvs=['S'])
 fs.append(f15)
 ps.append(p15)
 
-p16 = MLNPotential(formula=lambda x: (x[:, 0] <= 1.55) | x[:, 1].astype(bool), dimension=2, w=None)
+p16 = MLNPotential(formula=lambda x: (np.abs(x[:, 0]) <= 1.55) | x[:, 1].astype(bool), dimension=2, w=None)
 f16 = ParamF(p16, atoms=[angle('S'), seg_type('S', 'other')], lvs=['S'])
 fs.append(f16)
 
@@ -157,7 +158,7 @@ fs.extend([f17_1, f17_2, f17_3])
 ps.extend([p17_1, p17_2, p17_3])
 
 params = load(
-    f'learned_potentials/model_2/5000'
+    f'learned_potentials/model_{model}/3000'
 )
 for p, param in zip(ps, params):
     p.set_parameters(param)
