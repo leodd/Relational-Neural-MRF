@@ -6,7 +6,7 @@ from collections import defaultdict, ChainMap
 import os
 
 
-def load_data_fold(fold, path=''):
+def load_data_fold(fold=None, path=''):
     map_names = ['a', 'l', 'n', 'u', 'w']
     maps = [
         process_data(
@@ -15,8 +15,11 @@ def load_data_fold(fold, path=''):
         )
         for map_name in map_names
     ]
-    train_maps = maps[:fold] + maps[fold + 1:]
-    return merge_processed_data(train_maps), maps[fold]
+    if fold is None:
+        return merge_processed_data(maps)
+    else:
+        train_maps = maps[:fold] + maps[fold + 1:]
+        return merge_processed_data(train_maps), maps[fold]
 
 
 def load_raw_data(f, map_name=''):
