@@ -13,8 +13,8 @@ from collections import defaultdict
 
 train_mod(False)
 
-model = 0
-_, test = load_data_fold(0, '..')
+model = 4
+_, test = load_data_fold(model, '..')
 
 dt_seg_type = test['seg_type']
 dt_length = test['length']

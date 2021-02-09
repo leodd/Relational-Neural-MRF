@@ -4,6 +4,7 @@ from numpy.linalg import det, inv
 from math import pow, pi, e, exp
 from sklearn.linear_model import LinearRegression
 import functions.setting as setting
+from collections import defaultdict, Counter
 
 
 class TableFunction(Function):
@@ -81,6 +82,8 @@ class GaussianFunction(Function):
 
     def batch_call(self, x):
         x_mu = x - self.mu
+        if setting.save_cache:
+            self.cache = x_mu
         return self.coeff * np.exp(-0.5 * np.sum(x_mu @ self.inv_sig * x_mu, axis=1)) + self.eps
 
     def slice(self, *parameters):
@@ -98,6 +101,22 @@ class GaussianFunction(Function):
 
         return GaussianFunction(mu_new, sig_new)
 
+    def log_batch_call(self, x):
+        return np.log(self.batch_call(x))
+
+    def params_gradients(self, dy):
+        x_mu = self.cache
+        du = x_mu @ self.inv_sig
+        ds = -0.5 * (self.inv_sig[np.newaxis] - self.inv_sig[np.newaxis] @ x_mu[:, :, np.newaxis] @
+                     x_mu[:, np.newaxis, :] @ self.inv_sig[np.newaxis])
+        return (self.mu, self.sig), (np.sum(du * dy.reshape(-1, 1), axis=0), np.sum(ds * dy.reshape(-1, 1, 1), axis=0))
+
+    def update(self, steps):
+        du, ds = steps
+        sig = self.sig + ds
+        if np.linalg.det(sig) > 0:
+            self.set_parameters((self.mu + du, sig))
+
     def __mul__(self, other):
         if other is None:
             return self
@@ -114,22 +133,22 @@ class GaussianFunction(Function):
 
 
 class CategoricalGaussianFunction(Function):
-    def __init__(self, weight_table, distribution_table, distributions, domains, extra_sig=10):
+    def __init__(self, index_table, weights, distributions, domains, extra_sig=10):
         """
         Args:
-            weight_table: Table of the weights for the discrete conditions.
-            distribution_table: Table of index of the distribution in the distribution list.
+            index_table: Table of index of the distribution in the distribution list.
+            weights: List of weight.
             distributions: List of Gaussian distributions.
             domains: List of variables' domain
         """
         self.domains = domains
         self.extra_sig = extra_sig
-        self.set_parameters((weight_table, distribution_table, distributions))
+        self.set_parameters((index_table, weights, distributions))
 
     def set_parameters(self, parameters):
-        weight_table, distribution_table, distributions = parameters
-        self.w_table = weight_table
-        self.dis_table = np.array(distribution_table, dtype=int)
+        index_table, weights, distributions = parameters
+        self.table = np.array(index_table, dtype=int)
+        self.ws = np.array(weights)
         self.dis = distributions
         self.dimension = len(self.domains)
 
@@ -137,55 +156,102 @@ class CategoricalGaussianFunction(Function):
         self.d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
     def parameters(self):
-        return self.w_table, self.dis_table, self.dis
+        return self.table, self.ws, self.dis
 
     def __call__(self, *parameters):
         parameters = np.array(parameters, dtype=float)
         d_x, c_x = parameters[self.d_idx].astype(int), parameters[self.c_idx]
-        return self.w_table[tuple(d_x)] * self.dis[self.dis_table[tuple(d_x)]](*c_x)
+        i = self.table[tuple(d_x)]
+        return self.ws[i] * self.dis[i](*c_x)
 
     def batch_call(self, x):
         d_x, c_x = x[:, self.d_idx].astype(int), x[:, self.c_idx].astype(float)
-        idx = tuple(d_x.T)
-        return self.w_table[idx] * np.array([self.dis[i](*c_x_) for i, c_x_ in zip(self.dis_table[idx], c_x)])
+        idx = self.table[tuple(d_x.T)]
+        unique_idx = np.unique(idx)
+
+        res = np.empty(len(x))
+        cache = list()
+        for i in unique_idx:
+            cate_idx = idx == i
+            cate_y = self.dis[i].batch_call(c_x[cate_idx])
+            res[cate_idx] = self.ws[i] * cate_y
+            cache.append((cate_idx, cate_y))
+
+        if setting.save_cache:
+            self.cache = unique_idx, cache
+
+        return res
+
+    def log_batch_call(self, x):
+        return np.log(self.batch_call(x))
+
+    def params_gradients(self, dy):
+        unique_idx, cache = self.cache
+
+        params, gradients = list(), list()
+        dw = np.zeros(len(self.ws))
+        for i, (cate_idx, cate_y) in zip(unique_idx, cache):
+            dw[i] = np.sum(cate_y * dy[cate_idx])
+            pg, dg = self.dis[i].params_gradients(self.ws[i] * dy[cate_idx])
+            params.extend(pg)
+            gradients.extend(dg)
+
+        params.append(np.log(self.ws))
+        gradients.append(self.ws * (dw - np.sum(dw * self.ws)))
+
+        return params, gradients
+
+    def update(self, steps):
+        unique_idx, _ = self.cache
+
+        for idx, i in enumerate(unique_idx):
+            du, ds = steps[idx * 2:idx * 2 + 2]
+            self.dis[i].update((du, ds))
+
+        tau = np.log(self.ws) + steps[-1]
+        tau = np.exp(tau)
+        self.ws = tau / np.sum(tau)
 
     def slice(self, *parameters):  # Only one None is allowed
         if self.domains[parameters.index(None)].continuous:
             idx = tuple([int(parameters[i]) for i in self.d_idx])
-            return self.dis[self.dis_table[idx]].slice(*[parameters[i] for i in self.c_idx])
+            return self.dis[self.table[idx]].slice(*[parameters[i] for i in self.c_idx])
         else:
-            idx = tuple([slice(None) if parameters[i] is None else int(parameters[i]) for i in self.d_idx])
+            idx = self.table[tuple([slice(None) if parameters[i] is None else int(parameters[i]) for i in self.d_idx])]
             c_x = np.array([parameters[i] for i in self.c_idx], dtype=float)
-            table = self.w_table[idx] * np.array([self.dis[i](*c_x) for i in self.dis_table[idx]])
+            table = self.ws[idx] * np.array([self.dis[i](*c_x) for i in idx])
             return TableFunction(table)
 
     def fit(self, data):
         c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
         d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
-        w_table = np.zeros(shape=[len(self.domains[i].values) for i in d_idx])
-        dis_table = np.zeros(shape=w_table.shape, dtype=int)
+        shape = [len(self.domains[i].values) for i in d_idx]
+        table = np.arange(np.product(shape)).reshape(shape)
+        ws = np.zeros(table.size)
+        dis = [None] * table.size
 
-        idx, count = np.unique(data[:, d_idx].astype(int), return_counts=True, axis=0)
-        w_table[tuple(idx.T)] = count
-        w_table /= np.sum(w_table)
+        indices, cs = np.unique(data[:, d_idx].astype(int), return_counts=True, axis=0)
+        counter = Counter({tuple(i): c for i, c in zip(indices, cs)})
 
-        dis = [GaussianFunction(np.zeros(len(d_idx)), np.eye(len(d_idx)))]
-
-        for row in idx:
-            row_idx = np.where(np.all(data[:, d_idx] == row, axis=1))
+        for idx, i in np.ndenumerate(table):
+            row_idx = np.where(np.all(data[:, d_idx] == idx, axis=1))
             row_data = data[row_idx][:, c_idx]
 
-            if len(row_data) <= 1:
-                continue
+            ws[i] = counter[idx]
 
-            mu = np.mean(row_data, axis=0).reshape(-1)
-            sig = np.cov(row_data.T).reshape(len(c_idx), len(c_idx))
+            if len(row_data) == 0:
+                dis[i] = GaussianFunction(np.zeros(len(c_idx)), np.eye(len(c_idx)))
+            elif len(row_data) == 1:
+                dis[i] = GaussianFunction(row_data.reshape(-1), np.eye(len(c_idx)))
+            else:
+                mu = np.mean(row_data, axis=0).reshape(-1)
+                sig = np.cov(row_data.T).reshape(len(c_idx), len(c_idx))
+                dis[i] = GaussianFunction(mu, sig + self.extra_sig)
 
-            dis_table[tuple(row)] = len(dis)
-            dis.append(GaussianFunction(mu, sig + self.extra_sig))
+        ws /= np.sum(ws)
 
-        self.set_parameters((w_table, dis_table, dis))
+        self.set_parameters((table, ws, dis))
 
 
 class LinearGaussianFunction(Function):
