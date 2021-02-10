@@ -41,23 +41,59 @@ class NeuralNetPotential(Function):
 
 class ExpWrapper(Function):
     """
-    A wrapper for normal function class, such that the function call will return the value of exp(f(x)).
+    A wrapper for log function, such that the function call will return the value of exp(f(x)).
     """
-    def __init__(self, f):
+    def __init__(self, f, dimension=None, formula=None):
         self.f = f
-        self.dimension = f.dimension
+        self.dimension = dimension if dimension else f.dimension
+        self.formula = formula
 
     def __call__(self, *x):
         return self.batch_call(np.expand_dims(np.array(x), axis=0)).squeeze()
 
     def batch_call(self, x):
+        if self.formula: x = self.formula(x)
         return np.exp(self.f.batch_call(x))
 
     def log_batch_call(self, x):
+        if self.formula: x = self.formula(x)
         return self.f.batch_call(x)
 
     def log_backward(self, dy):
         return self.f.backward(dy)
+
+    def set_parameters(self, parameters):
+        self.f.set_parameters(parameters)
+
+    def parameters(self):
+        return self.f.parameters()
+
+    def params_gradients(self, dy):
+        return self.f.params_gradients(dy)
+
+    def update(self, steps):
+        self.f.update(steps)
+
+
+class FuncWrapper(Function):
+    """
+    A wrapper for function, enabling feature mapping.
+    """
+    def __init__(self, f, dimension=None, formula=None):
+        self.f = f
+        self.dimension = dimension if dimension else f.dimension
+        self.formula = formula
+
+    def __call__(self, *x):
+        return self.batch_call(np.expand_dims(np.array(x), axis=0)).squeeze()
+
+    def batch_call(self, x):
+        if self.formula: x = self.formula(x)
+        return self.f.batch_call(x)
+
+    def log_batch_call(self, x):
+        if self.formula: x = self.formula(x)
+        return self.f.log_batch_call(x)
 
     def set_parameters(self, parameters):
         self.f.set_parameters(parameters)

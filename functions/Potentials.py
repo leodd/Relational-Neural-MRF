@@ -133,7 +133,7 @@ class GaussianFunction(Function):
 
 
 class CategoricalGaussianFunction(Function):
-    def __init__(self, index_table, weights, distributions, domains, extra_sig=10):
+    def __init__(self, domains, index_table=None, weights=None, distributions=None, extra_sig=10):
         """
         Args:
             index_table: Table of index of the distribution in the distribution list.
@@ -143,17 +143,19 @@ class CategoricalGaussianFunction(Function):
         """
         self.domains = domains
         self.extra_sig = extra_sig
-        self.set_parameters((index_table, weights, distributions))
+        self.dimension = len(self.domains)
+        self.c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
+        self.d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
+        if index_table is None:
+            self.init()
+        else:
+            self.set_parameters((index_table, weights, distributions))
 
     def set_parameters(self, parameters):
         index_table, weights, distributions = parameters
         self.table = np.array(index_table, dtype=int)
         self.ws = np.array(weights)
         self.dis = distributions
-        self.dimension = len(self.domains)
-
-        self.c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
-        self.d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
 
     def parameters(self):
         return self.table, self.ws, self.dis
@@ -188,13 +190,14 @@ class CategoricalGaussianFunction(Function):
     def params_gradients(self, dy):
         unique_idx, cache = self.cache
 
-        params, gradients = list(), list()
+        params = [0] * (2 * len(self.ws))
+        gradients = [0] * (2 * len(self.ws))
         dw = np.zeros(len(self.ws))
         for i, (cate_idx, cate_y) in zip(unique_idx, cache):
             dw[i] = np.sum(cate_y * dy[cate_idx])
             pg, dg = self.dis[i].params_gradients(self.ws[i] * dy[cate_idx])
-            params.extend(pg)
-            gradients.extend(dg)
+            params[i * 2: i * 2 + 2] = pg
+            gradients[i * 2: i * 2 + 2] = dg
 
         params.append(np.log(self.ws))
         gradients.append(self.ws * (dw - np.sum(dw * self.ws)))
@@ -204,9 +207,9 @@ class CategoricalGaussianFunction(Function):
     def update(self, steps):
         unique_idx, _ = self.cache
 
-        for idx, i in enumerate(unique_idx):
-            du, ds = steps[idx * 2:idx * 2 + 2]
-            self.dis[i].update((du, ds))
+        for i in unique_idx:
+            dg = steps[i * 2:i * 2 + 2]
+            self.dis[i].update(dg)
 
         tau = np.log(self.ws) + steps[-1]
         tau = np.exp(tau)
@@ -250,6 +253,17 @@ class CategoricalGaussianFunction(Function):
                 dis[i] = GaussianFunction(mu, sig + self.extra_sig)
 
         ws /= np.sum(ws)
+
+        self.set_parameters((table, ws, dis))
+
+    def init(self):
+        c_idx = [i for i, d in enumerate(self.domains) if d.continuous]
+        d_idx = [i for i, d in enumerate(self.domains) if not d.continuous]
+
+        shape = [len(self.domains[i].values) for i in d_idx]
+        table = np.arange(np.product(shape)).reshape(shape)
+        ws = np.ones(table.size) / table.size
+        dis = [GaussianFunction(np.zeros(len(c_idx)), np.eye(len(c_idx))) for _ in range(table.size)]
 
         self.set_parameters((table, ws, dis))
 
