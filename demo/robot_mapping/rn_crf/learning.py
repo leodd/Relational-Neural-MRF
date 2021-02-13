@@ -1,7 +1,7 @@
 from utils import visualize_2d_potential
 from RelationalGraph import *
 from functions.NeuralNet import train_mod
-from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, FuncWrapper, \
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, \
     TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer
 from functions.MLNPotential import MLNPotential
 from learner.NeuralPMLE import PMLE
@@ -32,44 +32,54 @@ for model in range(5):
     depth = Atom(d_depth, [lv_s], name='depth')
     angle = Atom(d_angle, [lv_s], name='angle')
 
-    p_lda = CategoricalGaussianFunction([d_length, d_depth, d_angle, d_seg_type])
+    p_lda = NeuralNetPotential(
+        layers=[LinearLayer(4, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 1)]
+    )
 
-    p_d = FuncWrapper(
-        CategoricalGaussianFunction([d_depth, d_depth, d_seg_type, d_seg_type]),
+    p_d = NeuralNetPotential(
+        layers=[LinearLayer(4, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 1)],
         dimension=4,
         formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
     )
 
-    p_dk = CategoricalGaussianFunction([d_length, d_depth, d_seg_type, d_seg_type])
+    p_dk = NeuralNetPotential(
+        layers=[LinearLayer(4, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 1)]
+    )
 
     p_dw = MLNPotential(
         formula=lambda x: (np.abs(x[:, 0]) < 0.01) | (x[:, 1] != 0),
         dimension=2,
-        w=1
+        w=2
     )
 
     p_aw = MLNPotential(
         formula=lambda x: (np.abs(x[:, 0]) < 0.5) | (x[:, 1] != 0),
         dimension=2,
-        w=1
+        w=2
     )
 
     p_ao = MLNPotential(
         formula=lambda x: (np.abs(x[:, 0]) < 1.55) | (x[:, 1] == 2),
         dimension=2,
-        w=1
+        w=2
     )
 
     p_dd = MLNPotential(
         formula=lambda x: (x[:, 0] != 1) | (x[:, 1] != 1),
         dimension=2,
-        w=1
+        w=2
     )
 
     p_lw = MLNPotential(
         formula=lambda x: (x[:, 0] > 0.05) | (x[:, 1] != 1),
         dimension=2,
-        w=1
+        w=2
     )
 
     p_prior = ExpWrapper(
@@ -78,7 +88,7 @@ for model in range(5):
 
     f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
     f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
-    # f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_k_aligned))
+    f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_k_aligned))
     # f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
     f_aw = ParamF(p_aw, atoms=[angle('S'), seg_type('S')], lvs=['S'])
     # f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
@@ -95,6 +105,7 @@ for model in range(5):
     print(len(g.rvs))
 
     data = dict()
+    cond_rvs = set()
 
     for key, rv in rvs_dict.items():
         if key[0] == length:
@@ -105,10 +116,14 @@ for model in range(5):
             data[rv] = [d_depth.clip_value(dt_depth[key[1]])]
         if key[0] == seg_type:
             data[rv] = [d_seg_type.value_to_idx(dt_seg_type[key[1]])]
+        if key[0] != seg_type:
+            cond_rvs.add(rv)
 
-    # def visualize(ps, t):
-    #     if t % 500 == 0:
-    #         visualize_2d_potential(p_l, d_seg_type, d_length, spacing=0.02)
+    g.condition_rvs = cond_rvs
+
+    def visualize(ps, t):
+        if t % 200 == 0:
+            visualize_2d_potential(p_dd, d_seg_type, d_seg_type, spacing=0.02)
 
     train_mod(True)
     leaner = PMLE(g, [p_lda, p_d, p_aw, p_ao, p_dd], data)
@@ -121,7 +136,7 @@ for model in range(5):
         batch_size=1,
         rvs_selection_size=200,
         sample_size=30,
-        save_dir=f'learned_potentials/model_{model}',
+        save_dir=f'learned_potentials/model1_{model}',
         save_period=1000,
         # visualize=visualize
     )

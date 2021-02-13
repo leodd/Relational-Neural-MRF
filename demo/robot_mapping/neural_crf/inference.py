@@ -1,12 +1,12 @@
-from utils import load, visualize_2d_potential
+from utils import load
 import matplotlib.pyplot as plt
 from RelationalGraph import *
 from inferer.PBP import PBP
-from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, FuncWrapper, \
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, \
     TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer
+from functions.ConditionalNeuralPotentials import ConditionalNeuralPotential
 from functions.NeuralNet import train_mod
 from functions.MLNPotential import MLNPotential
-from functions.Potentials import CategoricalGaussianFunction
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
 from sklearn.metrics import f1_score
 
@@ -38,15 +38,22 @@ for model in range(5):
     depth = Atom(d_depth, [lv_s], name='depth')
     angle = Atom(d_angle, [lv_s], name='angle')
 
-    p_lda = CategoricalGaussianFunction([d_length, d_depth, d_angle, d_seg_type])
-
-    p_d = FuncWrapper(
-        CategoricalGaussianFunction([d_depth, d_depth, d_seg_type, d_seg_type]),
-        dimension=4,
-        formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
+    p_lda = ConditionalNeuralPotential(
+        layers=[LinearLayer(3, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 3)],
+        crf_domains=[d_seg_type],
+        conditional_dimension=3
     )
 
-    p_dk = CategoricalGaussianFunction([d_length, d_depth, d_seg_type, d_seg_type])
+    p_d = ConditionalNeuralPotential(
+        layers=[LinearLayer(2, 64), ReLU(),
+                LinearLayer(64, 32), ReLU(),
+                LinearLayer(32, 9)],
+        crf_domains=[d_seg_type, d_seg_type],
+        conditional_dimension=2,
+        conditional_formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
+    )
 
     p_dw = MLNPotential(
         formula=lambda x: (np.abs(x[:, 0]) < 0.01) | (x[:, 1] != 0),
