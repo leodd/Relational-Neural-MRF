@@ -29,6 +29,12 @@ for fold in range(5):
     test, _ = load_iris_data_fold('iris', fold, folds=5)
     data = matrix_to_dict(test, rv_sl, rv_sw, rv_pl, rv_pw, rv_c)
 
+    # p = CategoricalGaussianFunction(
+    #     domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+    #     index_table=None, weights=None, distributions=None,
+    #     extra_sig=10
+    # )
+
     p = PriorPotential(
         NeuralNetPotential(
             [LinearLayer(5, 64), ReLU(),
@@ -36,8 +42,8 @@ for fold in range(5):
              LinearLayer(32, 1)]
         ),
         CategoricalGaussianFunction(
-            weight_table=0, distribution_table=0, distributions=None,
             domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+            index_table=None, weights=None, distributions=None,
             extra_sig=10
         )
     )
@@ -49,7 +55,7 @@ for fold in range(5):
     # )
 
     params = load(
-        f'learned_potentials/model_2/{fold}/3000'
+        f'learned_potentials/model_dual_nn/{fold}/3000'
     )
 
     p.set_parameters(params[0])
@@ -66,20 +72,20 @@ for fold in range(5):
         rv_sl.value = data[rv_sl][m]
         rv_sw.value = data[rv_sw][m]
         rv_pl.value = data[rv_pl][m]
-        # rv_pw.value = data[rv_pw][m]
-        rv_c.value = data[rv_c][m]
+        rv_pw.value = data[rv_pw][m]
+        # rv_c.value = data[rv_c][m]
 
         infer = PBP(g, n=20)
         infer.run(2)
 
-        predict.append(infer.map(rv_pw))
+        predict.append(infer.map(rv_c))
 
     predict = np.array(predict)
-    target = data[rv_pw]
+    target = data[rv_c]
     for row in zip(predict, target):
         print(row)
-    res.append(np.mean((predict - target) ** 2))
-    # res.append(np.mean(predict == target))
+    # res.append(np.mean((predict - target) ** 2))
+    res.append(np.mean(predict == target))
     print(res[-1])
 
 print(res, np.mean(res), np.var(res))

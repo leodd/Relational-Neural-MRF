@@ -21,18 +21,24 @@ for fold in range(5):
     train, _ = load_iris_data_fold('iris', fold, folds=5)
     data = matrix_to_dict(train, rv_sl, rv_sw, rv_pl, rv_pw, rv_c)
 
-    p = PriorPotential(
-        NeuralNetPotential(
-            [LinearLayer(5, 64), ReLU(),
-             LinearLayer(64, 32), ReLU(),
-             LinearLayer(32, 1)]
-        ),
-        CategoricalGaussianFunction(
-            weight_table=0, distribution_table=0, distributions=None,
-            domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
-            extra_sig=10
-        )
+    p = CategoricalGaussianFunction(
+        domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+        index_table=None, weights=None, distributions=None,
+        extra_sig=10
     )
+
+    # p = PriorPotential(
+    #     NeuralNetPotential(
+    #         [LinearLayer(5, 64), ReLU(),
+    #          LinearLayer(64, 32), ReLU(),
+    #          LinearLayer(32, 1)]
+    #     ),
+    #     CategoricalGaussianFunction(
+    #         domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
+    #         index_table=None, weights=None, distributions=None,
+    #         extra_sig=10
+    #     )
+    # )
 
     # p = NeuralNetPotential(
     #     layers=[LinearLayer(5, 64), ReLU(),
@@ -46,20 +52,20 @@ for fold in range(5):
 
     def visualize(ps, t):
         if t % 200 == 0:
-            pass
+            print(p.parameters())
 
     train_mod(True)
     leaner = PMLE(g, [p], data)
     leaner.train(
-        lr=0.0001,
-        alpha=0.999,
-        regular=0.0001,
-        max_iter=3000,
+        lr=0.001,
+        alpha=1.0,
+        regular=0.000,
+        max_iter=5000,
         batch_iter=3,
         batch_size=50,
         rvs_selection_size=5,
         sample_size=30,
-        # visualize=visualize,
-        save_dir=f'learned_potentials/model_2/{fold}',
+        visualize=visualize,
+        save_dir=f'learned_potentials/model_cg/{fold}',
         save_period=1000,
     )
