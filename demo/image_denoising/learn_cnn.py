@@ -33,4 +33,4 @@ for _ in range(10):
         optimizer.step()
         print(loss)
 
-torch.save(model.state_dict(), 'learned_potentials/model_1_cnn.pth')
+    torch.save(model.state_dict(), 'learned_potentials/model_1_cnn.pth')
