@@ -92,7 +92,7 @@ for model in range(5):
     )
 
     params = load(
-        f'learned_potentials/model_{model}/3000'
+        f'learned_potentials/model_clamp_{model}/3000'
     )
     p_lda.set_parameters(params[0])
     p_d.set_parameters(params[1])

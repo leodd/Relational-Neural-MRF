@@ -2,7 +2,7 @@ from utils import visualize_2d_potential
 from RelationalGraph import *
 from functions.NeuralNet import train_mod
 from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, \
-    TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer
+    TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer, Clamp
 from functions.MLNPotential import MLNPotential
 from learner.NeuralPMLE import PMLE
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
@@ -35,13 +35,13 @@ for model in range(5):
     p_lda = NeuralNetPotential(
         layers=[LinearLayer(4, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)]
+                LinearLayer(32, 1), Clamp(-3, 3)]
     )
 
     p_d = NeuralNetPotential(
         layers=[LinearLayer(4, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
+                LinearLayer(32, 1), Clamp(-3, 3)],
         dimension=4,
         formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
     )
