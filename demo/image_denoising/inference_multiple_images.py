@@ -78,7 +78,7 @@ else:
     # )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1_1d_nn_clamp/5000'
+        'learned_potentials/model_2_contrast_nn/5000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -139,7 +139,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
             predict_image[i, j] = infer.map(rvs[i * col + j])
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1,
-                save_path='testing_2/1d_nn_clamp_mrf_result50/' + str(image_idx) + '.png')
+                save_path='testing_2/contrast_nn_mrf_result50_clamp/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))
