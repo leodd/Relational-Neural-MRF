@@ -124,14 +124,14 @@ for model in range(5):
     leaner = PMLE(g, [p_lda, p_d, p_aw, p_ao, p_dd], data)
     leaner.train(
         lr=0.001,
-        alpha=0.99,
+        alpha=1.,
         regular=0.0001,
         max_iter=3000,
         batch_iter=3,
         batch_size=1,
         rvs_selection_size=200,
         sample_size=30,
-        save_dir=f'learned_potentials/model_{model}',
+        save_dir=f'learned_potentials/model_clamp_{model}',
         save_period=1000,
         # visualize=visualize
     )

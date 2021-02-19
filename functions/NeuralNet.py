@@ -229,3 +229,17 @@ class NormalizeLayer:
 
     def backward(self, d_y, x):
         return self.z * d_y, None
+
+
+class Clamp:
+    def __init__(self, a, b):
+        self.a, self.b = a, b
+
+    def forward(self, x):
+        return np.clip(x, self.a, self.b)
+
+    def backward(self, d_y, x):
+        d_x = np.array(d_y, copy=True)
+        d_x[(x < self.a) & (d_y < 0)] = 0
+        d_x[(x > self.b) & (d_y > 0)] = 0
+        return d_x, None

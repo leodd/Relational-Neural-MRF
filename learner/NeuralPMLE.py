@@ -336,7 +336,7 @@ class PMLE:
                     #     layer.b += step
                     #     moments[(layer, 'b')] = moment
 
-                if t % 100 == 0:
+                if t % 10 == 0:
                     print(t)
 
                 if visualize is not None:
