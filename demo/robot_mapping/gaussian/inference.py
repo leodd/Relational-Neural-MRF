@@ -14,6 +14,8 @@ from sklearn.metrics import f1_score
 train_mod(False)
 
 all_y_true, all_y_pred = list(), list()
+acc = list()
+f1 = list()
 for model in range(5):
     train, test = load_data_fold(model, '..')
 
@@ -137,8 +139,10 @@ for model in range(5):
             print(res, target_rvs[rv])
 
     y_true, y_pred = np.array(y_true), np.array(y_pred)
-    print(np.mean(y_true == y_pred))
-    print(f1_score(y_true, y_pred, average=None))
+    acc.append(np.mean(y_true == y_pred))
+    f1.append(f1_score(y_true, y_pred, average=None))
+    print(acc[-1])
+    print(f1[-1])
 
     # for s, content in dt_lines.items():
     #     color = ['black', 'red', 'green'][predict[s]]
@@ -151,3 +155,6 @@ for model in range(5):
 all_y_true, all_y_pred = np.array(all_y_true), np.array(all_y_pred)
 print(np.mean(all_y_true == all_y_pred))
 print(f1_score(all_y_true, all_y_pred, average=None))
+
+print(np.mean(acc))
+print(np.array(f1).mean(axis=0))

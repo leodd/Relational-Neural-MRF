@@ -9,7 +9,7 @@ from inferer.PBP import PBP
 
 train_mod(False)
 
-USE_MANUAL_POTENTIALS = False
+USE_MANUAL_POTENTIALS = True
 
 gt_data, noisy_data = load_simple_data('testing_2/gt', 'testing_2/noisy')
 
@@ -23,7 +23,7 @@ if USE_MANUAL_POTENTIALS:
     pxy = ImageEdgePotential(0.5, 0.5)
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_1_expert/5000'
+        'learned_potentials/model_2_expert/3000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -78,7 +78,7 @@ else:
     )
 
     pxo_params, pxy_params = load(
-        'learned_potentials/model_2_2d_nn/5000'
+        'learned_potentials/model_2_2d_nn/3000'
     )
 
     pxo.set_parameters(pxo_params)
@@ -139,7 +139,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
             predict_image[i, j] = infer.map(rvs[i * col + j])
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1,
-                save_path='testing_2/2d_nn_mrf_result50_clamp/' + str(image_idx) + '.png')
+                save_path='testing_2/expert_mrf_result50_new/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))

@@ -24,7 +24,7 @@ for fold in range(5):
     p = CategoricalGaussianFunction(
         domains=[class_domain, sepal_length_domain, sepal_width_domain, petal_length_domain, petal_width_domain],
         index_table=None, weights=None, distributions=None,
-        extra_sig=10
+        extra_sig=1
     )
 
     # p = PriorPotential(

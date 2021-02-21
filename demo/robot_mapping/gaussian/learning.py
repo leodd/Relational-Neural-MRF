@@ -106,15 +106,15 @@ for model in range(5):
         if key[0] == seg_type:
             data[rv] = [d_seg_type.value_to_idx(dt_seg_type[key[1]])]
 
-    # def visualize(ps, t):
-    #     if t % 500 == 0:
-    #         visualize_2d_potential(p_l, d_seg_type, d_length, spacing=0.02)
+    def visualize(ps, t):
+        if t % 500 == 0:
+            print(p_lda.parameters())
 
     train_mod(True)
     leaner = PMLE(g, [p_lda, p_d, p_aw, p_ao, p_dd], data)
     leaner.train(
         lr=0.001,
-        alpha=0.99,
+        alpha=1.,
         regular=0.0001,
         max_iter=3000,
         batch_iter=3,
@@ -123,5 +123,5 @@ for model in range(5):
         sample_size=30,
         save_dir=f'learned_potentials/model_{model}',
         save_period=1000,
-        # visualize=visualize
+        visualize=visualize
     )

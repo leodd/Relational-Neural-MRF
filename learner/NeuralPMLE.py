@@ -234,13 +234,14 @@ class PMLE:
                 # Re-weight gradient of sampling points
                 for f, idx in zip(rv.nb, start_idx):
                     if f.potential in self.trainable_potentials:
-                        y = data_y[f.potential][idx:idx + sample_size + 1]
-                        y_ = np.exp(np.abs(y))
-                        regular = np.where(y >= 0., y_, -y_) / (sample_size + 1)
+                        # y = data_y[f.potential][idx:idx + sample_size + 1]
+                        # y_ = np.exp(np.abs(y))
+                        # regular = np.where(y >= 0., y_, -y_) / (sample_size + 1)
+                        #
+                        # alpha = f.potential.alpha
 
-                        alpha = f.potential.alpha
-
-                        gradient_y[f.potential][idx:idx + sample_size + 1] = -alpha * w + (alpha - 1) * regular
+                        # gradient_y[f.potential][idx:idx + sample_size + 1] = -alpha * w + (alpha - 1) * regular
+                        gradient_y[f.potential][idx:idx + sample_size + 1] = -w
 
         return gradient_y
 
