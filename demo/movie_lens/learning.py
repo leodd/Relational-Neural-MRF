@@ -44,23 +44,39 @@ rating = Atom(d_rating, [lv_User, lv_Movie], name='rating')
 user_avg_rating = Atom(d_avg_rating, [lv_User], name='user_avg_rating')
 movie_avg_rating = Atom(d_avg_rating, [lv_Movie], name='movie_avg_rating')
 
-p1 = PriorPotential(
-    NeuralNetPotential([
+# p1 = PriorPotential(
+#     NeuralNetPotential([
+#         # NormalizeLayer([(-1, 1), (-1, 1), (-1, 1)], domains=[d_rating, d_rating, d_same_gender]),
+#         # WSLinearLayer([[0, 1], [2]], 200), ReLU(),
+#         LinearLayer(3, 64), ReLU(),
+#         LinearLayer(64, 32), ReLU(),
+#         LinearLayer(32, 1)
+#     ]),
+#     TableFunction(
+#         np.ones([d_rating.size, d_rating.size, d_same_gender.size])
+#     )
+# )
+
+p1 = NeuralNetPotential(
+    [
         # NormalizeLayer([(-1, 1), (-1, 1), (-1, 1)], domains=[d_rating, d_rating, d_same_gender]),
         # WSLinearLayer([[0, 1], [2]], 200), ReLU(),
-        LinearLayer(3, 200), ReLU(),
-        LinearLayer(200, 100), ReLU(),
-        LinearLayer(100, 1)
-    ]),
-    TableFunction(
-        np.ones([d_rating.size, d_rating.size, d_same_gender.size])
-    )
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
+    ],
+    dimension=3,
+    formula=lambda x: np.concatenate((x[:, [0]] == x[:, [1]], x[:, [2]]), axis=1)
 )
-p2 = parse_mln(MLNPotential(
-    lambda x: bic_op(x[0] == x[1], x[2]),
-    domains=[d_gender, d_gender, d_same_gender],
-    w=None
-))
+
+f1_sub
+f1 = ParamF(p1, atoms=[rating('U1', 'M'), rating('U2', 'M'), gender('U1'), gender('U2')], lvs=['U1', 'U2', 'M'], subs=f1_sub)
+
+p2 = MLNPotential(
+    lambda x: bic_op(x[:, 0] == x[:, 1], x[:, 2]),
+    dimension=3,
+    w=1
+)
 
 rs = np.array(list(rating_data.keys()))
 r_ms = np.unique(rs[:, 1])
@@ -72,12 +88,11 @@ f1_sub = np.concatenate(f1_sub)
 f1_sub = f1_sub[f1_sub[:, 0] < f1_sub[:, 1]]
 f2_sub = np.unique(f1_sub[:, [0, 1]], axis=0)
 
-# rating(U1, M) = rating(U2, M) ?? same_gender(U1, U2)
-f1 = ParamF(p1, atoms=[rating('U1', 'M'), rating('U2', 'M'), same_gender('U1', 'U2')], lvs=['U1', 'U2', 'M'], subs=f1_sub)
-f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], lvs=['U1', 'U2'], subs=f2_sub)
+
+# f2 = ParamF(p2, atoms=[gender('U1'), gender('U2'), same_gender('U1', 'U2')], lvs=['U1', 'U2'], subs=f2_sub)
 
 rel_g = RelationalGraph(
-    parametric_factors=[f1, f2]
+    parametric_factors=[f1]
 )
 
 g, rvs_dict = rel_g.ground()
@@ -148,7 +163,7 @@ leaner = PMLE(g, [p1], data)
 leaner.train(
     lr=0.01,
     alpha=1.,
-    regular=0.,
+    regular=0.0001,
     max_iter=10000,
     batch_iter=5,
     batch_size=1,
@@ -156,6 +171,6 @@ leaner.train(
     sample_size=5,
     # save_dir='learned_potentials/model_1',
     save_period=1000,
-    rv_sampler=sampler,
+    # rv_sampler=sampler,
     visualize=visualize
 )
