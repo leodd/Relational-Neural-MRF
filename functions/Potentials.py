@@ -1,5 +1,6 @@
 from functions.Function import Function
 import numpy as np
+import torch
 from numpy.linalg import det, inv
 from math import pow, pi, e, exp
 from sklearn.linear_model import LinearRegression
@@ -424,3 +425,43 @@ class ImageEdgePotential(Function):
         self.scaling_cof += steps[1]
         self.max_threshold = max(self.max_threshold, 0.001)
         self.scaling_cof = max(self.scaling_cof, 0.001)
+
+
+class CNNPotential(Function):
+    def __init__(self):
+        Function.__init__(self)
+        self.dimension = 1
+
+    def __call__(self, *parameters):
+        u = (parameters[0] - parameters[1])
+        return exp(-u * u * self.alpha)
+
+    def batch_call(self, x):
+        u = (x[:, 0] - x[:, 1])
+        u = -u * u
+        if setting.save_cache:
+            self.cache = u
+        return np.exp(-u * u * self.alpha)
+
+    def log_batch_call(self, x):
+        u = (x[:, 0] - x[:, 1])
+        u = -u * u
+        if setting.save_cache:
+            self.cache = u
+        return u * self.alpha
+
+    def log_backward(self, dy):
+        return None, np.sum(self.cache * dy)
+
+    def set_parameters(self, alpha):
+        self.alpha = alpha
+
+    def parameters(self):
+        return self.alpha
+
+    def params_gradients(self, dy):
+        return [self.alpha], [np.sum(self.cache * dy)]
+
+    def update(self, steps):
+        self.alpha += steps[0]
+        self.alpha = min(self.alpha, 1000)

@@ -8,6 +8,7 @@ from learner.NeuralPMLE import PMLE
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
 
 
+
 for model in range(5):
     train, _ = load_data_fold(model, '..')
 

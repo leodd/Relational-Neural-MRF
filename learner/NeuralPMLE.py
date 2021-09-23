@@ -116,18 +116,17 @@ class PMLE:
 
         for rv in rvs:
             for f in rv.nb:
-                potential_count[f.potential] += len(batch)
+                potential_count[f.potential] += 1
 
                 if f not in f_MB:
-                    f_MB[f] = [
-                        [self.data[rv][m] for rv in f.nb]
-                        for m in batch
-                    ]
+                    f_MB[f] = np.hstack([self.data[rv][batch].reshape(len(batch), -1) for rv in f.nb])
 
         # Initialize data matrix
         data_x = {p: np.empty(
             [
-                potential_count[p] * (sample_size + 1),
+                potential_count[p],
+                K,
+                sample_size + 1,
                 p.dimension
             ]
         ) for p in potential_count}
@@ -139,64 +138,59 @@ class PMLE:
 
         current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
-            # Matrix of starting idx of the potential in the data_x matrix [k, [idx]]
-            data_idx_matrix = np.empty([K, len(rv.nb)], dtype=int)
+            # Matrix of starting idx of the potential in the data_x matrix
+            data_idx = np.empty(len(rv.nb), dtype=int)
 
-            rv_prior = [
+            rv_prior = np.array([
                 self.trainable_rvs_prior[(rv, m)]
                 for m in batch
-            ]
+            ])
+
+            if rv_prior is None:  # No prior, sample from uniform distribution
+                if rv.domain.continuous:  # Continuous case
+                    samples = np.random.uniform(*rv.domain.values, size=(K, sample_size))
+                else:  # Discrete case
+                    samples = np.random.choice(len(rv.domain.values), size=(K, sample_size))
+            else:
+                if rv.domain.continuous:  # Continuous case
+                    samples = np.random.randn(K, sample_size) * np.sqrt(rv_prior[:, [1]]) + rv_prior[:, [0]]
+                else:  # Discrete case
+                    samples = np.array([
+                        np.random.choice(len(rv.domain.values), p=p, size=sample_size)
+                        for p in rv_prior
+                    ])
 
             for c, f in enumerate(rv.nb):
                 rv_idx = f.nb.index(rv)
 
                 current_idx = current_idx_counter[f.potential]
 
-                for k in range(K):
-                    next_idx = current_idx + sample_size + 1
+                data_x[f.potential][current_idx] = f_MB[f].reshape([K, 1, -1])
+                data_x[f.potential][current_idx, :, 1:, rv_idx] = samples
 
-                    if rv_prior[k] is None:  # No prior, sample from uniform distribution
-                        if rv.domain.continuous:  # Continuous case
-                            samples = np.random.uniform(*rv.domain.values, size=sample_size)
-                        else:  # Discrete case
-                            samples = np.random.choice(len(rv.domain.values), size=sample_size)
-                    else:
-                        if rv.domain.continuous:  # Continuous case
-                            mu, sig = rv_prior[k]
-                            samples = np.random.randn(sample_size) * np.sqrt(sig) + mu
-                        else:  # Discrete case
-                            samples = np.random.choice(len(rv.domain.values), p=rv_prior[k], size=sample_size)
+                data_idx[c] = current_idx
+                current_idx_counter[f.potential] += 1
 
-                    data_x[f.potential][current_idx:next_idx, :] = f_MB[f][k]
-                    data_x[f.potential][current_idx + 1:next_idx, rv_idx] = samples
-
-                    data_idx_matrix[k, c] = current_idx
-                    current_idx = next_idx
-
-                current_idx_counter[f.potential] = current_idx
-
-            data_info[rv] = data_idx_matrix
+            data_info[rv] = data_idx
 
         return (data_x, data_info)
 
     def log_belief_balance(self, b):
-        mean_m = np.mean(b)
-        max_m = np.max(b)
+        # The dimension of b is [K, sample_size]
+        mean_m = np.mean(b, axis=1)
+        max_m = np.max(b, axis=1)
 
-        if max_m - mean_m > self.max_log_value:
-            shift = max_m - self.max_log_value
-        else:
-            shift = mean_m
+        shift = np.where(max_m - mean_m > self.max_log_value, max_m - self.max_log_value, mean_m)
+        b -= shift.reshape(-1, 1)
 
-        b -= shift
+        return b
 
-        return b, shift
-
-    def get_gradient(self, data_x, data_info, sample_size=10):
+    def get_gradient(self, data_x, data_info, batch_size, sample_size=10):
         """
         Args:
             data_x: The potential input that are computed by get_unweighted_data function.
             data_info: The data indexing, shift and spacing information.
+            batch_size: The size of the batch data.
             sample_size: The number of sampling points (need to be consistent with get_unweighted_data function).
 
         Returns:
@@ -206,11 +200,12 @@ class PMLE:
         gradient_y = dict()  # Store of the computed derivative
 
         for potential, data_matrix in data_x.items():
+            C, K, S, D = data_matrix.shape
             # Forward pass
             if type(potential) is PriorPotential:
-                data_y[potential] = potential.f.log_batch_call(data_matrix)
+                data_y[potential] = potential.f.log_batch_call(data_matrix.reshape(-1, D)).reshape(C, K, S)
             else:
-                data_y[potential] = potential.log_batch_call(data_matrix)
+                data_y[potential] = potential.log_batch_call(data_matrix.reshape(-1, D)).reshape(C, K, S)
 
         # Initialize gradient
         for potential in self.trainable_potentials:
@@ -219,29 +214,21 @@ class PMLE:
 
 
         for rv, data_idx in data_info.items():
-            for start_idx in data_idx:
-                w = np.zeros(sample_size + 1)
+            w = np.zeros([batch_size, sample_size + 1])
 
-                for f, idx in zip(rv.nb, start_idx):
-                    w += data_y[f.potential][idx:idx + sample_size + 1]
+            for f, idx in zip(rv.nb, data_idx):
+                w += data_y[f.potential][idx]
 
-                w, _ = self.log_belief_balance(w)
-                w = np.exp(w)
-                w = w / np.sum(w)
+            w = self.log_belief_balance(w)
+            w = np.exp(w)
+            w = w / np.sum(w, axis=1).reshape(-1, 1)
 
-                w[0] -= 1
+            w[:, 0] -= 1
 
-                # Re-weight gradient of sampling points
-                for f, idx in zip(rv.nb, start_idx):
-                    if f.potential in self.trainable_potentials:
-                        # y = data_y[f.potential][idx:idx + sample_size + 1]
-                        # y_ = np.exp(np.abs(y))
-                        # regular = np.where(y >= 0., y_, -y_) / (sample_size + 1)
-                        #
-                        # alpha = f.potential.alpha
-
-                        # gradient_y[f.potential][idx:idx + sample_size + 1] = -alpha * w + (alpha - 1) * regular
-                        gradient_y[f.potential][idx:idx + sample_size + 1] = -w
+            # Re-weight gradient of sampling points
+            for f, idx in zip(rv.nb, data_idx):
+                if f.potential in self.trainable_potentials:
+                    gradient_y[f.potential][idx] = -w
 
         return gradient_y
 
@@ -297,16 +284,16 @@ class PMLE:
 
             i = 0
             while i < batch_iter and t < max_iter:
-                gradient_y = self.get_gradient(data_x, data_info, sample_size)
+                gradient_y = self.get_gradient(data_x, data_info, len(batch), sample_size)
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
                     if type(potential) is PriorPotential:
-                        params, gradients = potential.f.params_gradients(d_y)
+                        params, gradients = potential.f.params_gradients(d_y.reshape(-1))
                     else:
-                        params, gradients = potential.params_gradients(d_y)
+                        params, gradients = potential.params_gradients(d_y.reshape(-1))
 
-                    c = (sample_size - 1) / d_y.shape[0]
+                    c = (sample_size - 1) / d_y.size
 
                     # Gradient ascent
                     steps = list()
@@ -319,23 +306,6 @@ class PMLE:
                         potential.f.update(steps)
                     else:
                         potential.update(steps)
-
-                    # if type(potential) is PriorPotential:
-                    #     _, d_param = potential.f.log_backward(d_y)
-                    # else:
-                    #     _, d_param = potential.log_backward(d_y)
-                    #
-                    # c = (sample_size - 1) / d_y.shape[0]
-                    #
-                    # # Gradient ascent
-                    # for layer, (d_W, d_b) in d_param.items():
-                    #     step, moment = adam(d_W * c - layer.W * regular, moments.get((layer, 'W'), (0, 0)), t + 1)
-                    #     layer.W += step
-                    #     moments[(layer, 'W')] = moment
-                    #
-                    #     step, moment = adam(d_b * c - layer.b * regular, moments.get((layer, 'b'), (0, 0)), t + 1)
-                    #     layer.b += step
-                    #     moments[(layer, 'b')] = moment
 
                 if t % 10 == 0:
                     print(t)
