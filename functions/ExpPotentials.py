@@ -23,20 +23,14 @@ class NeuralNetPotential(Function):
         if self.formula: x = self.formula(x)
         return self.nn.forward(x).reshape(-1)
 
-    def log_backward(self, dy):
-        return self.nn.backward(dy.reshape(-1, 1))
-
     def set_parameters(self, parameters):
         self.nn.set_parameters(parameters)
 
     def parameters(self):
         return self.nn.parameters()
 
-    def params_gradients(self, dy):
-        return self.nn.params_gradients(dy.reshape(-1, 1))
-
-    def update(self, steps):
-        self.nn.update(steps)
+    def update(self, dy, optimizer):
+        self.nn.update(dy.reshape(-1, 1), optimizer)
 
 
 class ExpWrapper(Function):
@@ -59,20 +53,14 @@ class ExpWrapper(Function):
         if self.formula: x = self.formula(x)
         return self.f.batch_call(x)
 
-    def log_backward(self, dy):
-        return self.f.backward(dy)
-
     def set_parameters(self, parameters):
         self.f.set_parameters(parameters)
 
     def parameters(self):
         return self.f.parameters()
 
-    def params_gradients(self, dy):
-        return self.f.params_gradients(dy)
-
-    def update(self, steps):
-        self.f.update(steps)
+    def update(self, dy, optimizer):
+        self.f.update(dy, optimizer)
 
 
 class FuncWrapper(Function):
@@ -101,8 +89,5 @@ class FuncWrapper(Function):
     def parameters(self):
         return self.f.parameters()
 
-    def params_gradients(self, dy):
-        return self.f.params_gradients(dy)
-
-    def update(self, steps):
-        self.f.update(steps)
+    def update(self, dy, optimizer):
+        self.f.update(dy, optimizer)

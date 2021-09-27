@@ -12,11 +12,14 @@ class AdamOptimizer:
             step, moment = adam(gradient, moment, t)
             theta -= step
     """
-    def __init__(self, lr, b1=0.9, b2=0.999, eps=1e-8):
+    def __init__(self, lr, regular=0, b1=0.9, b2=0.999, eps=1e-8):
         self.lr = lr
+        self.regular = regular
         self.b1 = b1
         self.b2 = b2
         self.eps = eps
+        self.t = 1
+        self.moments = dict()
 
     def __call__(self, g, moment, t):
         m, v = moment
@@ -31,13 +34,27 @@ class AdamOptimizer:
 
         return step, (m_new, v_new)
 
+    def compute_step(self, key, g, x=0):
+        step, self.moments[key] = self.__call__(
+            g - x * self.regular,
+            self.moments.get(key, (0, 0)),
+            self.t
+        )
+        return step
+
+    def step(self):
+        self.t += 1
+
 
 class AdamaxOptimizer:
-    def __init__(self, lr, b1=0.9, b2=0.999, eps=1e-8):
+    def __init__(self, lr, regular=0, b1=0.9, b2=0.999, eps=1e-8):
         self.lr = lr
+        self.regular = regular
         self.b1 = b1
         self.b2 = b2
         self.eps = eps
+        self.t = 1
+        self.moments = dict()
 
     def __call__(self, g, moment, t):
         m, v = moment
@@ -51,13 +68,27 @@ class AdamaxOptimizer:
 
         return step, (m_new, v_new)
 
+    def compute_step(self, key, g, x=0):
+        step, self.moments[key] = self.__call__(
+            g - x * self.regular,
+            self.moments.get(key, (0, 0)),
+            self.t
+        )
+        return step
+
+    def step(self):
+        self.t += 1
+
 
 class NadamOptimizer:
-    def __init__(self, lr, b1=0.9, b2=0.999, eps=1e-8):
+    def __init__(self, lr, regular=0, b1=0.9, b2=0.999, eps=1e-8):
         self.lr = lr
+        self.regular = regular
         self.b1 = b1
         self.b2 = b2
         self.eps = eps
+        self.t = 1
+        self.moments = dict()
 
     def __call__(self, g, moment, t):
         m, v = moment
@@ -71,3 +102,14 @@ class NadamOptimizer:
         step = self.lr * m_hat / (sqrt(v_hat) + self.eps)
 
         return step, (m_new, v_new)
+
+    def compute_step(self, key, g, x=0):
+        step, self.moments[key] = self.__call__(
+            g - x * self.regular,
+            self.moments.get(key, (0, 0)),
+            self.t
+        )
+        return step
+
+    def step(self):
+        self.t += 1

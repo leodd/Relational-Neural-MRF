@@ -26,8 +26,8 @@ for _ in range(10):
     x_batch = x[idx]
     y_batch = y[idx]
     for _ in range(100):
-        optimizer.zero_grad()
         out = model(x_batch)
+        optimizer.zero_grad()
         loss = criterion(out, y_batch)
         loss.backward()
         optimizer.step()

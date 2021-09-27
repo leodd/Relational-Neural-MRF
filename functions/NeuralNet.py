@@ -89,30 +89,17 @@ class NeuralNetFunction(Function):
 
         return d_x, d_network
 
-    def params_gradients(self, d_y):
-        d_x = d_y
-        params = list()
-        gradients = list()
+    def update(self, dy, optimizer):
+        dx = dy
 
         for idx in reversed(range(len(self.layers))):
             layer = self.layers[idx]
             x = self.cache[idx]
-            d_x, d_param = layer.backward(d_x, x)
+            dx, d_param = layer.backward(dx, x)
             if d_param is not None:
-                params.extend(layer.parameters())
-                gradients.extend(d_param)
-
-        return params, gradients
-
-    def update(self, steps):
-        i = 0
-        for idx in reversed(range(len(self.layers))):
-            layer = self.layers[idx]
-            if getattr(layer, 'parameters', False):
-                W, b = steps[i], steps[i + 1]
-                layer.W += W
-                layer.b += b
-                i += 2
+                dW, db = d_param
+                layer.W += optimizer.compute_step((self, idx, 'W'), dW, layer.W)
+                layer.b += optimizer.compute_step((self, idx, 'b'), db, layer.b)
 
 
 class ReLU:

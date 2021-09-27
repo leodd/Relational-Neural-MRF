@@ -1,6 +1,8 @@
 from functions.Function import Function
+from functions.NeuralNet import Clamp
 import numpy as np
 import torch
+import torch.nn as nn
 from numpy.linalg import det, inv
 from math import pow, pi, e, exp
 from sklearn.linear_model import LinearRegression
@@ -105,18 +107,18 @@ class GaussianFunction(Function):
     def log_batch_call(self, x):
         return np.log(self.batch_call(x))
 
-    def params_gradients(self, dy):
+    def update(self, dy, optimizer):
         x_mu = self.cache
         du = x_mu @ self.inv_sig
         ds = -0.5 * (self.inv_sig[np.newaxis] - self.inv_sig[np.newaxis] @ x_mu[:, :, np.newaxis] @
                      x_mu[:, np.newaxis, :] @ self.inv_sig[np.newaxis])
-        return (self.mu, self.sig), (np.sum(du * dy.reshape(-1, 1), axis=0), np.sum(ds * dy.reshape(-1, 1, 1), axis=0))
 
-    def update(self, steps):
-        du, ds = steps
-        sig = self.sig + ds
+        du = np.sum(du * dy.reshape(-1, 1), axis=0)
+        ds = np.sum(ds * dy.reshape(-1, 1, 1), axis=0)
+
+        sig = self.sig + optimizer.compute_step((self, 'sig'), ds, self.sig)
         if np.linalg.det(sig) > 0:
-            self.set_parameters((self.mu + du, sig))
+            self.set_parameters((self.mu + optimizer.compute_step((self, 'mu'), du, self.mu), sig))
 
     def __mul__(self, other):
         if other is None:
@@ -188,31 +190,16 @@ class CategoricalGaussianFunction(Function):
     def log_batch_call(self, x):
         return np.log(self.batch_call(x))
 
-    def params_gradients(self, dy):
+    def update(self, dy, optimizer):
         unique_idx, cache = self.cache
 
-        params = [0] * (2 * len(self.ws))
-        gradients = [0] * (2 * len(self.ws))
         dw = np.zeros(len(self.ws))
         for i, (cate_idx, cate_y) in zip(unique_idx, cache):
             dw[i] = np.sum(cate_y * dy[cate_idx])
-            pg, dg = self.dis[i].params_gradients(self.ws[i] * dy[cate_idx])
-            params[i * 2: i * 2 + 2] = pg
-            gradients[i * 2: i * 2 + 2] = dg
+            self.dis[i].update(self.ws[i] * dy[cate_idx], optimizer)
 
-        params.append(np.log(self.ws))
-        gradients.append(self.ws * (dw - np.sum(dw * self.ws)))
-
-        return params, gradients
-
-    def update(self, steps):
-        unique_idx, _ = self.cache
-
-        for i in unique_idx:
-            dg = steps[i * 2:i * 2 + 2]
-            self.dis[i].update(dg)
-
-        tau = np.log(self.ws) + steps[-1]
+        tau = np.log(self.ws)
+        tau += optimizer.compute_step((self, 'tau'), self.ws * (dw - np.sum(dw * self.ws)), tau)
         tau = np.exp(tau)
         self.ws = tau / np.sum(tau)
 
@@ -321,11 +308,7 @@ class ImageNodePotential(Function):
         return exp(-u * u * self.alpha)
 
     def batch_call(self, x):
-        u = (x[:, 0] - x[:, 1])
-        u = -u * u
-        if setting.save_cache:
-            self.cache = u
-        return np.exp(-u * u * self.alpha)
+        return np.exp(self.log_batch_call(x))
 
     def log_batch_call(self, x):
         u = (x[:, 0] - x[:, 1])
@@ -334,20 +317,14 @@ class ImageNodePotential(Function):
             self.cache = u
         return u * self.alpha
 
-    def log_backward(self, dy):
-        return None, np.sum(self.cache * dy)
-
     def set_parameters(self, alpha):
         self.alpha = alpha
 
     def parameters(self):
         return self.alpha
 
-    def params_gradients(self, dy):
-        return [self.alpha], [np.sum(self.cache * dy)]
-
-    def update(self, steps):
-        self.alpha += steps[0]
+    def update(self, dy, optimizer):
+        self.alpha += optimizer.compute_step((self, 'alpha'), np.sum(self.cache * dy), self.alpha)
         self.alpha = min(self.alpha, 1000)
 
 
@@ -384,20 +361,6 @@ class ImageEdgePotential(Function):
             -d * self.scaling_cof
         )
 
-    def log_backward(self, dy):
-        d = self.cache
-        gt = np.where(
-            d > self.max_threshold,
-            -self.scaling_cof,
-            0
-        )
-        gs = np.where(
-            d > self.max_threshold,
-            -self.max_threshold,
-            -d
-        )
-        return None, [np.sum(gt * dy), np.sum(gs * dy)]
-
     def set_parameters(self, parameters):
         scaling_cof, max_threshold = parameters
         self.scaling_cof = scaling_cof
@@ -406,7 +369,7 @@ class ImageEdgePotential(Function):
     def parameters(self):
         return self.scaling_cof, self.max_threshold
 
-    def params_gradients(self, dy):
+    def update(self, dy, optimizer):
         d = self.cache
         gt = np.where(
             d > self.max_threshold,
@@ -418,50 +381,50 @@ class ImageEdgePotential(Function):
             -self.max_threshold,
             -d
         )
-        return [self.max_threshold, self.scaling_cof], [np.sum(gt * dy), np.sum(gs * dy)]
 
-    def update(self, steps):
-        self.max_threshold += steps[0]
-        self.scaling_cof += steps[1]
+        self.max_threshold += optimizer.compute_step((self, 'max_threshold'), sum(gt * dy), self.max_threshold)
+        self.scaling_cof += optimizer.compute_step((self, 'scaling_cof'), sum(gs * dy), self.scaling_cof)
         self.max_threshold = max(self.max_threshold, 0.001)
         self.scaling_cof = max(self.scaling_cof, 0.001)
 
 
 class CNNPotential(Function):
-    def __init__(self):
+    def __init__(self, latent_rv_size, image_size, model, clamp=(-np.inf, np.inf)):
         Function.__init__(self)
-        self.dimension = 1
+        self.dimension = latent_rv_size + image_size[0] * image_size[1]
+        self.latent_rv_size = latent_rv_size
+        self.image_size = image_size
+        self.model = model
+        self.clamp = Clamp(*clamp)
 
     def __call__(self, *parameters):
-        u = (parameters[0] - parameters[1])
-        return exp(-u * u * self.alpha)
+        rvs = np.array(parameters[0]).reshape(1, -1)
+        image = np.array(parameters[1]).reshape(1, -1)
+        return self.batch_call(np.hstack([rvs, image]))
 
     def batch_call(self, x):
-        u = (x[:, 0] - x[:, 1])
-        u = -u * u
-        if setting.save_cache:
-            self.cache = u
-        return np.exp(-u * u * self.alpha)
+        return np.exp(self.log_batch_call(x))
 
     def log_batch_call(self, x):
-        u = (x[:, 0] - x[:, 1])
-        u = -u * u
+        rvs = torch.from_numpy(x[:, :self.latent_rv_size])
+        image = torch.from_numpy(x[:, self.latent_rv_size:]).reshape(-1, *self.image_size)
+
         if setting.save_cache:
-            self.cache = u
-        return u * self.alpha
+            out = self.model(rvs, image).numpy()
+        else:
+            with torch.no_grad():
+                out = self.model(rvs, image).numpy()
 
-    def log_backward(self, dy):
-        return None, np.sum(self.cache * dy)
+        self.cache = out
+        return self.clamp.forward(out).reshape(-1)
 
-    def set_parameters(self, alpha):
-        self.alpha = alpha
+    def set_parameters(self, state_dict):
+        self.model.load_state_dict(state_dict)
 
     def parameters(self):
-        return self.alpha
+        return self.model.state_dict()
 
-    def params_gradients(self, dy):
-        return [self.alpha], [np.sum(self.cache * dy)]
-
-    def update(self, steps):
-        self.alpha += steps[0]
-        self.alpha = min(self.alpha, 1000)
+    def  update(self, dy, optimizer):
+        optimizer.zero_grad()
+        dy, _ = self.clamp.backward(dy, self.cache)
+        self.model.backward(torch.from_numpy(dy).reshape(-1, 1))

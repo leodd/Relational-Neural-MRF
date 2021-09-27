@@ -234,7 +234,7 @@ class PMLE:
 
     def train(self, lr=0.01, alpha=0.5, regular=0.5,
               max_iter=1000, batch_iter=10, batch_size=1, rvs_selection_size=100, sample_size=10,
-              save_dir=None, save_period=1000, rv_sampler=None, visualize=None):
+              save_dir=None, save_period=1000, rv_sampler=None, visualize=None, optimizers=None):
         """
         Args:
             lr: Learning rate.
@@ -249,6 +249,7 @@ class PMLE:
             save_dir: The directory for the saved potentials.
             rv_sampler: A sampling function for getting random variables.
             visualize: An optional visualization function.
+            optimizers: An dictionary of potential that maps to optimizer.
         """
         if not isinstance(alpha, list):
             alpha = [alpha] * len(self.trainable_potentials_ordered)
@@ -256,8 +257,14 @@ class PMLE:
         for p, a in zip(self.trainable_potentials_ordered, alpha):
             p.alpha = a
 
-        adam = AdamOptimizer(lr)
-        moments = dict()
+        if optimizers is None:
+            optimizers = dict()
+
+        optimizers = {
+            p: optimizers.get(p, AdamOptimizer(lr, regular))
+            for p in self.trainable_potentials_ordered
+        }
+
         t = 0
 
         while t < max_iter:
@@ -288,24 +295,14 @@ class PMLE:
 
                 # Update neural net parameters with back propagation
                 for potential, d_y in gradient_y.items():
-                    if type(potential) is PriorPotential:
-                        params, gradients = potential.f.params_gradients(d_y.reshape(-1))
-                    else:
-                        params, gradients = potential.params_gradients(d_y.reshape(-1))
-
                     c = (sample_size - 1) / d_y.size
 
-                    # Gradient ascent
-                    steps = list()
-                    for idx, (x, g) in enumerate(zip(params, gradients)):
-                        step, moment = adam(g * c - x * regular, moments.get((potential, idx), (0, 0)), t + 1)
-                        steps.append(step)
-                        moments[(potential, idx)] = moment
-
                     if type(potential) is PriorPotential:
-                        potential.f.update(steps)
+                        potential.f.update(c * d_y.reshape(-1), optimizers[potential])
                     else:
-                        potential.update(steps)
+                        potential.update(c * d_y.reshape(-1), optimizers[potential])
+
+                    optimizers[potential].step()
 
                 if t % 10 == 0:
                     print(t)
