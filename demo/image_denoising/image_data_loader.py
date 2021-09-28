@@ -1,5 +1,6 @@
 import matplotlib.image as img
 from utils import show_images, save, visualize_2d_potential
+from utils import save_image
 import numpy as np
 import glob
 
@@ -41,5 +42,5 @@ def load_simple_data(ground_true_folder, noisy_folder):
 
 
 if __name__ == '__main__':
-    gt_data, noisy_data = load_data('gt', 'noisy')
+    gt_data, noisy_data = load_simple_data('./testing_2/gt', './testing_2/noisy')
     print(len(gt_data))

@@ -146,14 +146,14 @@ class PMLE:
                 for m in batch
             ])
 
-            if rv_prior is None:  # No prior, sample from uniform distribution
+            if rv_prior[0] is None:  # No prior, sample from uniform distribution
                 if rv.domain.continuous:  # Continuous case
                     samples = np.random.uniform(*rv.domain.values, size=(K, sample_size))
                 else:  # Discrete case
                     samples = np.random.choice(len(rv.domain.values), size=(K, sample_size))
             else:
                 if rv.domain.continuous:  # Continuous case
-                    samples = np.random.randn(K, sample_size) * np.sqrt(rv_prior[:, [1]]) + rv_prior[:, [0]]
+                    samples = np.random.randn(K, sample_size) * np.random.randn(K, sample_size) + rv_prior[:, [0]]
                 else:  # Discrete case
                     samples = np.array([
                         np.random.choice(len(rv.domain.values), p=p, size=sample_size)

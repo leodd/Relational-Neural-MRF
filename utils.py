@@ -1,8 +1,7 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from math import log, exp
-from scipy.integrate import quad
+from math import log
 import pickle
 import os
 import errno
@@ -207,6 +206,17 @@ def save_str_list(f, str_list):
     with open(f, 'w') as file:
         for s in str_list:
             file.write('%s\n' % s)
+
+
+def save_image(img, f):
+    if not os.path.exists(os.path.dirname(f)):
+        try:
+            os.makedirs(os.path.dirname(f))
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
+    plt.imsave(f, img)
 
 
 if __name__ == '__main__':
