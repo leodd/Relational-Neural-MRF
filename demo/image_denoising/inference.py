@@ -26,36 +26,36 @@ domain = Domain([0, 1], continuous=True)
 # pxo = ImageNodePotential(1)
 # pxy = ImageEdgePotential(0.5, 0.5)
 
-pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
-pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
+# pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
+# pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
 
-# pxo = PriorPotential(
-#     NeuralNetPotential(
-#         [
-#             LinearLayer(1, 64), ReLU(),
-#             LinearLayer(64, 32), ReLU(),
-#             LinearLayer(32, 1), Clamp(-3, 3)
-#         ],
-#         dimension=2,
-#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-#     ),
-#     LinearGaussianFunction(1., 0., 0.1),
-#     learn_prior=False
-# )
-#
-# pxy = PriorPotential(
-#     NeuralNetPotential(
-#         [
-#             LinearLayer(1, 64), ReLU(),
-#             LinearLayer(64, 32), ReLU(),
-#             LinearLayer(32, 1), Clamp(-3, 3)
-#         ],
-#         dimension=2,
-#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-#     ),
-#     LinearGaussianFunction(1., 0., 0.1),
-#     learn_prior=False
-# )
+pxo = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1), Clamp(-3, 3)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
+)
+
+pxy = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ReLU(),
+            LinearLayer(64, 32), ReLU(),
+            LinearLayer(32, 1), Clamp(-3, 3)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
+)
 
 # pxo = NeuralNetPotential(
 #     [
@@ -96,7 +96,7 @@ pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
 # )
 
 pxo_params, pxy_params = load(
-    'learned_potentials_2/model_3_gaussian/1500'
+    'learned_potentials_2/model_3_1d_nn_prior/1500'
 )
 
 pxo.set_parameters(pxo_params)
