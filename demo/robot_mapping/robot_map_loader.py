@@ -329,7 +329,7 @@ if __name__ == '__main__':
     for s, content in raw_data.items():
         color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
 
-        color = colors[processed_data['part_of_line'].get(s, -1)]
+        # color = colors[processed_data['part_of_line'].get(s, -1)]
 
         # if s[:2] == 'L0':
         #     color = 'red'
@@ -350,16 +350,16 @@ if __name__ == '__main__':
     plt.axis('equal')
     plt.show()
 
-    for s, ss in processed_data['k_aligned'].items():
-        print(s, ss)
-        for s_, content in raw_data.items():
-            if s_ == s:
-                color = 'red'
-            elif s_ in ss:
-                color = 'blue'
-            else:
-                color = 'black'
-            plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
-
-        plt.axis('equal')
-        plt.show()
+    # for s, ss in processed_data['k_aligned'].items():
+    #     print(s, ss)
+    #     for s_, content in raw_data.items():
+    #         if s_ == s:
+    #             color = 'red'
+    #         elif s_ in ss:
+    #             color = 'blue'
+    #         else:
+    #             color = 'black'
+    #         plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
+    #
+    #     plt.axis('equal')
+    #     plt.show()

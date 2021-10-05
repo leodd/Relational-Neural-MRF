@@ -17,7 +17,7 @@ model = nn.Sequential(
 x = torch.from_numpy(gt_data).type(torch.float32).unsqueeze(1)
 y = torch.from_numpy(noisy_data).type(torch.float32).unsqueeze(1)
 
-optimizer = torch.optim.Adam(model.parameters(), 0.001, weight_decay=0.0001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
 criterion = nn.MSELoss()
 
 for _ in range(10):

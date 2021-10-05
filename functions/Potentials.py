@@ -406,16 +406,18 @@ class CNNPotential(Function):
         return np.exp(self.log_batch_call(x))
 
     def log_batch_call(self, x):
-        rvs = torch.from_numpy(x[:, :self.latent_rv_size])
-        image = torch.from_numpy(x[:, self.latent_rv_size:]).reshape(-1, *self.image_size)
+        rvs = torch.from_numpy(x[:, :self.latent_rv_size]).float()
+        image = torch.from_numpy(x[:, self.latent_rv_size:]).reshape(-1, *self.image_size).float()
 
         if setting.save_cache:
-            out = self.model(rvs, image).numpy()
+            out = self.model(rvs, image)
         else:
             with torch.no_grad():
-                out = self.model(rvs, image).numpy()
+                out = self.model(rvs, image)
 
         self.cache = out
+        out = out.detach().double().numpy()
+        # return out.reshape(-1)
         return self.clamp.forward(out).reshape(-1)
 
     def set_parameters(self, state_dict):
@@ -424,7 +426,11 @@ class CNNPotential(Function):
     def parameters(self):
         return self.model.state_dict()
 
-    def  update(self, dy, optimizer):
+    def update(self, dy, optimizer):
         optimizer.zero_grad()
-        dy, _ = self.clamp.backward(dy, self.cache)
-        self.model.backward(torch.from_numpy(dy).reshape(-1, 1))
+        # print(dy)
+        # print(self.cache)
+        dy = dy.reshape(-1, 1)
+        dy, _ = self.clamp.backward(dy, self.cache.detach().numpy())
+        # print(dy.reshape(-1))
+        self.cache.backward(torch.from_numpy(-dy).float())

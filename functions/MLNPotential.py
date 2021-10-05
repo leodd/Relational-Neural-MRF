@@ -60,11 +60,8 @@ class MLNPotential(Function):
     def parameters(self):
         return self.w
 
-    def params_gradients(self, dy):
-        return [self.w], [np.sum(self.cache * dy)]
-
-    def update(self, steps):
-        self.w += steps[0]
+    def update(self, dy, optimizer):
+        self.w += optimizer.compute_step((self, 'w'), np.sum(self.cache * dy), self.w)
 
 
 class HMLNPotential(Function):

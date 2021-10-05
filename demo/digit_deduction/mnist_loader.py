@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 
 
 class MNISTRandomDigit():
-    def __init__(self):
-        self.data = torchvision.datasets.MNIST('.', train=True, download=True,
+    def __init__(self, root='.'):
+        self.data = torchvision.datasets.MNIST(root, train=True, download=True,
             transform=torchvision.transforms.Compose([
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(
@@ -20,11 +20,12 @@ class MNISTRandomDigit():
 
     def get_random_image(self, digit):
         idx = np.random.choice(self.digit_map[digit])
-        return self.data[idx][0]
+        img = self.data[idx][0]
+        return img[0].numpy()
 
 
 if __name__ == '__main__':
     dataset = MNISTRandomDigit()
-    img = dataset.get_random_image(9)
-    plt.imshow(img[0])
+    img = dataset.get_random_image(0)
+    plt.imshow(img)
     plt.show()

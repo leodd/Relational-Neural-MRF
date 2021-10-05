@@ -208,7 +208,7 @@ def save_str_list(f, str_list):
             file.write('%s\n' % s)
 
 
-def save_image(img, f):
+def save_image(img, f, cmap='gray'):
     if not os.path.exists(os.path.dirname(f)):
         try:
             os.makedirs(os.path.dirname(f))
@@ -216,7 +216,7 @@ def save_image(img, f):
             if exc.errno != errno.EEXIST:
                 raise
 
-    plt.imsave(f, img)
+    plt.imsave(f, img, cmap=cmap)
 
 
 if __name__ == '__main__':

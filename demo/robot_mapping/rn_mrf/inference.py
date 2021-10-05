@@ -149,13 +149,13 @@ for model in range(5):
     print(np.mean(y_true == y_pred))
     print(f1_score(y_true, y_pred, average=None))
 
-    # for s, content in dt_lines.items():
-    #     color = ['black', 'red', 'green'][predict[s]]
-    #     # color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
-    #     plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
-    #
-    # plt.axis('equal')
-    # plt.show()
+    for s, content in dt_lines.items():
+        color = ['black', 'red', 'green'][predict[s]]
+        # color = {'W': 'black', 'D': 'red', 'O': 'green'}[content[4]]
+        plt.plot([content[0], content[2]], [content[1], content[3]], color=color, linestyle='-', linewidth=2)
+
+    plt.axis('equal')
+    plt.show()
 
 all_y_true, all_y_pred = np.array(all_y_true), np.array(all_y_pred)
 print(np.mean(all_y_true == all_y_pred))

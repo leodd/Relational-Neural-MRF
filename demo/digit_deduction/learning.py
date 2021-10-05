@@ -1,138 +1,105 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as Func
+import numpy as np
 from utils import visualize_2d_potential
 from RelationalGraph import *
 from functions.NeuralNet import train_mod
 from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, \
-    TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer, Clamp
+    TableFunction, CNNPotential, ReLU, LinearLayer, Clamp
 from functions.MLNPotential import MLNPotential
 from learner.NeuralPMLE import PMLE
-from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
+from demo.digit_deduction.mnist_loader import MNISTRandomDigit
 
 
+img_dataset = MNISTRandomDigit(root='.')
 
-for model in range(5):
-    train, _ = load_data_fold(model, '..')
+digit_data = np.random.choice(10, size=2000)
+img_data = np.array([img_dataset.get_random_image(digit) for digit in digit_data])
 
-    dt_seg_type = train['seg_type']
-    dt_length = train['length']
-    dt_depth = train['depth']
-    dt_angle = train['angle']
-    dt_neighbor = train['neighbor']
-    dt_k_aligned = train['k_aligned']
-    dt_aligned = train['aligned']
+d_digit = Domain(np.arange(10), continuous=False)
+d_img = Domain([0, 1], continuous=True)
 
-    d_seg_type = Domain(['W', 'D', 'O'], continuous=False)
-    d_length = Domain([0., 0.25], continuous=True)
-    d_depth = Domain([-0.05, 0.05], continuous=True)
-    d_angle = Domain([-1.57, 1.57], continuous=True)
-    d_seg_type.domain_indexize()
+rv_digit = RV(d_digit)
+rv_img = RV(d_img)
 
-    lv_s = LV(list(dt_seg_type.keys()))
+data = {
+    rv_digit: digit_data,
+    rv_img: img_data.reshape(img_data.shape[0], -1)
+}
 
-    seg_type = Atom(d_seg_type, [lv_s], name='type')
-    length = Atom(d_length, [lv_s], name='length')
-    depth = Atom(d_depth, [lv_s], name='depth')
-    angle = Atom(d_angle, [lv_s], name='angle')
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 8, 3, 1)
+        self.conv2 = nn.Conv2d(8, 5, 3, 1)
+        self.fc1 = nn.Linear(720, 64)
+        self.fc2 = nn.Linear(65, 1)
 
-    p_lda = NeuralNetPotential(
-        layers=[LinearLayer(4, 64), ReLU(),
-                LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1), Clamp(-3, 3)]
-    )
+    def forward(self, y, x):
+        x = x.unsqueeze(1)
+        x = self.conv1(x)
+        x = Func.relu(x)
+        x = self.conv2(x)
+        x = Func.relu(x)
+        x = Func.max_pool2d(x, 2)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = Func.relu(x)
+        x = torch.cat([x, y], dim=1)
+        x = self.fc2(x)
+        return x
 
-    p_d = NeuralNetPotential(
-        layers=[LinearLayer(4, 64), ReLU(),
-                LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1), Clamp(-3, 3)],
-        dimension=4,
-        formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
-    )
+model = Net()
 
-    # p_dk = NeuralNetPotential(
-    #     layers=[LinearLayer(4, 64), ReLU(),
-    #             LinearLayer(64, 32), ReLU(),
-    #             LinearLayer(32, 1)]
-    # )
+p_digit_img = CNNPotential(
+    latent_rv_size=1,
+    image_size=(28, 28),
+    model=model,
+    clamp=(-3, 3)
+)
 
-    p_dw = MLNPotential(
-        formula=lambda x: (np.abs(x[:, 0]) < 0.01) | (x[:, 1] != 0),
-        dimension=2,
-        w=2
-    )
+f_digit_img = F(p_digit_img, nb=[rv_digit, rv_img])
 
-    p_aw = MLNPotential(
-        formula=lambda x: (np.abs(x[:, 0]) < 0.5) | (x[:, 1] != 0),
-        dimension=2,
-        w=2
-    )
+g = Graph(rvs={rv_digit, rv_img}, factors={f_digit_img}, condition_rvs={rv_img})
 
-    p_ao = MLNPotential(
-        formula=lambda x: (np.abs(x[:, 0]) < 1.55) | (x[:, 1] == 2),
-        dimension=2,
-        w=2
-    )
+visualized_data = np.hstack([
+    np.arange(10).reshape(-1, 1),
+    np.repeat(img_dataset.get_random_image(7).reshape(1, -1), 10, axis=0)
+])
 
-    p_dd = MLNPotential(
-        formula=lambda x: (x[:, 0] != 1) | (x[:, 1] != 1),
-        dimension=2,
-        w=2
-    )
+def visualize(ps, t):
+    if t % 100 == 0:
+        res = p_digit_img.batch_call(visualized_data)
+        print(res)
 
-    p_lw = MLNPotential(
-        formula=lambda x: (x[:, 0] > 0.05) | (x[:, 1] != 1),
-        dimension=2,
-        w=2
-    )
+# test_digit = np.random.choice(10, size=1000)
+# test_img = np.array([img_dataset.get_random_image(digit) for digit in test_digit]).reshape(-1, 28 * 28)
+# test_data = np.hstack([
+#     np.tile(test_digit, 10).reshape(-1, 1),
+#     np.repeat(test_img, 10, axis=0)
+# ])
+#
+# def visualize(ps, t):
+#     if t % 1000 == 0:
+#         res = p_digit_img.batch_call(test_data).reshape(-1, 10)
+#         res = np.argmax(res, axis=1)
+#         print(np.mean(res == test_digit))
 
-    p_prior = ExpWrapper(
-        TableFunction(np.log(get_seg_type_distribution(train['seg_type'])))
-    )
-
-    f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-    f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
-    # f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_k_aligned))
-    # f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
-    f_aw = ParamF(p_aw, atoms=[angle('S'), seg_type('S')], lvs=['S'])
-    # f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
-    f_ao = ParamF(p_ao, atoms=[angle('S'), seg_type('S')], lvs=['S'])
-    f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
-    # f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
-
-    rel_g = RelationalGraph(
-        parametric_factors=[f_lda, f_d, f_aw, f_ao, f_dd]
-    )
-
-    g, rvs_dict = rel_g.ground()
-
-    print(len(g.rvs))
-
-    data = dict()
-
-    for key, rv in rvs_dict.items():
-        if key[0] == length:
-            data[rv] = [d_length.clip_value(dt_length[key[1]])]
-        if key[0] == angle:
-            data[rv] = [dt_angle[key[1]]]
-        if key[0] == depth:
-            data[rv] = [d_depth.clip_value(dt_depth[key[1]])]
-        if key[0] == seg_type:
-            data[rv] = [d_seg_type.value_to_idx(dt_seg_type[key[1]])]
-
-    def visualize(ps, t):
-        if t % 200 == 0:
-            visualize_2d_potential(p_dd, d_seg_type, d_seg_type, spacing=0.02)
-
-    train_mod(True)
-    leaner = PMLE(g, [p_lda, p_d, p_aw, p_ao, p_dd], data)
-    leaner.train(
-        lr=0.001,
-        alpha=1.,
-        regular=0.0001,
-        max_iter=3000,
-        batch_iter=3,
-        batch_size=1,
-        rvs_selection_size=200,
-        sample_size=30,
-        save_dir=f'learned_potentials/model_clamp_{model}',
-        save_period=1000,
-        # visualize=visualize
-    )
+train_mod(True)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+leaner = PMLE(g, [p_digit_img], data)
+leaner.train(
+    lr=0.001,
+    alpha=1.,
+    regular=0.0001,
+    max_iter=2000,
+    batch_iter=10,
+    batch_size=1,
+    rvs_selection_size=1,
+    sample_size=30,
+    save_dir='learned_potentials',
+    save_period=1000,
+    visualize=visualize,
+    optimizers={p_digit_img: optimizer}
+)

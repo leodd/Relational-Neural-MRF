@@ -1,5 +1,5 @@
 from functions.NeuralNet import *
-from functions.Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction
+from functions.Potentials import GaussianFunction, TableFunction, CategoricalGaussianFunction, CNNPotential
 from functions.PriorPotential import PriorPotential
 import numpy as np
 

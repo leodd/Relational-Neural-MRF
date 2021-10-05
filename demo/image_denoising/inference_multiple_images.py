@@ -1,5 +1,5 @@
 from utils import show_images, load
-from demo.image_denoising.image_data_loader import load_data, load_simple_data
+from demo.image_denoising.image_data_loader import load_data
 from Graph import *
 from functions.Potentials import GaussianFunction, LinearGaussianFunction
 from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, LinearLayer, train_mod, Clamp
@@ -11,78 +11,88 @@ train_mod(False)
 
 USE_MANUAL_POTENTIALS = True
 
-gt_data, noisy_data = load_simple_data('testing_2/gt', 'testing_2/noisy')
+gt_data, noisy_data = load_data('testing_2/gt', 'testing_2/noisy_unigaussian')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-if USE_MANUAL_POTENTIALS:
-    pxo = ImageNodePotential(1)
-    pxy = ImageEdgePotential(0.5, 0.5)
+# pxo = ImageNodePotential(1)
+# pxy = ImageEdgePotential(0.5, 0.5)
 
-    pxo_params, pxy_params = load(
-        'learned_potentials/model_2_expert/3000'
-    )
+# pxo = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1), Clamp(-3, 3)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1),
+#     learn_prior=False
+# )
+#
+# pxy = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1), Clamp(-3, 3)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1),
+#     learn_prior=False
+# )
 
-    pxo.set_parameters(pxo_params)
-    pxy.set_parameters(pxy_params)
-else:
-    # pxo = PriorPotential(
-    #     NeuralNetPotential(
-    #         [
-    #             LinearLayer(1, 64), ReLU(),
-    #             LinearLayer(64, 32), ReLU(),
-    #             LinearLayer(32, 1), Clamp(-3, 3)
-    #         ],
-    #         dimension=2,
-    #         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    #     ),
-    #     LinearGaussianFunction(1., 0., 0.1),
-    #     learn_prior=False
-    # )
-    #
-    # pxy = PriorPotential(
-    #     NeuralNetPotential(
-    #         [
-    #             LinearLayer(1, 64), ReLU(),
-    #             LinearLayer(64, 32), ReLU(),
-    #             LinearLayer(32, 1), Clamp(-3, 3)
-    #         ],
-    #         dimension=2,
-    #         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    #     ),
-    #     LinearGaussianFunction(1., 0., 0.1),
-    #     learn_prior=False
-    # )
+# pxo = NeuralNetPotential(
+#     [
+#         LinearLayer(1, 64), ReLU(),
+#         LinearLayer(64, 32), ReLU(),
+#         LinearLayer(32, 1), Clamp(-3, 3)
+#     ],
+#     dimension=2,
+#     formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+# )
+#
+# pxy = NeuralNetPotential(
+#     [
+#         LinearLayer(1, 64), ReLU(),
+#         LinearLayer(64, 32), ReLU(),
+#         LinearLayer(32, 1), Clamp(-3, 3)
+#     ],
+#     dimension=2,
+#     formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+# )
 
-    pxo = NeuralNetPotential(
-        [
-            LinearLayer(2, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1), Clamp(-3, 3)
-        ],
-        # dimension=2,
-        # formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    )
+pxo = NeuralNetPotential(
+    [
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1), Clamp(-3, 3)
+    ],
+    dimension=2
+)
 
-    pxy = NeuralNetPotential(
-        [
-            LinearLayer(2, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1), Clamp(-3, 3)
-        ],
-        # dimension=2,
-        # formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    )
+pxy = NeuralNetPotential(
+    [
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1), Clamp(-3, 3)
+    ],
+    dimension=2
+)
 
-    pxo_params, pxy_params = load(
-        'learned_potentials/model_2_2d_nn/3000'
-    )
+pxo_params, pxy_params = load(
+    'learned_potentials/model_3_2d_nn/1500'
+)
 
-    pxo.set_parameters(pxo_params)
-    pxy.set_parameters(pxy_params)
+pxo.set_parameters(pxo_params)
+pxy.set_parameters(pxy_params)
 
 l1_loss = list()
 l2_loss = list()
@@ -139,7 +149,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
             predict_image[i, j] = infer.map(rvs[i * col + j])
 
     show_images([gt_image, noisy_image, predict_image], vmin=0, vmax=1,
-                save_path='testing_2/expert_mrf_result50_new/' + str(image_idx) + '.png')
+                save_path='testing_2/result_mrf_2d_nn/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))

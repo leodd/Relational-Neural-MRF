@@ -1,5 +1,6 @@
 import matplotlib.image as img
 from utils import show_images, load, visualize_2d_potential
+from demo.image_denoising.image_data_loader import load_data
 from Graph import *
 from functions.Potentials import GaussianFunction, LinearGaussianFunction
 from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, Clamp, LinearLayer, train_mod
@@ -9,11 +10,10 @@ from inferer.PBP import PBP
 
 train_mod(False)
 
-gt_image = img.imread('testing-simple/ground-true-image.png')
-gt_image = gt_image[:, :, 0]
+gt_data, noisy_data = load_data('testing_2/gt', 'testing_2/noisy_unigaussian')
 
-noisy_image = img.imread('testing-simple/noisy-image.png')
-noisy_image = noisy_image[:, :, 0]
+gt_image = gt_data[0]
+noisy_image = noisy_data[0]
 
 # data = pd.read_fwf('testing-simple/noisy-image.dat', header=None)
 # noisy_image = data.values
@@ -23,8 +23,8 @@ col = noisy_image.shape[1]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = ImageNodePotential(1)
-pxy = ImageEdgePotential(0.5, 0.5)
+# pxo = ImageNodePotential(1)
+# pxy = ImageEdgePotential(0.5, 0.5)
 
 # pxo = PriorPotential(
 #     NeuralNetPotential(
@@ -74,8 +74,26 @@ pxy = ImageEdgePotential(0.5, 0.5)
 #     formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
 # )
 
+pxo = NeuralNetPotential(
+    [
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1), Clamp(-3, 3)
+    ],
+    dimension=2
+)
+
+pxy = NeuralNetPotential(
+    [
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1), Clamp(-3, 3)
+    ],
+    dimension=2
+)
+
 pxo_params, pxy_params = load(
-    'learned_potentials/model_3_expert/1500'
+    'learned_potentials/model_3_2d_nn/1500'
 )
 
 pxo.set_parameters(pxo_params)
@@ -125,7 +143,7 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=50)
+infer = PBP(g, n=20)
 infer.run(20, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)
