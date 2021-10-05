@@ -10,7 +10,7 @@ from inferer.PBP import PBP
 
 train_mod(False)
 
-gt_data, noisy_data = load_data('testing_2/gt', 'testing_2/noisy_unigaussian')
+gt_data, noisy_data = load_data('testing_2/gt', 'testing_2/noisy_multigaussian')
 
 gt_image = gt_data[0]
 noisy_image = noisy_data[0]
@@ -25,6 +25,9 @@ domain = Domain([0, 1], continuous=True)
 
 # pxo = ImageNodePotential(1)
 # pxy = ImageEdgePotential(0.5, 0.5)
+
+pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
+pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.)
 
 # pxo = PriorPotential(
 #     NeuralNetPotential(
@@ -74,26 +77,26 @@ domain = Domain([0, 1], continuous=True)
 #     formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
 # )
 
-pxo = NeuralNetPotential(
-    [
-        LinearLayer(2, 64), ReLU(),
-        LinearLayer(64, 32), ReLU(),
-        LinearLayer(32, 1), Clamp(-3, 3)
-    ],
-    dimension=2
-)
-
-pxy = NeuralNetPotential(
-    [
-        LinearLayer(2, 64), ReLU(),
-        LinearLayer(64, 32), ReLU(),
-        LinearLayer(32, 1), Clamp(-3, 3)
-    ],
-    dimension=2
-)
+# pxo = NeuralNetPotential(
+#     [
+#         LinearLayer(2, 64), ReLU(),
+#         LinearLayer(64, 32), ReLU(),
+#         LinearLayer(32, 1), Clamp(-3, 3)
+#     ],
+#     dimension=2
+# )
+#
+# pxy = NeuralNetPotential(
+#     [
+#         LinearLayer(2, 64), ReLU(),
+#         LinearLayer(64, 32), ReLU(),
+#         LinearLayer(32, 1), Clamp(-3, 3)
+#     ],
+#     dimension=2
+# )
 
 pxo_params, pxy_params = load(
-    'learned_potentials/model_3_2d_nn/1500'
+    'learned_potentials_2/model_3_gaussian/1500'
 )
 
 pxo.set_parameters(pxo_params)

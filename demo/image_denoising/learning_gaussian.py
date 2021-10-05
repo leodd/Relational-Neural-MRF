@@ -6,7 +6,7 @@ from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 
 
-gt_data, noisy_data = load_data('training/gt', 'training/noisy')
+gt_data, noisy_data = load_data('training/gt', 'training/noisy_multigaussian')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
@@ -70,13 +70,13 @@ def visualize(ps, t):
 
 leaner = PMLE(g, [pxo, pxy], data)
 leaner.train(
-    lr=0.001,
-    max_iter=10000,
+    lr=0.01,
+    max_iter=1500,
     batch_iter=5,
     batch_size=20,
-    rvs_selection_size=1000,
+    rvs_selection_size=100,
     sample_size=5,
-    save_dir='learned_potentials/model_1_gaussian',
-    save_period=1000,
+    save_dir='learned_potentials_2/model_3_gaussian',
+    save_period=500,
     visualize=visualize
 )

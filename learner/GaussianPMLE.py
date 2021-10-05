@@ -7,7 +7,6 @@ from collections import Counter
 from optimization_tools import AdamOptimizer
 from utils import save, load, visualize_2d_potential, visualize_1d_potential
 import os
-import seaborn as sns
 
 
 class PMLE:
@@ -213,7 +212,7 @@ class PMLE:
 
                     sig_det = np.linalg.det(sig)
                     if sig_det > 0:
-                        potential.set_parameters(mu, sig)
+                        potential.set_parameters([mu, sig])
                     else:
                         moments[(potential, 'mu')] = (0, 0)
                         moments[(potential, 'sig')] = (0, 0)
