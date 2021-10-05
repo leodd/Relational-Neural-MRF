@@ -93,6 +93,13 @@ def show_images(images, cols=1, titles=None, vmin=0, vmax=1, save_path=None):
     if save_path is None:
         plt.show()
     else:
+        if not os.path.exists(os.path.dirname(save_path)):
+            try:
+                os.makedirs(os.path.dirname(save_path))
+            except OSError as exc:  # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+
         plt.savefig(save_path)
 
 
