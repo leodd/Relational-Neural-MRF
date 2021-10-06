@@ -27,8 +27,8 @@ pxo = PriorPotential(
         dimension=2,
         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
     ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=True
+    LinearGaussianFunction(1., 0., 0.5),
+    learn_prior=False
 )
 
 pxy = PriorPotential(
@@ -41,8 +41,8 @@ pxy = PriorPotential(
         dimension=2,
         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
     ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=True
+    LinearGaussianFunction(1., 0., 0.5),
+    learn_prior=False
 )
 
 # pxo = NeuralNetPotential(

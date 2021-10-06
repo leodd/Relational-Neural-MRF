@@ -290,7 +290,7 @@ class LinearGaussianFunction(Function):
 
     def fit(self, data):
         model = LinearRegression()
-        model.fit(data[:, 0], data[:, 1])
+        model.fit(data[:, [0]], data[:, [1]])
         w = model.coef_[0]
         b = model.intercept_
         d = ((w * data[:, 0] - data[:, 1] + b) ** 2) / (w ** 2 + 1)
@@ -388,6 +388,54 @@ class ImageEdgePotential(Function):
         self.scaling_cof = max(self.scaling_cof, 0.001)
 
 
+# class CNNPotential(Function):
+#     def __init__(self, latent_rv_size, image_size, model, clamp=(-np.inf, np.inf)):
+#         Function.__init__(self)
+#         self.dimension = latent_rv_size + image_size[0] * image_size[1]
+#         self.latent_rv_size = latent_rv_size
+#         self.image_size = image_size
+#         self.model = model
+#         self.clamp = Clamp(*clamp)
+#
+#     def __call__(self, *parameters):
+#         rvs = np.array(parameters[0]).reshape(1, -1)
+#         image = np.array(parameters[1]).reshape(1, -1)
+#         return self.batch_call(np.hstack([rvs, image]))
+#
+#     def batch_call(self, x):
+#         return np.exp(self.log_batch_call(x))
+#
+#     def log_batch_call(self, x):
+#         rvs = torch.from_numpy(x[:, :self.latent_rv_size]).float()
+#         image = torch.from_numpy(x[:, self.latent_rv_size:]).reshape(-1, *self.image_size).float()
+#
+#         if setting.save_cache:
+#             out = self.model(rvs, image)
+#         else:
+#             with torch.no_grad():
+#                 out = self.model(rvs, image)
+#
+#         self.cache = out
+#         out = out.detach().double().numpy()
+#         # return out.reshape(-1)
+#         return self.clamp.forward(out).reshape(-1)
+#
+#     def set_parameters(self, state_dict):
+#         self.model.load_state_dict(state_dict)
+#
+#     def parameters(self):
+#         return self.model.state_dict()
+#
+#     def update(self, dy, optimizer):
+#         optimizer.zero_grad()
+#         # print(dy)
+#         # print(self.cache)
+#         dy = dy.reshape(-1, 1)
+#         dy, _ = self.clamp.backward(dy, self.cache.detach().numpy())
+#         # print(dy.reshape(-1))
+#         self.cache.backward(torch.from_numpy(-dy).float())
+
+
 class CNNPotential(Function):
     def __init__(self, latent_rv_size, image_size, model, clamp=(-np.inf, np.inf)):
         Function.__init__(self)
@@ -432,5 +480,6 @@ class CNNPotential(Function):
         # print(self.cache)
         dy = dy.reshape(-1, 1)
         dy, _ = self.clamp.backward(dy, self.cache.detach().numpy())
+        dy = dy.sum().reshape(-1, 1)
         # print(dy.reshape(-1))
         self.cache.backward(torch.from_numpy(-dy).float())

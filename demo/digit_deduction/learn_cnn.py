@@ -5,9 +5,9 @@ import numpy as np
 from demo.digit_deduction.mnist_loader import MNISTRandomDigit
 
 
-class Net(nn.Module):
+class CNN(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 8, 3, 1)
         self.conv2 = nn.Conv2d(8, 5, 3, 1)
         self.fc1 = nn.Linear(720, 64)
@@ -26,7 +26,21 @@ class Net(nn.Module):
         output = Func.log_softmax(x, dim=1)
         return output
 
-model = Net()
+class LinearNet(nn.Module):
+    def __init__(self):
+        super(LinearNet, self).__init__()
+        self.fc1 = nn.Linear(784, 64)
+        self.fc2 = nn.Linear(64, 10)
+
+    def forward(self, x):
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = Func.relu(x)
+        x = self.fc2(x)
+        output = Func.log_softmax(x, dim=1)
+        return output
+
+model = LinearNet()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 img_dataset = MNISTRandomDigit(root='.')

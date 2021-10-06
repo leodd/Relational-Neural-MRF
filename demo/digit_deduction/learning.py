@@ -87,7 +87,7 @@ def visualize(ps, t):
 #         print(np.mean(res == test_digit))
 
 train_mod(True)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.SGD(model.parameters(), lr=100)
 leaner = PMLE(g, [p_digit_img], data)
 leaner.train(
     lr=0.001,
