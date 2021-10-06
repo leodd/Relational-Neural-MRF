@@ -13,8 +13,8 @@ col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = GaussianFunction([0.5, 0.5], np.eye(2))
-pxy = GaussianFunction([0.5, 0.5], np.eye(2))
+pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
 
 data = dict()
 
