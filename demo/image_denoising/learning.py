@@ -17,33 +17,33 @@ domain = Domain([0, 1], continuous=True)
 # pxo = ImageNodePotential(1)
 # pxy = ImageEdgePotential(0.5, 0.5)
 
-pxo = PriorPotential(
-    NeuralNetPotential(
-        [
-            LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1), Clamp(-3, 3)
-        ],
-        dimension=2,
-        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=False
-)
-
-pxy = PriorPotential(
-    NeuralNetPotential(
-        [
-            LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1), Clamp(-3, 3)
-        ],
-        dimension=2,
-        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=False
-)
+# pxo = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1), Clamp(-3, 3)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1),
+#     learn_prior=False
+# )
+#
+# pxy = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1), Clamp(-3, 3)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1),
+#     learn_prior=False
+# )
 
 # pxo = NeuralNetPotential(
 #     [
@@ -65,23 +65,23 @@ pxy = PriorPotential(
 #     formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
 # )
 
-# pxo = NeuralNetPotential(
-#     [
-#         LinearLayer(2, 64), ReLU(),
-#         LinearLayer(64, 32), ReLU(),
-#         LinearLayer(32, 1), Clamp(-3, 3)
-#     ],
-#     dimension=2
-# )
-#
-# pxy = NeuralNetPotential(
-#     [
-#         LinearLayer(2, 64), ReLU(),
-#         LinearLayer(64, 32), ReLU(),
-#         LinearLayer(32, 1), Clamp(-3, 3)
-#     ],
-#     dimension=2
-# )
+pxo = NeuralNetPotential(
+    [
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 64), ReLU(),
+        LinearLayer(64, 1), Clamp(-3, 3)
+    ],
+    dimension=2
+)
+
+pxy = NeuralNetPotential(
+    [
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1), Clamp(-3, 3)
+    ],
+    dimension=2
+)
 
 data = dict()
 
@@ -142,12 +142,12 @@ leaner.train(
     lr=0.001,
     alpha=1,
     regular=0.0001,
-    max_iter=1500,
+    max_iter=3000,
     batch_iter=5,
     batch_size=20,
     rvs_selection_size=100,
     sample_size=20,
-    save_dir='learned_potentials_2/model_3_1d_nn_prior',
+    save_dir='learned_potentials_2/model_3_2d_nn',
     save_period=500,
     visualize=visualize
 )
