@@ -13,7 +13,7 @@ rv1 = RV(d1)
 rv2 = RV(d2)
 
 choice = np.array([(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (1, 1), (1, 2), (1, 3), (1, 4)])
-temp = np.random.choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], p=[0.05, 0.1, 0.2, 0.1, 0.05, 0.2, 0.1, 0.05, 0.1, 0.05], size=1000)
+temp = np.random.choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], p=[0.05, 0.1, 0.2, 0.1, 0.05, 0.2, 0.1, 0.05, 0.1, 0.05], size=5000)
 
 # choice = np.array([(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
 # temp = np.random.choice([0, 1, 2, 3, 4, 5], p=[0.1, 0.2, 0.1, 0.3, 0.1, 0.2], size=4000)
@@ -23,31 +23,31 @@ data = {
     rv2: choice[temp, 1]
 }
 
-p = PriorPotential(
-    NeuralNetPotential(
-        layers=[
-            NormalizeLayer([(-1, 1)] * 2, domains=[d1, d2]),
-            # WSLinearLayer([[0, 1]], 64), ReLU(),
-            LinearLayer(2, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1)
-        ]
-    ),
-    TableFunction(
-        np.ones([d1.size, d2.size]) / (d1.size * d2.size)
-    ),
-    learn_prior=True
-)
-
-# p = NeuralNetPotential(
-#     layers=[
-#         NormalizeLayer([(-1, 1)] * 2, domains=[d1, d2]),
-#         # WSLinearLayer([[0, 1]], 64), ReLU(),
-#         LinearLayer(2, 64), ReLU(),
-#         LinearLayer(64, 32), ReLU(),
-#         LinearLayer(32, 1)
-#     ]
+# p = PriorPotential(
+#     NeuralNetPotential(
+#         layers=[
+#             NormalizeLayer([(-1, 1)] * 2, domains=[d1, d2]),
+#             # WSLinearLayer([[0, 1]], 64), ReLU(),
+#             LinearLayer(2, 64), ReLU(),
+#             LinearLayer(64, 32), ReLU(),
+#             LinearLayer(32, 1)
+#         ]
+#     ),
+#     TableFunction(
+#         np.ones([d1.size, d2.size]) / (d1.size * d2.size)
+#     ),
+#     learn_prior=True
 # )
+
+p = NeuralNetPotential(
+    layers=[
+        NormalizeLayer([(-1, 1)] * 2, domains=[d1, d2]),
+        # WSLinearLayer([[0, 1]], 64), ReLU(),
+        LinearLayer(2, 64), ReLU(),
+        LinearLayer(64, 32), ReLU(),
+        LinearLayer(32, 1)
+    ]
+)
 
 f = F(p, nb=[rv1, rv2])
 
@@ -56,6 +56,7 @@ g = Graph({rv1, rv2}, {f})
 def visualize(ps, t):
     if t % 200 == 0:
         visualize_2d_potential(p, d1, d2)
+        print(p.batch_call(choice))
 
 train_mod(True)
 leaner = PMLE(g, [p], data)

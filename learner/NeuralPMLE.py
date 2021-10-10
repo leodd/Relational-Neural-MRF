@@ -134,7 +134,7 @@ class PMLE:
         # Compute variable proposal
         self.get_rvs_prior(rvs, batch, self.trainable_rvs_prior)
 
-        data_info = dict()  # rv as key, data indexing, shift, spacing as value
+        data_info = dict()  # rv as key, data indexing as value
 
         current_idx_counter = Counter()  # Potential as key, index as value
         for rv in rvs:
@@ -150,13 +150,13 @@ class PMLE:
                 if rv.domain.continuous:  # Continuous case
                     samples = np.random.uniform(*rv.domain.values, size=(K, sample_size))
                 else:  # Discrete case
-                    samples = np.random.choice(len(rv.domain.values), size=(K, sample_size))
+                    samples = np.random.choice(rv.domain.values, size=(K, sample_size))
             else:
                 if rv.domain.continuous:  # Continuous case
-                    samples = np.random.randn(K, sample_size) * np.random.randn(K, sample_size) + rv_prior[:, [0]]
+                    samples = np.random.randn(K, sample_size) * np.sqrt(rv_prior[:, [1]]) + rv_prior[:, [0]]
                 else:  # Discrete case
                     samples = np.array([
-                        np.random.choice(len(rv.domain.values), p=p, size=sample_size)
+                        np.random.choice(rv.domain.values, p=p, size=sample_size)
                         for p in rv_prior
                     ])
 
@@ -221,14 +221,14 @@ class PMLE:
 
             w = self.log_belief_balance(w)
             w = np.exp(w)
-            w = w / np.sum(w, axis=1).reshape(-1, 1)
+            w = -w / np.sum(w[:, 1:], axis=1).reshape(-1, 1)
 
-            w[:, 0] -= 1
+            w[:, 0] = 1
 
             # Re-weight gradient of sampling points
             for f, idx in zip(rv.nb, data_idx):
                 if f.potential in self.trainable_potentials:
-                    gradient_y[f.potential][idx] = -w
+                    gradient_y[f.potential][idx] = w
 
         return gradient_y
 

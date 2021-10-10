@@ -437,13 +437,12 @@ class ImageEdgePotential(Function):
 
 
 class CNNPotential(Function):
-    def __init__(self, latent_rv_size, image_size, model, clamp=(-np.inf, np.inf)):
+    def __init__(self, rv_domain, image_size, model):
         Function.__init__(self)
-        self.dimension = latent_rv_size + image_size[0] * image_size[1]
-        self.latent_rv_size = latent_rv_size
+        self.dimension = 1 + image_size[0] * image_size[1]
+        self.rv_domain = rv_domain
         self.image_size = image_size
         self.model = model
-        self.clamp = Clamp(*clamp)
 
     def __call__(self, *parameters):
         rvs = np.array(parameters[0]).reshape(1, -1)
@@ -454,32 +453,21 @@ class CNNPotential(Function):
         return np.exp(self.log_batch_call(x))
 
     def log_batch_call(self, x):
-        rvs = torch.from_numpy(x[:, :self.latent_rv_size]).float()
-        image = torch.from_numpy(x[:, self.latent_rv_size:]).reshape(-1, *self.image_size).float()
+        self.cache = rvs = x[:, 0].astype(int)
+        image = x[:, 1:]
+        out = self.model.batch_call(image)
+        out = out[range(rvs.size), rvs]
+        # print(out)
+        return out
 
-        if setting.save_cache:
-            out = self.model(rvs, image)
-        else:
-            with torch.no_grad():
-                out = self.model(rvs, image)
-
-        self.cache = out
-        out = out.detach().double().numpy()
-        # return out.reshape(-1)
-        return self.clamp.forward(out).reshape(-1)
-
-    def set_parameters(self, state_dict):
-        self.model.load_state_dict(state_dict)
+    def set_parameters(self, parameters):
+        self.model.set_parameters(parameters)
 
     def parameters(self):
-        return self.model.state_dict()
+        return self.model.parameters()
 
     def update(self, dy, optimizer):
-        optimizer.zero_grad()
         # print(dy)
-        # print(self.cache)
-        dy = dy.reshape(-1, 1)
-        dy, _ = self.clamp.backward(dy, self.cache.detach().numpy())
-        dy = dy.sum().reshape(-1, 1)
-        # print(dy.reshape(-1))
-        self.cache.backward(torch.from_numpy(-dy).float())
+        model_dy = np.zeros([dy.size, len(self.rv_domain.values)])
+        model_dy[range(self.cache.size), self.cache] = dy
+        self.model.update(model_dy, optimizer)
