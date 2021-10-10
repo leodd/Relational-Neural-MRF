@@ -221,9 +221,9 @@ class PMLE:
 
             w = self.log_belief_balance(w)
             w = np.exp(w)
-            w = -w / np.sum(w[:, 1:], axis=1).reshape(-1, 1)
+            w = -w / np.sum(w, axis=1).reshape(-1, 1)
 
-            w[:, 0] = 1
+            w[:, 0] += 1
 
             # Re-weight gradient of sampling points
             for f, idx in zip(rv.nb, data_idx):
