@@ -388,55 +388,82 @@ class ImageEdgePotential(Function):
         self.scaling_cof = max(self.scaling_cof, 0.001)
 
 
-# class CNNPotential(Function):
-#     def __init__(self, latent_rv_size, image_size, model, clamp=(-np.inf, np.inf)):
-#         Function.__init__(self)
-#         self.dimension = latent_rv_size + image_size[0] * image_size[1]
-#         self.latent_rv_size = latent_rv_size
-#         self.image_size = image_size
-#         self.model = model
-#         self.clamp = Clamp(*clamp)
-#
-#     def __call__(self, *parameters):
-#         rvs = np.array(parameters[0]).reshape(1, -1)
-#         image = np.array(parameters[1]).reshape(1, -1)
-#         return self.batch_call(np.hstack([rvs, image]))
-#
-#     def batch_call(self, x):
-#         return np.exp(self.log_batch_call(x))
-#
-#     def log_batch_call(self, x):
-#         rvs = torch.from_numpy(x[:, :self.latent_rv_size]).float()
-#         image = torch.from_numpy(x[:, self.latent_rv_size:]).reshape(-1, *self.image_size).float()
-#
-#         if setting.save_cache:
-#             out = self.model(rvs, image)
-#         else:
-#             with torch.no_grad():
-#                 out = self.model(rvs, image)
-#
-#         self.cache = out
-#         out = out.detach().double().numpy()
-#         # return out.reshape(-1)
-#         return self.clamp.forward(out).reshape(-1)
-#
-#     def set_parameters(self, state_dict):
-#         self.model.load_state_dict(state_dict)
-#
-#     def parameters(self):
-#         return self.model.state_dict()
-#
-#     def update(self, dy, optimizer):
-#         optimizer.zero_grad()
-#         # print(dy)
-#         # print(self.cache)
-#         dy = dy.reshape(-1, 1)
-#         dy, _ = self.clamp.backward(dy, self.cache.detach().numpy())
-#         # print(dy.reshape(-1))
-#         self.cache.backward(torch.from_numpy(-dy).float())
-
-
 class CNNPotential(Function):
+    def __init__(self, rv_domain, image_size, clamp=(-3, 3)):
+        Function.__init__(self)
+
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as Func
+
+        class CNN(nn.Module):
+            def __init__(self):
+                super(CNN, self).__init__()
+                self.conv1 = nn.Conv2d(1, 8, 3, 1)
+                self.conv2 = nn.Conv2d(8, 5, 3, 1)
+                self.fc1 = nn.Linear(720, 64)
+                self.fc2 = nn.Linear(64, 10)
+
+            def forward(self, x):
+                x = self.conv1(x)
+                x = Func.elu(x)
+                x = self.conv2(x)
+                x = Func.elu(x)
+                x = Func.max_pool2d(x, 2)
+                x = torch.flatten(x, 1)
+                x = self.fc1(x)
+                x = Func.elu(x)
+                output = self.fc2(x)
+                return output
+
+        self.dimension = 1 + image_size[0] * image_size[1]
+        self.rv_domain = rv_domain
+        self.image_size = image_size
+        self.model = CNN()
+        self.clamp = Clamp(*clamp)
+
+    def __call__(self, *parameters):
+        rvs = np.array(parameters[0]).reshape(1, -1)
+        image = np.array(parameters[1]).reshape(1, -1)
+        return self.batch_call(np.hstack([rvs, image]))
+
+    def batch_call(self, x):
+        return np.exp(self.log_batch_call(x))
+
+    def log_batch_call(self, x):
+        rvs = x[:, 0].astype(int)
+        image = torch.from_numpy(x[:, 1:]).reshape(-1, 1, *self.image_size).float()
+
+        if setting.save_cache:
+            out = self.model(image)
+        else:
+            with torch.no_grad():
+                out = self.model(image)
+
+        self.cache = (out, rvs)
+        out = out.detach().double().numpy()
+        out = self.clamp.forward(out)
+        return out[range(rvs.size), rvs]
+
+    def set_parameters(self, state_dict):
+        self.model.load_state_dict(state_dict)
+
+    def parameters(self):
+        return self.model.state_dict()
+
+    def update(self, dy, optimizer):
+        out, rvs = self.cache
+        optimizer.zero_grad()
+        # print(dy)
+        # print(self.cache)
+        model_dy = np.zeros([dy.size, len(self.rv_domain.values)])
+        model_dy[range(rvs.size), rvs] = dy
+        model_dy, _ = self.clamp.backward(model_dy, out.detach().numpy())
+        # print(dy.reshape(-1))
+        out.backward(torch.from_numpy(-model_dy).float())
+
+
+class FCPotential(Function):
     def __init__(self, rv_domain, image_size, model):
         Function.__init__(self)
         self.dimension = 1 + image_size[0] * image_size[1]

@@ -85,10 +85,14 @@ class PBP:
                 f_x.append(self.x[nb])
                 m.append(self.message[(nb, f)])
             else:
-                f_x.append([nb.value])
+                f_x.extend(np.array([nb.value]).reshape(-1, 1))
 
         f_x = np.array(list(product(*f_x)), dtype=float)
-        m = np.exp(self.log_message_balance(np.array(list(product(*m))).sum(axis=1))[0])
+        m = np.exp(
+            self.log_message_balance(
+                np.array(list(product(*m))).sum(axis=1)
+            )[0]
+        )
 
         batch_len = len(f_x)
         f_x = np.tile(f_x, (len(x), 1))
