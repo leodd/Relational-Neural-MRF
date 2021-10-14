@@ -15,12 +15,16 @@ def generate_v2_data(size):
 
 
 def generate_v3_data(size):
-    a, b, c = generate_v1_data(size)
-    a_ = 9.9 - a
-    b_ = np.array(a_, dtype=int)
-    c_ = np.array(a_ * 10, dtype=int) % 10
-    return a, b, c, a_, b_, c_
+    t1 = np.random.randint(0, 23, size)
+    shift = np.random.randint(0, 23, size) - 11
+    t2 = (t1 + shift) % 24
+    return t1, t2, shift
 
+
+def separate_digit(numbers):
+    b = np.array(numbers % 10, dtype=int)
+    a = np.array(numbers / 10, dtype=int)
+    return a, b
 
 if __name__ == '__main__':
-    print(generate_v3_data(1))
+    print(generate_v3_data(10))

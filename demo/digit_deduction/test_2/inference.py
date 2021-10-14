@@ -9,23 +9,28 @@ from functions.ExpPotentials import NeuralNetPotential, NeuralNetFunction, \
     CNNPotential, FCPotential, ReLU, ELU, LinearLayer, Clamp, NormalizeLayer
 from functions.MLNPotential import MLNPotential
 from demo.digit_deduction.mnist_loader import MNISTRandomDigit
-from demo.digit_deduction.data_generator import generate_v3_data
+from demo.digit_deduction.data_generator import generate_v3_data, separate_digit
 from utils import visualize_2d_potential, load
 
 
 train_mod(False)
 
+np.random.seed(2)
+
 img_dataset = MNISTRandomDigit(root='..')
 
-np.random.seed(2)
-float_data_1, digit_data_1, digit_data_2, float_data_2, digit_data_3, digit_data_4 = generate_v3_data(size=1000)
-img_data_1 = np.array([img_dataset.get_random_image(digit) for digit in digit_data_1])
-img_data_2 = np.array([img_dataset.get_random_image(digit) for digit in digit_data_2])
-img_data_3 = np.array([img_dataset.get_random_image(digit) for digit in digit_data_3])
-img_data_4 = np.array([img_dataset.get_random_image(digit) for digit in digit_data_4])
+t1, t2, shift = generate_v3_data(size=1000)
+d1, d2 = separate_digit(t1)
+d3, d4 = separate_digit(t2)
+
+img_data_1 = np.array([img_dataset.get_random_image(digit) for digit in d1])
+img_data_2 = np.array([img_dataset.get_random_image(digit) for digit in d2])
+img_data_3 = np.array([img_dataset.get_random_image(digit) for digit in d3])
+img_data_4 = np.array([img_dataset.get_random_image(digit) for digit in d4])
 
 d_digit = Domain(np.arange(10), continuous=False)
-d_float = Domain([0, 10], continuous=True)
+d_time = Domain(np.arange(24), continuous=False)
+d_shift = Domain(np.arange(24) - 11, continuous=False)
 d_img = Domain([0, 1], continuous=True)
 
 p_digit_img = CNNPotential(
@@ -33,66 +38,78 @@ p_digit_img = CNNPotential(
     image_size=(28, 28)
 )
 
-p_digit2float = MLNPotential(
-    formula=lambda x: -(x[:, 0] + x[:, 1] * 0.1 - x[:, 2]) ** 2,
+p_digit2time = MLNPotential(
+    formula=lambda x: (x[:, 0] * 10 + x[:, 1]) == x[:, 2],
     dimension=3,
-    w=5
+    w=1
 )
 
-p_float2float = MLNPotential(
-    formula=lambda x: -(x[:, 0] + x[:, 1] - 9.9) ** 2,
-    dimension=2,
-    w=5
+p_time2time = NeuralNetPotential(
+    layers=[
+        NormalizeLayer([(0, 1)] * 3, domains=[d_time, d_time, d_shift]),
+        LinearLayer(3, 32), ELU(),
+        LinearLayer(32, 16), ELU(),
+        LinearLayer(16, 1), Clamp(-3, 3)
+    ]
 )
+
+# p_time2time = MLNPotential(
+#     formula=lambda x: (x[:, 0] + x[:, 2]) % 24 == x[:, 1],
+#     dimension=3,
+#     w=3
+# )
 
 params = load(
     f'learned_potentials/40000'
 )
 p_digit_img.set_parameters(params[0])
-# p_digit2float.set_parameters(params[1])
-# p_float2float.set_parameters(params[2])
+p_digit2time.set_parameters(params[1])
+p_time2time.set_parameters(params[2])
 
-rv_d1 = list()
-rv_d2 = list()
-rv_d3 = list()
-rv_d4 = list()
-rv_f1= list()
-rv_f2= list()
+rvs_d1 = list()
+rvs_d2 = list()
+rvs_d3 = list()
+rvs_d4 = list()
+rvs_t1= list()
+rvs_t2= list()
+rvs_shift = list()
 fs = list()
 
 for i in range(100):
-    rv_float_1 = RV(d_float)
-    rv_float_2 = RV(d_float, value=float_data_2[i])
-    rv_digit_1 = RV(d_digit)
-    rv_digit_2 = RV(d_digit)
-    rv_digit_3 = RV(d_digit)
-    rv_digit_4 = RV(d_digit)
-    rv_img_1 = RV(d_img, value=img_data_1[i])
-    rv_img_2 = RV(d_img, value=img_data_2[i])
-    rv_img_3 = RV(d_img, value=img_data_3[i])
-    rv_img_4 = RV(d_img, value=img_data_4[i])
+    rv_t1 = RV(d_time)
+    rv_t2 = RV(d_time)
+    rv_shift = RV(d_shift, value=shift[i])
+    rv_d1 = RV(d_digit)
+    rv_d2 = RV(d_digit)
+    rv_d3 = RV(d_digit)
+    rv_d4 = RV(d_digit)
+    rv_img1 = RV(d_img, value=img_data_1[i])
+    rv_img2 = RV(d_img, value=img_data_2[i])
+    rv_img3 = RV(d_img, value=img_data_3[i])
+    rv_img4 = RV(d_img, value=img_data_4[i])
 
-    f_digit_img_1 = F(p_digit_img, nb=[rv_digit_1, rv_img_1])
-    f_digit_img_2 = F(p_digit_img, nb=[rv_digit_2, rv_img_2])
-    f_digit_img_3 = F(p_digit_img, nb=[rv_digit_3, rv_img_3])
-    f_digit_img_4 = F(p_digit_img, nb=[rv_digit_4, rv_img_4])
-    f_digit2float_1 = F(p_digit2float, nb=[rv_digit_1, rv_digit_2, rv_float_1])
-    f_digit2float_2 = F(p_digit2float, nb=[rv_digit_3, rv_digit_4, rv_float_2])
-    f_float2float = F(p_float2float, nb=[rv_float_1, rv_float_2])
+    f_digit_img_1 = F(p_digit_img, nb=[rv_d1, rv_img1])
+    f_digit_img_2 = F(p_digit_img, nb=[rv_d2, rv_img2])
+    f_digit_img_3 = F(p_digit_img, nb=[rv_d3, rv_img3])
+    f_digit_img_4 = F(p_digit_img, nb=[rv_d4, rv_img4])
+    f_digit2time_1 = F(p_digit2time, nb=[rv_d1, rv_d2, rv_t1])
+    f_digit2time_2 = F(p_digit2time, nb=[rv_d3, rv_d4, rv_t2])
+    f_time2time = F(p_time2time, nb=[rv_t1, rv_t2, rv_shift])
 
-    rv_d1.append(rv_digit_1)
-    rv_d2.append(rv_digit_2)
-    rv_d3.append(rv_digit_3)
-    rv_d4.append(rv_digit_4)
-    rv_f1.append(rv_float_1)
-    rv_f2.append(rv_float_2)
+    rvs_d1.append(rv_d1)
+    rvs_d2.append(rv_d2)
+    rvs_d3.append(rv_d3)
+    rvs_d4.append(rv_d4)
+    rvs_t1.append(rv_t1)
+    rvs_t2.append(rv_t2)
+    rvs_shift.append(rv_shift)
     fs.extend([
         f_digit_img_1, f_digit_img_2, f_digit_img_3, f_digit_img_4,
-        f_digit2float_1, f_digit2float_2, f_float2float
+        f_digit2time_1, f_digit2time_2, f_time2time
     ])
 
 g = Graph(
-    rvs=set(rv_d1 + rv_d2 + rv_d3 + rv_d4 + rv_f1 + rv_f2),
+    rvs=set(rvs_d1 + rvs_d2 + rvs_d3 + rvs_d4 + rvs_t1 + rvs_t2 + rvs_shift),
     factors=set(fs)
 )
 
@@ -103,21 +120,21 @@ res = list()
 err = list()
 
 for i in range(100):
-    pred_digit_1 = infer.map(rv_d1[i])
-    pred_digit_2 = infer.map(rv_d2[i])
-    pred_digit_3 = infer.map(rv_d3[i])
-    pred_digit_4 = infer.map(rv_d4[i])
-    pred_float_1 = infer.map(rv_f1[i])
-    pred_float_2 = infer.map(rv_f2[i])
+    pred_d1 = infer.map(rvs_d1[i])
+    pred_d2 = infer.map(rvs_d2[i])
+    pred_d3 = infer.map(rvs_d3[i])
+    pred_d4 = infer.map(rvs_d4[i])
+    pred_t1 = infer.map(rvs_t1[i])
+    pred_t2 = infer.map(rvs_t2[i])
 
-    print(pred_float_1, pred_digit_1, pred_digit_2, pred_float_2, pred_digit_3, pred_digit_4)
+    # print(pred_float_1, pred_digit_1, pred_digit_2, pred_float_2, pred_digit_3, pred_digit_4)
 
-    res.append(pred_digit_1 == digit_data_1[i])
-    res.append(pred_digit_2 == digit_data_2[i])
-    res.append(pred_digit_3 == digit_data_3[i])
-    res.append(pred_digit_4 == digit_data_4[i])
-    err.append(np.abs(pred_float_1 - float_data_1[i]))
-    err.append(np.abs(pred_float_2 - float_data_2[i]))
+    res.append(pred_d1 == d1[i])
+    res.append(pred_d2 == d2[i])
+    res.append(pred_d3 == d3[i])
+    res.append(pred_d4 == d4[i])
+    err.append(pred_t1 == t1[i])
+    err.append(pred_t2 == t2[i])
 
 print(np.mean(res))
 print(np.mean(err))

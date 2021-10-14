@@ -11,7 +11,7 @@ train_mod(False)
 
 USE_MANUAL_POTENTIALS = True
 
-gt_data, noisy_data = load_data('testing_2/gt', 'testing_2/noisy_unigaussian')
+gt_data, noisy_data = load_data('testing_2/gt', 'testing_2/noisy_multigaussian')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
@@ -21,36 +21,36 @@ domain = Domain([0, 1], continuous=True)
 # pxo = ImageNodePotential(1)
 # pxy = ImageEdgePotential(0.5, 0.5)
 
-pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
-pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+# pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+# pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
 
-# pxo = PriorPotential(
-#     NeuralNetPotential(
-#         [
-#             LinearLayer(1, 64), ELU(),
-#             LinearLayer(64, 32), ELU(),
-#             LinearLayer(32, 1), Clamp(-3, 3)
-#         ],
-#         dimension=2,
-#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-#     ),
-#     LinearGaussianFunction(1., 0., 0.1),
-#     learn_prior=False
-# )
-#
-# pxy = PriorPotential(
-#     NeuralNetPotential(
-#         [
-#             LinearLayer(1, 64), ELU(),
-#             LinearLayer(64, 32), ELU(),
-#             LinearLayer(32, 1), Clamp(-3, 3)
-#         ],
-#         dimension=2,
-#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-#     ),
-#     LinearGaussianFunction(1., 0., 0.1),
-#     learn_prior=False
-# )
+pxo = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ELU(),
+            LinearLayer(64, 32), ELU(),
+            LinearLayer(32, 1), Clamp(-3, 3)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
+)
+
+pxy = PriorPotential(
+    NeuralNetPotential(
+        [
+            LinearLayer(1, 64), ELU(),
+            LinearLayer(64, 32), ELU(),
+            LinearLayer(32, 1), Clamp(-3, 3)
+        ],
+        dimension=2,
+        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+    ),
+    LinearGaussianFunction(1., 0., 0.1),
+    learn_prior=False
+)
 
 # pxo = NeuralNetPotential(
 #     [
@@ -91,7 +91,7 @@ pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
 # )
 
 pxo_params, pxy_params = load(
-    'learned_potentials/model_3_gaussian/1500'
+    'learned_potentials_2/model_3_1d_nn_prior/1500'
 )
 
 pxo.set_parameters(pxo_params)
@@ -153,7 +153,7 @@ for image_idx, (noisy_image, gt_image) in enumerate(zip(noisy_data, gt_data)):
 
     show_images([gt_image, noisy_image, predict_image])
 
-    save_image(predict_image, f='testing_2/result_unigaussian/gaussian/' + str(image_idx) + '.png')
+    save_image(predict_image, f='testing_2/result_multigaussian/1d_nn_prior/' + str(image_idx) + '.png')
 
     l1_loss.append(np.sum(np.abs(predict_image - gt_image)))
     l2_loss.append(np.sum((predict_image - gt_image) ** 2))

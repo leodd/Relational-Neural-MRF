@@ -27,11 +27,12 @@ def bic_op(x, y):
 
 
 class MLNPotential(Function):
-    def __init__(self, formula, dimension, w=1):
+    def __init__(self, formula, dimension, w=1, clamp=(-3, 3)):
         Function.__init__(self)
         self.formula = formula
         self.dimension = dimension
         self.w = w
+        self.clamp = clamp
 
     def __call__(self, *x):
         return self.batch_call(np.expand_dims(np.array(x), axis=0)).squeeze()
@@ -62,6 +63,7 @@ class MLNPotential(Function):
 
     def update(self, dy, optimizer):
         self.w += optimizer.compute_step((self, 'w'), np.sum(self.cache * dy), self.w)
+        self.w = np.clip(self.w, *self.clamp)
 
 
 class HMLNPotential(Function):

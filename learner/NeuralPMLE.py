@@ -304,7 +304,7 @@ class PMLE:
 
                     optimizers[potential].step()
 
-                if t % 10 == 0:
+                if t % 100 == 0:
                     print(t)
 
                 if visualize is not None:
