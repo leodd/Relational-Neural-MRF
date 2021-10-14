@@ -6,15 +6,15 @@ from demo.image_denoising.image_data_loader import load_data
 import numpy as np
 
 
-gt_data, noisy_data = load_data('training/gt', 'training/noisy_multigaussian')
+gt_data, noisy_data = load_data('training/gt', 'training/noisy_unigaussian')
 
 row = gt_data.shape[1]
 col = gt_data.shape[2]
 
 domain = Domain([0, 1], continuous=True)
 
-pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
-pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+pxo = GaussianFunction([0.5, 0.5], np.eye(2))
+pxy = GaussianFunction([0.5, 0.5], np.eye(2))
 
 data = dict()
 
@@ -76,7 +76,7 @@ leaner.train(
     batch_size=20,
     rvs_selection_size=100,
     sample_size=5,
-    save_dir='learned_potentials_2/model_3_gaussian',
+    save_dir='learned_potentials/model_3_gaussian',
     save_period=500,
     visualize=visualize
 )

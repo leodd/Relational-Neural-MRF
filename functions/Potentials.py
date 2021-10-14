@@ -257,7 +257,7 @@ class CategoricalGaussianFunction(Function):
 
 
 class LinearGaussianFunction(Function):
-    def __init__(self, w, b, sig):
+    def __init__(self, w, b, sig, eps=0):
         """
         Args:
             sig: The variance value.
@@ -265,6 +265,7 @@ class LinearGaussianFunction(Function):
         Function.__init__(self)
         self.dimension = 2
         self.set_parameters((w, b, sig))
+        self.eps = eps
 
     def set_parameters(self, parameters):
         self.w, self.b, self.sig = parameters
@@ -278,7 +279,7 @@ class LinearGaussianFunction(Function):
 
     def batch_call(self, x):
         z = x[:, 1] - x[:, 0] * self.w - self.b
-        return np.exp(-0.5 * z * z / self.sig)
+        return np.exp(-0.5 * z * z / self.sig) + self.eps
 
     def slice(self, *parameters):
         if parameters[0] is not None:
