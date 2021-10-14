@@ -3,7 +3,7 @@ from utils import show_images, load, visualize_2d_potential
 from demo.image_denoising.image_data_loader import load_data
 from Graph import *
 from functions.Potentials import GaussianFunction, LinearGaussianFunction
-from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, Clamp, LinearLayer, train_mod
+from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ReLU, ELU, Clamp, LinearLayer, train_mod
 from functions.Potentials import ImageNodePotential, ImageEdgePotential
 from inferer.PBP import PBP
 
@@ -26,36 +26,36 @@ domain = Domain([0, 1], continuous=True)
 # pxo = ImageNodePotential(1)
 # pxy = ImageEdgePotential(0.5, 0.5)
 
-# pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
-# pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+pxo = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
+pxy = GaussianFunction([0.5, 0.5], np.eye(2), eps=0.01)
 
-pxo = PriorPotential(
-    NeuralNetPotential(
-        [
-            LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1), Clamp(-3, 3)
-        ],
-        dimension=2,
-        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=False
-)
-
-pxy = PriorPotential(
-    NeuralNetPotential(
-        [
-            LinearLayer(1, 64), ReLU(),
-            LinearLayer(64, 32), ReLU(),
-            LinearLayer(32, 1), Clamp(-3, 3)
-        ],
-        dimension=2,
-        formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
-    ),
-    LinearGaussianFunction(1., 0., 0.1),
-    learn_prior=False
-)
+# pxo = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ELU(),
+#             LinearLayer(64, 32), ELU(),
+#             LinearLayer(32, 1), Clamp(-3, 3)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1, eps=0.01),
+#     learn_prior=False
+# )
+#
+# pxy = PriorPotential(
+#     NeuralNetPotential(
+#         [
+#             LinearLayer(1, 64), ELU(),
+#             LinearLayer(64, 32), ELU(),
+#             LinearLayer(32, 1), Clamp(-3, 3)
+#         ],
+#         dimension=2,
+#         formula=lambda x: np.abs(x[:, 0] - x[:, 1]).reshape(-1, 1)
+#     ),
+#     LinearGaussianFunction(1., 0., 0.1, eps=0.01),
+#     learn_prior=False
+# )
 
 # pxo = NeuralNetPotential(
 #     [
@@ -96,7 +96,7 @@ pxy = PriorPotential(
 # )
 
 pxo_params, pxy_params = load(
-    'learned_potentials_2/model_3_1d_nn_prior/1500'
+    'learned_potentials_2/model_3_gaussian/1500'
 )
 
 pxo.set_parameters(pxo_params)
@@ -146,7 +146,7 @@ for i in range(row - 1):
 
 g = Graph(rvs + evidence, fs)
 
-infer = PBP(g, n=20)
+infer = PBP(g, n=50)
 infer.run(20, log_enable=True)
 
 # infer = VarInference(g, num_mixtures=1, num_quadrature_points=5)

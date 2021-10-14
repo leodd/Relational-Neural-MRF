@@ -22,8 +22,8 @@ for m, file in enumerate(glob.glob(ground_true_folder + '/*.png')):
     save_image(noisy_image, uninoisy_folder + file_name)
 
     # multi-gaussian noisy images
-    noise1 = 0.15 + np.random.randn(*gt_image.shape) * 0.1
-    noise2 = -0.15 + np.random.randn(*gt_image.shape) * 0.1
+    noise1 = 0.1 + np.random.randn(*gt_image.shape) * 0.05
+    noise2 = -0.1 + np.random.randn(*gt_image.shape) * 0.05
 
     choice = np.random.choice(2, size=gt_image.shape)
     noise = np.where(choice == 0, noise1, noise2)

@@ -6,7 +6,7 @@ from demo.image_denoising.image_data_loader import load_data
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-gt_data, noisy_data = load_data('training/gt', 'training/noisy_multigaussian')
+gt_data, noisy_data = load_data('training/gt', 'training/noisy_unigaussian')
 
 m = len(gt_data)
 
@@ -35,4 +35,4 @@ for i in range(300):
         optimizer.step()
         print(i, loss)
 
-    torch.save(model.state_dict(), 'learned_potentials_2/model_3_cnn.pth')
+    torch.save(model.state_dict(), 'learned_potentials/model_3_cnn.pth')
