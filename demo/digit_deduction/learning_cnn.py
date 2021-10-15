@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as Func
 import numpy as np
 from demo.digit_deduction.mnist_loader import MNISTRandomDigit
+from demo.digit_deduction.data_generator import generate_v3_data, separate_digit
 
 
 class CNN(nn.Module):
@@ -26,25 +27,21 @@ class CNN(nn.Module):
         output = Func.log_softmax(x, dim=1)
         return output
 
-class LinearNet(nn.Module):
-    def __init__(self):
-        super(LinearNet, self).__init__()
-        self.fc1 = nn.Linear(784, 64)
-        self.fc2 = nn.Linear(64, 10)
-        # self.fc3 = nn.Linear(32, 1)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = Func.relu(x)
-        x = self.fc2(x)
-        # x = Func.relu(x)
-        # x = self.fc3(x)
-        return x
-
-model = LinearNet()
+model = CNN()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-img_dataset = MNISTRandomDigit(root='.')
+np.random.seed(0)
+
+img_dataset = MNISTRandomDigit(root='..')
+
+t1, t2, shift = generate_v3_data(size=1000)
+d1, d2 = separate_digit(t1)
+d3, d4 = separate_digit(t2)
+
+img_data_1 = np.array([img_dataset.get_random_image(digit) for digit in d1])
+img_data_2 = np.array([img_dataset.get_random_image(digit) for digit in d2])
+img_data_3 = np.array([img_dataset.get_random_image(digit) for digit in d3])
+img_data_4 = np.array([img_dataset.get_random_image(digit) for digit in d4])
 
 digit_data = np.random.choice(10, size=2000)
 img_data = np.array([img_dataset.get_random_image(digit) for digit in digit_data]).reshape(-1, 28 * 28)
