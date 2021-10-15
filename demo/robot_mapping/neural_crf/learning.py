@@ -114,6 +114,7 @@ for model in range(5):
             data[rv] = [d_depth.clip_value(dt_depth[key[1]])]
         if key[0] == seg_type:
             data[rv] = [d_seg_type.value_to_idx(dt_seg_type[key[1]])]
+        data[rv] = np.array(data[rv])
         if key[0] != seg_type:
             cond_rvs.add(rv)
 

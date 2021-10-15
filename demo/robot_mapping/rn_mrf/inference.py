@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from RelationalGraph import *
 from inferer.PBP import PBP
 from functions.ExpPotentials import PriorPotential, NeuralNetPotential, ExpWrapper, \
-    TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer
+    TableFunction, CategoricalGaussianFunction,  ReLU, LinearLayer, Clamp, NormalizeLayer
 from functions.NeuralNet import train_mod
 from functions.MLNPotential import MLNPotential
 from demo.robot_mapping.robot_map_loader import load_data_fold, get_seg_type_distribution, get_subs_matrix
@@ -38,15 +38,17 @@ for model in range(5):
     angle = Atom(d_angle, [lv_s], name='angle')
 
     p_lda = NeuralNetPotential(
-        layers=[LinearLayer(4, 64), ReLU(),
+        layers=[NormalizeLayer([None, None, None, (0, 1)], domains=[d_length, d_depth, d_angle, d_seg_type]),
+                LinearLayer(4, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)]
+                LinearLayer(32, 1), Clamp(-3, 3)]
     )
 
     p_d = NeuralNetPotential(
-        layers=[LinearLayer(4, 64), ReLU(),
+        layers=[NormalizeLayer([None, None, (0, 1), (0, 1)], domains=[d_depth, d_depth, d_seg_type, d_seg_type]),
+                LinearLayer(4, 64), ReLU(),
                 LinearLayer(64, 32), ReLU(),
-                LinearLayer(32, 1)],
+                LinearLayer(32, 1), Clamp(-3, 3)],
         dimension=4,
         formula=lambda x: np.concatenate((x[:, [0]] - x[:, [1]], x[:, 1:]), axis=1)
     )
@@ -58,8 +60,8 @@ for model in range(5):
     )
 
     p_dw = MLNPotential(
-        formula=lambda x: (np.abs(x[:, 0]) < 0.01) | (x[:, 1] != 0),
-        dimension=2,
+        formula=lambda x: (np.abs(x[:, 0] - x[:, 1]) < 0.01) & (x[:, 2] == 0) | (x[:, 1] != 0),
+        dimension=4,
         w=2
     )
 
@@ -101,13 +103,17 @@ for model in range(5):
     p_dd.set_parameters(params[4])
 
     f_lda = ParamF(p_lda, atoms=[length('S'), depth('S'), angle('S'), seg_type('S')], lvs=['S'])
-    f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
-    f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_k_aligned))
-    # f_dw = ParamF(p_dw, atoms=[depth('S'), seg_type('S')], lvs=['S'])
+    f_d = ParamF(p_d, atoms=[depth('S1'), depth('S2'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'],
+                 subs=get_subs_matrix(dt_neighbor, True))
+    f_dk = ParamF(p_dk, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'],
+                  subs=get_subs_matrix(dt_k_aligned))
+    f_dw = ParamF(p_dw, atoms=[length('S1'), depth('S1'), seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'],
+                  subs=get_subs_matrix(dt_neighbor, True))
     f_aw = ParamF(p_aw, atoms=[angle('S'), seg_type('S')], lvs=['S'])
-    # f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
+    f_lw = ParamF(p_lw, atoms=[length('S'), seg_type('S')], lvs=['S'])
     f_ao = ParamF(p_ao, atoms=[angle('S'), seg_type('S')], lvs=['S'])
-    f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'], subs=get_subs_matrix(dt_neighbor, True))
+    f_dd = ParamF(p_dd, atoms=[seg_type('S1'), seg_type('S2')], lvs=['S1', 'S2'],
+                  subs=get_subs_matrix(dt_neighbor, True))
     # f_prior = ParamF(p_prior, atoms=[seg_type('S')], lvs=['S'])
 
     rel_g = RelationalGraph(

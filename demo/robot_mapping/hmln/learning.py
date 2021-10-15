@@ -169,6 +169,7 @@ for model in range(5):
             data[rv] = [dt_angle[key[1]]]
         if key[0] == depth:
             data[rv] = [d_depth.clip_value(dt_depth[key[1]])]
+        data[rv] = np.array(data[rv])
         if key[0] == seg_type:
             if key[2] == 'wall' and dt_seg_type[key[1]] == 'W':
                 data[rv] = [True]
