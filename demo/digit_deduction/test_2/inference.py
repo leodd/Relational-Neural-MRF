@@ -42,33 +42,42 @@ for k in range(5):
         image_size=(28, 28)
     )
 
-    p_digit2time = MLNPotential(
-        formula=lambda x: (x[:, 0] * 10 + x[:, 1]) == x[:, 2],
-        dimension=3,
-        w=None
+    p_digit2time = NeuralNetPotential(
+        layers=[
+            NormalizeLayer([(0, 1)] * 3, domains=[d_digit, d_digit, d_time]),
+            LinearLayer(3, 32), ELU(),
+            LinearLayer(32, 16), ELU(),
+            LinearLayer(16, 1), Clamp(-3, 3)
+        ]
     )
 
-    # p_time2time = NeuralNetPotential(
-    #     layers=[
-    #         NormalizeLayer([(0, 1)] * 3, domains=[d_time, d_time, d_shift]),
-    #         LinearLayer(3, 32), ELU(),
-    #         LinearLayer(32, 16), ELU(),
-    #         LinearLayer(16, 1), Clamp(-3, 3)
-    #     ]
+    # p_digit2time = MLNPotential(
+    #     formula=lambda x: (x[:, 0] * 10 + x[:, 1]) == x[:, 2],
+    #     dimension=3,
+    #     w=None
     # )
 
-    p_time2time = MLNPotential(
-        formula=lambda x: (x[:, 0] + x[:, 2]) % 24 == x[:, 1],
-        dimension=3,
-        w=None
+    p_time2time = NeuralNetPotential(
+        layers=[
+            NormalizeLayer([(0, 1)] * 3, domains=[d_time, d_time, d_shift]),
+            LinearLayer(3, 32), ELU(),
+            LinearLayer(32, 16), ELU(),
+            LinearLayer(16, 1), Clamp(-3, 3)
+        ]
     )
 
+    # p_time2time = MLNPotential(
+    #     formula=lambda x: (x[:, 0] + x[:, 2]) % 24 == x[:, 1],
+    #     dimension=3,
+    #     w=None
+    # )
+
     params = load(
-        f'learned_potentials/cnn/{k}/40000'
+        f'learned_potentials/rn-mrf-nn/{k}/40000'
     )
     p_digit_img.set_parameters(params[0])
-    # p_digit2time.set_parameters(params[1])
-    # p_time2time.set_parameters(params[2])
+    p_digit2time.set_parameters(params[1])
+    p_time2time.set_parameters(params[2])
 
     rvs_d1 = list()
     rvs_d2 = list()

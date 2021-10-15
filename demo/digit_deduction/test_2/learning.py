@@ -66,18 +66,18 @@ for i in range(5):
 
     p_digit2time = NeuralNetPotential(
         layers=[
-            NormalizeLayer([(0, 1)] * 3, domains=[d_time, d_time, d_shift]),
+            NormalizeLayer([(0, 1)] * 3, domains=[d_digit, d_digit, d_time]),
             LinearLayer(3, 32), ELU(),
             LinearLayer(32, 16), ELU(),
             LinearLayer(16, 1), Clamp(-3, 3)
         ]
     )
 
-    p_digit2time = MLNPotential(
-        formula=lambda x: (x[:, 0] * 10 + x[:, 1]) == x[:, 2],
-        dimension=3,
-        w=None
-    )
+    # p_digit2time = MLNPotential(
+    #     formula=lambda x: (x[:, 0] * 10 + x[:, 1]) == x[:, 2],
+    #     dimension=3,
+    #     w=None
+    # )
 
     p_time2time = NeuralNetPotential(
         layers=[
@@ -130,7 +130,7 @@ for i in range(5):
             print(p_time2time.batch_call(np.array([[19, 12, -7], [19, 12, 8]])))
 
     train_mod(True)
-    leaner = PMLE(g, [p_digit_img], data)
+    leaner = PMLE(g, [p_digit_img, p_digit2time, p_time2time], data)
     leaner.train(
         lr=0.001,
         alpha=1.,
@@ -140,7 +140,7 @@ for i in range(5):
         batch_size=1,
         rvs_selection_size=1,
         sample_size=20,
-        save_dir=f'learned_potentials/cnn/{i}',
+        save_dir=f'learned_potentials/rn-mrf-nn/{i}',
         save_period=10000,
         visualize=visualize,
         optimizers={p_digit_img: torch.optim.Adam(p_digit_img.model.parameters(), lr=0.0001)}
