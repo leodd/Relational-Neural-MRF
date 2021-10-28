@@ -19,7 +19,7 @@ np.random.seed(0)
 img_dataset = MNISTRandomDigit(root='..')
 
 for i in range(5):
-    t1, t2, shift = generate_v3_data(size=1000)
+    t1, t2, shift = generate_v3_data(size=10000)
     d1, d2 = separate_digit(t1)
     d3, d4 = separate_digit(t2)
 
@@ -109,7 +109,7 @@ for i in range(5):
         },
         factors={
             f_digit_img_1, f_digit_img_2, f_digit_img_3, f_digit_img_4,
-            # f_digit2time_1, f_digit2time_2, f_time2time
+            f_digit2time_1, f_digit2time_2, f_time2time
         },
         condition_rvs={rv_img1, rv_img2, rv_img3, rv_img4}
     )
@@ -140,7 +140,7 @@ for i in range(5):
         batch_size=1,
         rvs_selection_size=1,
         sample_size=20,
-        save_dir=f'learned_potentials/rn-mrf-nn/{i}',
+        save_dir=f'learned_potentials/rn-mrf-nn-x10/{i}',
         save_period=10000,
         visualize=visualize,
         optimizers={p_digit_img: torch.optim.Adam(p_digit_img.model.parameters(), lr=0.0001)}

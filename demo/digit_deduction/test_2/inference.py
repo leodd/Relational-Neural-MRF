@@ -73,11 +73,10 @@ for k in range(5):
     # )
 
     params = load(
-        f'learned_potentials/rn-mrf-nn/{k}/40000'
+        f'learned_potentials/rn-mrf-nn-x10/{k}/40000'
     )
     p_digit_img.set_parameters(params[0])
-    p_digit2time.set_parameters(params[1])
-    p_time2time.set_parameters(params[2])
+    p_time2time.set_parameters(params[1])
 
     rvs_d1 = list()
     rvs_d2 = list()
@@ -118,7 +117,7 @@ for k in range(5):
         rvs_shift.append(rv_shift)
         fs.extend([
             f_digit_img_1, f_digit_img_2, f_digit_img_3, f_digit_img_4,
-            # f_digit2time_1, f_digit2time_2, f_time2time
+            f_digit2time_1, f_digit2time_2, f_time2time
         ])
 
     g = Graph(
